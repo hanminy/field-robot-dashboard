@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2021 Real-time motion planning of a hydraulic excavator using trajectory optimization and model predictive control - 서울대_요약</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2021 Real-time motion planning of a hydraulic excavator using trajectory optimization and model predictive control - 서울대_요약</h1><h1 id="real-time-motion-planning-of-a-hydraulic-excavator-using-trajectory-optimization-and-mpc">Real-Time Motion Planning of a Hydraulic Excavator using Trajectory Optimization and MPC</h1>
+<h2 id="_1">한줄 요약</h2>
+<p>유압 굴착기의 실시간 궤적 계획을 위해 <strong>global planner (trajectory optimization)</strong> 와 <strong>local planner (MPC + disturbance estimation)</strong> 를 통합한 프레임워크를 제안하며, force/torque, power, cylinder displacement, flow rate 등 물리적 제약조건을 모두 만족하면서 30 Hz 이상의 실시간 궤적 재계획이 가능함을 시뮬레이션으로 검증하였다.</p>
+<hr/>
+<h2 id="1">1. 연구 배경</h2>
+<h3 id="11">1.1 문제 정의</h3>
+<ul>
+<li>유압 굴착기(hydraulic excavator)의 굴착 작업 자동화에는 다양한 <strong>operational constraints</strong> (굴착량, 버킷 자세 등)와 <strong>physical constraints</strong> (force/torque 한계, 펌프 유량 한계, 파워 한계 등)를 동시에 만족하는 궤적 계획이 필요</li>
+<li>기존 trajectory optimization 방법은 전체 궤적을 한 번에 offline으로 최적화하므로, 운영 중 발생하는 <strong>외란(disturbance)</strong> -- 토양-버킷 상호작용, 유압 실린더 마찰 -- 에 취약</li>
+<li>외란으로 인해 최적성 저하는 물론 <strong>제약조건 위반(constraint violation)</strong> 까지 발생 가능</li>
+</ul>
+<h3 id="12">1.2 기존 연구 분류</h3>
+<table>
+<thead>
+<tr>
+<th>분류</th>
+<th>대표 연구</th>
+<th>특징</th>
+<th>한계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Trajectory optimization</strong></td>
+<td>[6,7,9]</td>
+<td>비용함수+제약조건+시스템 동역학 기반 전체 궤적 최적화</td>
+<td>Offline 계산, 외란 미대응, 단순 커널 파라미터화</td>
+</tr>
+<tr>
+<td><strong>Receding horizon / MPC</strong></td>
+<td>[12,13]</td>
+<td>이동 수평선 방식 궤적 최적화</td>
+<td>[12] 단일 입력 decoupled 동역학만 고려, [13] 연산시간 부족 (~3.3 Hz)</td>
+</tr>
+<tr>
+<td><strong>Non-optimization 기반</strong></td>
+<td>[1,14-16]</td>
+<td>DMP, reachability map, 계층적 제어</td>
+<td>제약조건 명시적 고려 불가, feasibility 보장 어려움</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-contributions">1.3 연구 기여 (Contributions)</h3>
+<ol>
+<li><strong>Global + Local planner 통합</strong>: operational constraints와 physical constraints를 모두 고려</li>
+<li><strong>축소 차원 global trajectory optimization</strong>: 수 초 이내 계산 가능한 문제 정식화</li>
+<li><strong>실시간 제약 궤적 생성</strong>: 외란 추정 기반 disturbance-aware 실시간 궤적 계획</li>
+</ol>
+<hr/>
+<h2 id="2">2. 시스템 및 방법론</h2>
+<h3 id="21">2.1 전체 시스템 아키텍처</h3>
+<p>400
+<em>Fig. 2: 알고리즘 전체 흐름도. Global planner가 환경 모델 기반으로 전역 궤적 $\mathbf{x}_r$을 생성하고, Local planner (MPC + 외란 추정)가 이를 실시간 추종하며, Motion Controller가 제어 입력 $\mathbf{u}$를 PLANT에 인가한다. 점선은 피드백 신호를 나타냄.</em></p>
+<pre><code class="language-mermaid">flowchart LR
+    ENV["환경 모델&lt;br/&gt;(지면 형상)"] --&gt; GP["Global Planner&lt;br/&gt;(Trajectory Optimization)"]
+    GP -- "x_r (전역 궤적)" --&gt; LP["Local Planner"]
+
+    subgraph LP_box["Local Planning"]
+        DE["Disturbance&lt;br/&gt;Estimation"] --&gt; MPC["Model Predictive&lt;br/&gt;Control"]
+    end
+
+    LP -- "x_d, u_d" --&gt; MC["Motion Controller&lt;br/&gt;(FB Linearization PID)"]
+    MC -- "u (제어입력)" --&gt; PLANT["PLANT&lt;br/&gt;(굴착기 동역학)"]
+    PLANT -- "x (상태)" --&gt; LP
+    PLANT -- "x" --&gt; DE
+</code></pre>
+<h3 id="22-hyundai-hx300l">2.2 굴착기 구성 (Hyundai HX300L)</h3>
+<p>400
+<em>Fig. 1: Hyundai HX300L 굴착기 구성. 4개의 회전 강체로 구성: (1) Cabin, (2) Boom, (3) Arm, (4) Bucket. 관절 각도 $\mathbf{q}_\theta$와 실린더 변위 $\mathbf{q}_L$로 configuration 정의 가능.</em></p>
+<hr/>
+<h2 id="3">3. 핵심 기술</h2>
+<h3 id="31-kinematics">3.1 운동학 (Kinematics)</h3>
+<p>Configuration을 관절 각도 또는 실린더 변위로 표현:</p>
+<p>$$
+\mathbf{q}_\theta = [\psi_U \; \theta_B \; \theta_A \; \theta_K]^\top \in \mathbb{R}^4, \quad \mathbf{q}_L = [\psi_U \; L_B \; L_A \; L_K]^\top \in \mathbb{R}^4
+$$</p>
+<p>두 표현 사이의 비선형 전단사(bijective) 매핑:</p>
+<p>$$
+\mathbf{q}<em>\theta = g_L(\mathbf{q}_L), \quad \mathbf{q}_L = g</em>\theta(\mathbf{q}<em>\theta), \quad \dot{\mathbf{q}}</em>\theta = J_L(\mathbf{q}<em>L)\dot{\mathbf{q}}_L, \quad \dot{\mathbf{q}}_L = J</em>\theta(\mathbf{q}<em>\theta)\dot{\mathbf{q}}</em>\theta \tag{1}
+$$</p>
+<p>버킷 팁 자세 (bucket tip pose):</p>
+<p>$$
+\mathbf{E} = [E_x(\mathbf{L}) \; E_z(\mathbf{L}) \; \theta(\mathbf{L})]^\top \in \mathbb{R}^3
+$$</p>
+<p>여기서 $\mathbf{L} = [L_B \; L_A \; L_K]^\top$, $\theta = \theta_B + \theta_A + \theta_K$.</p>
+<h3 id="32-dynamics">3.2 동역학 (Dynamics)</h3>
+<p><strong>관절 각도 기반 동역학</strong> (Euler-Lagrange):</p>
+<p>$$
+\dot{\mathbf{x}}<em>\theta = \begin{bmatrix} \dot{\mathbf{q}}</em>\theta \ \ddot{\mathbf{q}}<em>\theta \end{bmatrix} = \begin{bmatrix} \dot{\mathbf{q}}</em>\theta \ M_\theta^{-1}(-\mathbf{h}<em>\theta + J</em>\theta^\top \mathbf{u} + \boldsymbol{\Delta}) \end{bmatrix} =: f_\theta(\mathbf{x}_\theta, \mathbf{u}, \boldsymbol{\Delta}) \tag{2}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\mathbf{x}<em>\theta = [\mathbf{q}</em>\theta^\top \; \dot{\mathbf{q}}_\theta^\top]^\top \in \mathbb{R}^8$</td>
+<td>시스템 상태</td>
+</tr>
+<tr>
+<td>$\mathbf{u} = [T_U \; F_B \; F_A \; F_K]^\top \in \mathbb{R}^4$</td>
+<td>제어 입력 (swing torque + 유압 실린더 force)</td>
+</tr>
+<tr>
+<td>$M_\theta(\mathbf{q}_\theta) \in \mathbb{R}^{4 \times 4}$</td>
+<td>질량 행렬</td>
+</tr>
+<tr>
+<td>$\mathbf{h}<em>\theta(\mathbf{q}</em>\theta, \dot{\mathbf{q}}_\theta) \in \mathbb{R}^4$</td>
+<td>Coriolis-원심력 + 중력 합성항</td>
+</tr>
+<tr>
+<td>$\boldsymbol{\Delta} \in \mathbb{R}^4$</td>
+<td>총괄 외란 (lumped disturbance)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>실린더 변위 기반 동역학</strong> (local planning에서 사용):</p>
+<p>$$
+\dot{\mathbf{x}}_L = \begin{bmatrix} \dot{\mathbf{q}}_L \ \ddot{\mathbf{q}}_L \end{bmatrix} = \begin{bmatrix} \dot{\mathbf{q}}_L \ M_L^{-1}(-\mathbf{h}_L + \mathbf{u} + \boldsymbol{\Delta}_L) \end{bmatrix} =: f_L(\mathbf{x}_L, \mathbf{u}, \boldsymbol{\Delta}_L) \tag{3}
+$$</p>
+<p>여기서 $M_L(\mathbf{q}_L) = J_L^\top \tilde{M}_L J_L$, $\mathbf{h}_L = J_L^\top(\tilde{M}_L \dot{J}_L \dot{\mathbf{q}}_L + \tilde{\mathbf{h}}_L)$, $\boldsymbol{\Delta}_L = J_L^\top \boldsymbol{\Delta}$.</p>
+<h3 id="33-global-planning">3.3 Global Planning</h3>
+<p>굴착 작업은 3개 phase로 구성:</p>
+<p>400
+<em>Fig. 3: 단일 굴착 작업의 3개 phase. Phase 1: 초기 위치에서 지표면 진입점으로 이동. Phase 2: 버킷이 토양을 관통(굴착). Phase 3: 굴착된 토양을 목표 위치(트럭 등)로 운반.</em></p>
+<pre><code class="language-mermaid">flowchart LR
+    P1["Phase 1&lt;br/&gt;초기 위치 → 지표면 진입&lt;br/&gt;(Bernstein 파라미터화)"] --&gt; P2["Phase 2&lt;br/&gt;토양 굴착&lt;br/&gt;(Waypoint 최적화)"]
+    P2 --&gt; P3["Phase 3&lt;br/&gt;토양 운반&lt;br/&gt;(Bernstein 파라미터화)"]
+
+    style P1 fill:#e8f4fd
+    style P2 fill:#fde8e8
+    style P3 fill:#e8fde8
+</code></pre>
+<h4 id="phase-2">Phase 2: 굴착 궤적 최적화</h4>
+<p>$n_2 + 1$개 waypoint $\mathbf{L}<em>0, \mathbf{L}_1, \cdots, \mathbf{L}</em>{n_2}$로 이산화하고, 비용함수를 다음과 같이 정의:</p>
+<p>$$
+J_{\text{Phase2}} = w_d \sum_{k=1}^{n_2} |\mathbf{L}<em>k - \mathbf{L}</em>{k-1}|_W^2 - w_v V \tag{4}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>항</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$w_d \sum |\mathbf{L}<em>k - \mathbf{L}</em>{k-1}|_W^2$</td>
+<td>유압 실린더 이동 거리 최소화 (에너지 비용)</td>
+</tr>
+<tr>
+<td>$w_v V$</td>
+<td>굴착 체적 최대화</td>
+</tr>
+</tbody>
+</table>
+<p>지표면과 목표 형상은 다항식으로 모델링:</p>
+<p>$$
+z_{\text{surf}} = a_0^{\text{surf}} + a_1^{\text{surf}}x + \cdots + a_{n_{\text{surf}}}^{\text{surf}} x^{n_{\text{surf}}} \tag{5}
+$$</p>
+<p>$$
+z_{\text{target}} = a_0^{\text{target}} + a_1^{\text{target}}x + \cdots + a_{n_{\text{target}}}^{\text{target}} x^{n_{\text{target}}}
+$$</p>
+<p>굴착 체적 (swept volume, 사다리꼴 적분):</p>
+<p>$$
+V_{\text{swept}} = \int_{x_{n_2}}^{x_0} z_{\text{surf}}(x)\,dx - \frac{z_0 + 2z_1 + \cdots + 2z_{n_2-1} + z_{n_2}}{2n_2} \cdot (x_0 - x_{n_2}) \tag{6}
+$$</p>
+<p>$$
+V = \min{V_{\text{swept}},\; V_{\text{cap}}(\theta(\mathbf{L}_{n_2}))}
+$$</p>
+<p>400
+<em>Fig. 5: (좌) Phase 2에서의 버킷 궤적 제약조건. 실선은 현재 지표면, 점선은 목표 형상. (우) 버킷 형상이 버킷 팁 궤적을 관통하지 않아야 함 (삼각형 충돌 박스). 버킷 회전 각도 $\theta$와 여유 각도 $\alpha$ 표시.</em></p>
+<p><strong>Phase 2 제약조건 요약:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>제약조건</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>위치 제약</td>
+<td>버킷 팁이 관심 영역 내, 목표 표면 위, 지표면 아래에 위치</td>
+</tr>
+<tr>
+<td>2</td>
+<td>단조 증가 $\theta$</td>
+<td>버킷 회전각이 단조 증가해야 함 (에너지 효율)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>양의 여유 각도 $\alpha &gt; 0$</td>
+<td>버킷 팁 외 부분이 지면을 밀지 않도록</td>
+</tr>
+<tr>
+<td>4</td>
+<td>버킷 몸체 위치</td>
+<td>버킷 전체가 팁 경로 위에 위치</td>
+</tr>
+<tr>
+<td>5</td>
+<td>$\theta &lt; \pi$</td>
+<td>토양 흘림 방지 (Fig. 4 참조)</td>
+</tr>
+</tbody>
+</table>
+<p>400
+<em>Fig. 4: 버킷 용량 $V_{\text{cap}}$과 회전 각도 $\theta$의 관계. $\theta \geq \pi$이면 손목 방향으로 토양이 흘러 장비 고장 위험.</em></p>
+<h4 id="phases-1-3-bernstein">Phases 1 &amp; 3: Bernstein 다항식 파라미터화</h4>
+<p>Bernstein 다항식:</p>
+<p>$$
+p(s) = \sum_{k=0}^{n} \beta_k \binom{n}{k} s^k (1-s)^{n-k}, \quad s \in [0, 1] \tag{7}
+$$</p>
+<p>Phases 1, 3의 최적화 문제:</p>
+<p>$$
+\min_{\beta_k, T} \int_0^T \frac{1}{2} \mathbf{u}^\top W_u \mathbf{u}\, dt \tag{8}
+$$</p>
+<p>$$
+\text{s.t.} \quad \mathbf{q}<em>L^l \leq \beta_k \leq \mathbf{q}_L^u, \quad \dot{\mathbf{q}}_L^l \leq \frac{n \cdot (\beta</em>{k+1} - \beta_k)}{T} \leq \dot{\mathbf{q}}_L^u
+$$</p>
+<p>Phase 3 추가 제약 (토양 흘림 방지):</p>
+<p>$$
+\theta_0 \leq \theta(\beta_k) \leq \pi \tag{9}
+$$</p>
+<h3 id="34-local-planning-mpc">3.4 Local Planning (MPC)</h3>
+<h4 id="_2">물리적 제약조건</h4>
+<p>$$
+\mathbf{u}^l \leq \mathbf{u} \leq \mathbf{u}^u \tag{10a}
+$$</p>
+<p>$$
+p = \mathbf{u}^\top \dot{\mathbf{q}}_L \leq p^u \tag{10b}
+$$</p>
+<p>$$
+\mathbf{L}^l \leq \mathbf{L} \leq \mathbf{L}^u \tag{10c}
+$$</p>
+<p>$$
+f_i = A_i(\text{sgn}(\dot{\mathbf{q}}_L))^\top \dot{\mathbf{q}}_L^{\text{abs}} \leq f_i^u, \quad i = 1, 2 \tag{10d}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>제약</th>
+<th>물리적 의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(10a) Force/torque limit</td>
+<td>각 액추에이터의 힘/토크 상하한</td>
+</tr>
+<tr>
+<td>(10b) Power limit</td>
+<td>유압 펌프의 총 파워 상한 (모든 액추에이터가 동일 파워원 공유)</td>
+</tr>
+<tr>
+<td>(10c) Cylinder displacement</td>
+<td>실린더 변위의 물리적 상하한</td>
+</tr>
+<tr>
+<td>(10d) Pump flow rate</td>
+<td>2개 유압 펌프의 유량 제한</td>
+</tr>
+</tbody>
+</table>
+<h4 id="disturbance-estimation">외란 추정 (Disturbance Estimation)</h4>
+<p>모멘텀 기반 외란 추정 (momentum-based disturbance estimation):</p>
+<p>$$
+\hat{\boldsymbol{\Delta}} = K_E \left( \mathbf{p} - \mathbf{p}(0) - \int_0^t \left( J_\theta^\top \mathbf{u} + C_\theta^\top \dot{\mathbf{q}}<em>\theta - G</em>\theta + \hat{\boldsymbol{\Delta}} \right) d\tau \right), \quad \mathbf{p} = M_\theta \dot{\mathbf{q}}_\theta \tag{11}
+$$</p>
+<p>$\dot{M}<em>\theta = C</em>\theta + C_\theta^\top$ 성질을 활용하면, 실제 외란 $\boldsymbol{\Delta}$의 <strong>저역통과 필터(low-pass filter)</strong> 로 작동:</p>
+<p>$$
+\dot{\hat{\boldsymbol{\Delta}}} = K_E(\boldsymbol{\Delta} - \hat{\boldsymbol{\Delta}})
+$$</p>
+<p>실린더 변위 기반 추정값: $\hat{\boldsymbol{\Delta}}_L = J_L^\top \hat{\boldsymbol{\Delta}} = [\hat{\Delta}_U \; \hat{\Delta}_B \; \hat{\Delta}_A \; \hat{\Delta}_K]^\top$</p>
+<h4 id="mpc">MPC 문제 정식화</h4>
+<p>원래 비선형 MPC:</p>
+<p>$$
+\min_{\mathbf{u}<em>k} |\mathbf{x}_N - \mathbf{x}</em>{r,N}|<em>P^2 + \sum</em>{k=0}^{N-1} \left( |\mathbf{x}<em>k - \mathbf{x}</em>{r,k}|_Q^2 + |\mathbf{u}_k|_R^2 \right) \tag{12}
+$$</p>
+<p>$$
+\text{s.t.} \quad \mathbf{x}<em>{k+1} = f_d(\mathbf{x}_k, \mathbf{u}_k, \hat{\boldsymbol{\Delta}}_k), \quad c</em>{k,i}(\mathbf{x}_k, \mathbf{u}_k) \geq 0
+$$</p>
+<h4 id="feedback-linearization">Feedback Linearization 기반 단순화</h4>
+<p>가상 입력 $\mathbf{v} \in \mathbb{R}^4$와 피드백 선형화 제어 법칙 도입:</p>
+<p>$$
+\mathbf{u} = \text{FL}(\mathbf{x}, \mathbf{v}) := \mathbf{h}_L + M_L \mathbf{v} - \hat{\boldsymbol{\Delta}}_L
+$$</p>
+<p>이를 통해 비선형 동역학을 <strong>선형 동역학으로 변환</strong>:</p>
+<p>$$
+\dot{\mathbf{x}} = A_c \mathbf{x} + B_c \mathbf{v}, \quad A_c = \begin{bmatrix} 0_{4\times4} &amp; I_4 \ 0_{4\times4} &amp; 0_{4\times4} \end{bmatrix}, \; B_c = \begin{bmatrix} 0_{4\times4} \ I_4 \end{bmatrix} \tag{13}
+$$</p>
+<p>최종 MPC 문제 (선형화된 동역학 기반):</p>
+<p>$$
+\min_{\mathbf{v}<em>k} |\mathbf{x}_N - \mathbf{x}</em>{r,N}|<em>{\tilde{P}}^2 + \sum</em>{k=0}^{N-1} \left( |\mathbf{x}<em>k - \mathbf{x}</em>{r,k}|<em>{\tilde{Q}}^2 + |\mathbf{v}_k|</em>{\tilde{R}}^2 \right) \tag{14}
+$$</p>
+<p>$$
+\text{s.t.} \quad \mathbf{x}<em>{k+1} = A_d \mathbf{x}_k + B_d \mathbf{v}_k, \quad c</em>{k,i}(\mathbf{x}_k, \text{FL}(\mathbf{x}_k, \mathbf{v}_k)) \geq 0
+$$</p>
+<pre><code class="language-mermaid">flowchart TB
+    NL["비선형 동역학 (3)&lt;br/&gt;f_L(x_L, u, Delta_L)"] --&gt;|"Feedback Linearization&lt;br/&gt;u = h_L + M_L*v - Delta_L_hat"| LIN["선형 동역학 (13)&lt;br/&gt;x_dot = A_c*x + B_c*v"]
+    LIN --&gt;|"이산화"| DIS["이산 선형 동역학&lt;br/&gt;x_{k+1} = A_d*x_k + B_d*v_k"]
+    DIS --&gt; MPC_P["MPC 문제 (14)&lt;br/&gt;- 선형 동역학 → 빠른 계산&lt;br/&gt;- 물리적 제약조건 유지&lt;br/&gt;- DDP + Augmented Lagrangian"]
+
+    DE["외란 추정 (11)&lt;br/&gt;모멘텀 기반&lt;br/&gt;저역통과 필터 특성"] --&gt; MPC_P
+
+    style NL fill:#ffcccc
+    style LIN fill:#ccffcc
+    style MPC_P fill:#cce5ff
+</code></pre>
+<hr/>
+<h2 id="4">4. 실험 결과</h2>
+<h3 id="41">4.1 시뮬레이션 환경</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>설정</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>플랫폼</strong></td>
+<td>Hyundai HX300L 모델 파라미터</td>
+</tr>
+<tr>
+<td><strong>구현</strong></td>
+<td>ROS + C++ (각 모듈 개별 노드)</td>
+</tr>
+<tr>
+<td><strong>외란 모델</strong></td>
+<td>Modified LuGre friction (실린더 마찰) + Modified FEE (토양-버킷 상호작용)</td>
+</tr>
+<tr>
+<td><strong>전역 최적화</strong></td>
+<td>ALGLIB (비선형 최적화 솔버)</td>
+</tr>
+<tr>
+<td><strong>MPC 솔버</strong></td>
+<td>DDP + Augmented Lagrangian [30]</td>
+</tr>
+<tr>
+<td><strong>MPC 파라미터</strong></td>
+<td>시간 수평선 1000 ms, 제어 이산화/적분 주기 20 ms</td>
+</tr>
+<tr>
+<td><strong>Bernstein 제어점</strong></td>
+<td>Phase 1, 3: 9개 / Phase 2: 20개 via point</td>
+</tr>
+<tr>
+<td><strong>하드웨어</strong></td>
+<td>Intel Core i7-9750 CPU @ 2.6 GHz</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-scenario-1-shallow-excavation">4.2 Scenario 1 -- Shallow Excavation (얕은 굴착)</h3>
+<p>700
+<em>Fig. 6: 두 시나리오의 global planning 결과. (a) Shallow excavation, (b) Deep excavation. Ground(주황), Target(흰색), Global planner result(녹색), Traversed trajectory(빨강).</em></p>
+<p>700
+<em>Fig. 7: Scenario 1 - Shallow excavation 결과. (a) 전역 궤적 추종, (b) 정규화된 제어 입력, (c) 정규화된 파워 및 펌프 유량, (d) 정규화된 추정 외란. 빨간 점선은 물리적 한계를 나타냄.</em></p>
+<p><strong>주요 결과:</strong></p>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Global trajectory 계산 시간</td>
+<td><strong>2.1초</strong></td>
+</tr>
+<tr>
+<td>Local planning 평균 계산 시간</td>
+<td><strong>21.7 ms (약 46 Hz)</strong></td>
+</tr>
+<tr>
+<td>물리적 제약조건 만족</td>
+<td>모든 제약조건 충족</td>
+</tr>
+<tr>
+<td>외란 추정</td>
+<td>버킷 실린더에서 마찰 모델 명확히 관측, 붐/암에서는 토양 상호작용 외란이 더 큼</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>목표 형상(target shape)을 관통하지 않도록 넓은 영역에서 궤적 생성</li>
+<li><strong>Tip-grading-like motion</strong> 발생</li>
+<li>Global planning이 의도적으로 물리적 한계를 초과하더라도, local planning에서 제약조건 만족</li>
+</ul>
+<h3 id="43-scenario-2-deep-excavation">4.3 Scenario 2 -- Deep Excavation (깊은 굴착)</h3>
+<p>700
+<em>Fig. 8: Scenario 2 - Deep excavation 결과. (a) 전역 궤적 추종, (b) 정규화된 제어 입력, (c) 정규화된 파워 및 펌프 유량, (d) 정규화된 추정 외란.</em></p>
+<p><strong>주요 결과:</strong></p>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Global trajectory 계산 시간</td>
+<td><strong>1.6초</strong></td>
+</tr>
+<tr>
+<td>Local planning 평균 계산 시간</td>
+<td><strong>30.2 ms (약 33 Hz)</strong></td>
+</tr>
+<tr>
+<td>물리적 제약조건 만족</td>
+<td>모든 제약조건 충족</td>
+</tr>
+<tr>
+<td>외란 크기</td>
+<td>Scenario 1보다 큰 외란 (버킷이 토양에 더 깊이 침투)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>목표 형상이 깊으면 Phase 2에서 <strong>삼각형 형태의 궤적</strong> 생성하여 굴착 체적 최대화</li>
+<li>반복 굴착을 통해 깊은 목표 형상에 점진적으로 도달하는 전략 (target-shape-aware excavation-volume-maximizing strategy)</li>
+<li>더 큰 외란에도 불구하고 global reference 잘 추종 및 모든 물리적 제약조건 충족</li>
+</ul>
+<h3 id="44">4.4 두 시나리오 비교</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>Shallow Excavation</th>
+<th>Deep Excavation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>궤적 형태</td>
+<td>넓은 영역 tip-grading</td>
+<td>삼각형 체적 최대화</td>
+</tr>
+<tr>
+<td>목표 도달</td>
+<td>단일 pass</td>
+<td>반복 필요</td>
+</tr>
+<tr>
+<td>Global 계산</td>
+<td>2.1 s</td>
+<td>1.6 s</td>
+</tr>
+<tr>
+<td>Local 계산</td>
+<td>21.7 ms (46 Hz)</td>
+<td>30.2 ms (33 Hz)</td>
+</tr>
+<tr>
+<td>외란 크기</td>
+<td>상대적 소</td>
+<td>상대적 대</td>
+</tr>
+<tr>
+<td>제약 만족</td>
+<td>O</td>
+<td>O</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="5">5. 한계 및 향후 연구</h2>
+<ul>
+<li><strong>시뮬레이션만 검증</strong>: 실제 굴착기에서의 실험 검증이 수행되지 않음</li>
+<li><strong>환경 사전 지식 가정</strong>: 지면 형상(ground shape)을 사전에 알고 있다고 가정 (LiDAR, 카메라 등으로 취득 가능하나 불확실성 미고려)</li>
+<li><strong>토양 모델의 단순화</strong>: Modified FEE 기반 토양-버킷 상호작용 모델은 시뮬레이션용이며, 실제 토양 조건의 다양성 미반영</li>
+<li><strong>단일 굴착 작업만 고려</strong>: 연속적인 반복 굴착, 트럭 적재 등 상위 수준 태스크 플래닝 미포함</li>
+<li><strong>향후 연구</strong>: 실제 굴착기에서의 알고리즘 검증 (논문 결론에서 명시)</li>
+</ul>
+<hr/>
+<h2 id="_3">한마디로 정리</h2>
+<ul>
+<li>Global + Local planner 통합 프레임워크로 유압 굴착기의 <strong>실시간 궤적 계획</strong> 구현</li>
+<li>Force/torque, power, cylinder displacement, flow rate 등 <strong>4가지 물리적 제약조건 동시 충족</strong> 달성</li>
+<li>Feedback linearization으로 비선형 MPC를 선형화하여 <strong>30 Hz 이상 실시간 연산</strong> 달성</li>
+<li>모멘텀 기반 외란 추정으로 마찰 및 토양 상호작용 <strong>disturbance-aware planning</strong> 구현</li>
+<li>Shallow/deep excavation 두 시나리오에서 <strong>제약 만족 + 전역 궤적 추종</strong> 검증 완료</li>
+<li>실제 굴착기 실험 <strong>미수행</strong> -- 시뮬레이션만 검증</li>
+</ul>
+<hr/>
+<h2 id="_4">심화 탐구 기록</h2>
+<blockquote>
+<p>[!info] 탐구 일자: 2026-05-24
+Claude와의 Q&amp;A를 통해 논문의 핵심 수식과 기여도를 심층 분석한 기록. 이 섹션만 읽어도 논문의 수학적 구조와 독창성을 완전히 파악할 수 있도록 정리함.</p>
+</blockquote>
+<hr/>
+<h3 id="q1-3">Q1. 논문의 3가지 기여도 — 독창성과 차별성 분석</h3>
+<h4 id="1-global-local-planner">기여 1: Global + Local Planner 통합</h4>
+<p><strong>기존 연구의 한계:</strong></p>
+<table>
+<thead>
+<tr>
+<th>기존 접근법</th>
+<th>고려한 것</th>
+<th>빠진 것</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trajectory Optimization [6,7,9]</td>
+<td>굴착량·버킷 자세 등 <em>작업(operational)</em> 제약</td>
+<td>힘/토크, 펌프 유량 등 <em>물리적(physical)</em> 제약을 실시간으로 보장 못함</td>
+</tr>
+<tr>
+<td>MPC [12,13]</td>
+<td>물리적 제약을 이동 수평선으로 처리</td>
+<td>작업 수준 목표(어디를 얼마나 파야 하는가) 상위 계획 부재</td>
+</tr>
+<tr>
+<td>비최적화 기반 [1,14-16]</td>
+<td>DMP 등으로 궤적 생성</td>
+<td>제약조건 자체를 명시적으로 넣을 수 없음</td>
+</tr>
+</tbody>
+</table>
+<p><strong>이 논문의 차별점:</strong> 두 계획기를 역할 분담시켜 하나의 파이프라인으로 결합.</p>
+<ul>
+<li><strong>Global Planner</strong> → <em>"어디를, 어떤 모양으로 파야 하는가?"</em> (굴착 체적 최대화, 버킷 자세, 지면 형상 등 <strong>작업 제약</strong>)</li>
+<li><strong>Local Planner (MPC)</strong> → <em>"그 궤적을 따라가면서 기계가 부서지지 않게"</em> (힘/토크, 파워, 실린더 변위, 유량 등 <strong>물리 제약</strong>)</li>
+</ul>
+<blockquote>
+<p>[!tip] 비유
+기존에는 "네비게이션(경로)"만 있거나, "차량 안전장치"만 따로 있었는데, 이 논문은 <strong>네비게이션이 안전장치와 실시간으로 대화하면서</strong> 경로를 조정하는 시스템을 만든 것.</p>
+</blockquote>
+<h4 id="2-global-trajectory-optimization">기여 2: 축소 차원 Global Trajectory Optimization</h4>
+<p>기존 trajectory optimization [6,7,9]은 전체 궤적을 시간 도메인에서 밀도 높게 이산화하여 최적화 → 변수 폭발로 수십 초~수 분의 오프라인 계산 필요.</p>
+<p><strong>이 논문의 차별점:</strong> Bernstein 다항식 파라미터화 + Phase 분할 조합.</p>
+<pre><code>기존: 시간 스텝 500개 × 상태 8차원 = 변수 4,000개
+이 논문: 제어점 9~20개 × 3차원(실린더) = 변수 27~60개
+</code></pre>
+<blockquote>
+<p>[!tip] 비유
+기존에는 궤적의 모든 점을 하나하나 결정했다면(점묘화), 이 논문은 <strong>소수의 꼭짓점만 결정하면 부드러운 곡선이 자동으로 생기는 방식</strong>(벡터 그래픽)을 사용. 결과적으로 Global planning이 <strong>1.6~2.1초</strong>만에 완료.</p>
+</blockquote>
+<h4 id="3_1">기여 3: 외란 추정 기반 실시간 제약 궤적 생성</h4>
+<table>
+<thead>
+<tr>
+<th>기존 연구</th>
+<th>문제</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trajectory Optimization [6,7,9]</td>
+<td>오프라인 궤적 → 외란(토양 저항, 마찰) 발생 시 궤적 무효화, 물리적 제약 위반</td>
+</tr>
+<tr>
+<td>MPC [12]</td>
+<td>실시간이지만 단일 입력·분리 동역학만 → 4개 액추에이터의 커플링 제약 표현 불가</td>
+</tr>
+<tr>
+<td>MPC [13]</td>
+<td>커플링 고려했으나 ~3.3 Hz → 실시간 부적합 (최소 10~30 Hz 필요)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>이 논문의 차별점:</strong> 3가지 기술 결합으로 해결.</p>
+<ol>
+<li><strong>모멘텀 기반 외란 추정기</strong> (Eq. 11) → 토양 저항·마찰 등 미지 외란을 실시간 추정</li>
+<li><strong>Feedback Linearization</strong> (Eq. 13) → 비선형 동역학을 선형 시스템으로 변환, MPC 계산 대폭 가속</li>
+<li><strong>선형화된 MPC</strong> (Eq. 14) → 물리적 제약 4종 유지하면서 빠른 최적화</li>
+</ol>
+<blockquote>
+<p>[!tip] 비유
+- 기존 방법: <strong>날씨 예보 없이 항로를 미리 정해놓고</strong> 비행 (외란 무시)
+- [13]: 날씨를 보면서 조정하지만, <strong>3초에 한 번</strong>만 조정 (너무 느림)
+- 이 논문: <strong>바람(외란)을 실시간 감지하면서, 초당 30~46회 항로 재조정</strong>, 모든 한계 준수</p>
+</blockquote>
+<p><strong>[13]의 3.3 Hz 벽을 30~46 Hz로 10배 이상 뛰어넘은 것이 핵심.</strong></p>
+<h4 id="_5">종합</h4>
+<table>
+<thead>
+<tr>
+<th>기여</th>
+<th>기존 대비 없었던 것</th>
+<th>독창성의 핵심</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 통합 프레임워크</td>
+<td>작업 + 물리 제약을 한 파이프라인에서 동시 처리</td>
+<td>두 레벨 계획기의 역할 분담 + 실시간 연결</td>
+</tr>
+<tr>
+<td>② 축소 차원 최적화</td>
+<td>전역 궤적을 수 초 이내에 생성</td>
+<td>Bernstein 파라미터화 + Phase 분할로 변수 ~100배 축소</td>
+</tr>
+<tr>
+<td>③ Disturbance-aware MPC</td>
+<td>외란 추정 + 4종 물리 제약 + 30 Hz 이상 실시간</td>
+<td>외란 추정 + FL + 선형 MPC의 3중 결합</td>
+</tr>
+</tbody>
+</table>
+<p>세 기여는 <strong>서로 맞물려</strong> 작동: ②가 빠르게 전역 궤적 생성 → ③이 외란에 강건하게 실시간 추종 → ①이 둘을 하나로 엮음. 이 <strong>조합 자체</strong>가 독창성.</p>
+<hr/>
+<h3 id="q2-excavation-volume">Q2. 굴착 체적(Excavation Volume) 공식 유도</h3>
+<h4 id="_6">기하학적 직관</h4>
+<p>굴착 체적은 <strong>버킷이 지나간 경로 위쪽의 흙 면적</strong>. 2D 단면에서:</p>
+<pre><code>z ↑
+  │    ╭─── z_surf(x): 현재 지표면
+  │   ╱ ░░░░░░░░░░░░░░░░   ← 이 영역이 "파낸 흙"
+  │  ╱ ░░░░░░░░░░░░░░░░░
+  │ ╱░░░░░░░░░░░░░░░░░╱
+  │╱___○___○___○___○╱    ← 버킷 팁 경로 (waypoints)
+  │   (x₀,z₀)  ...  (x_{n₂},z_{n₂})
+  └──────────────────────→ x
+</code></pre>
+<p>$$\text{굴착 면적} = \text{지표면 아래 면적} - \text{버킷 경로 아래 면적}$$</p>
+<h4 id="_7">지표면 아래 면적 (해석적 적분)</h4>
+<p>지표면이 다항식이므로:</p>
+<p>$$A_{\text{surf}} = \int_{x_{n_2}}^{x_0} z_{\text{surf}}(x)\,dx = \left[ a_0 x + \frac{a_1}{2}x^2 + \frac{a_2}{3}x^3 + \cdots \right]<em>{x</em>{n_2}}^{x_0}$$</p>
+<p>적분 방향 $x_{n_2} \to x_0$: 굴착기가 먼 곳에서 가까운 곳으로 파들어오므로 $x_0 &gt; x_{n_2}$, 적분값 양수.</p>
+<h4 id="_8">버킷 경로 아래 면적 (사다리꼴 근사)</h4>
+<p>버킷 팁이 이산 waypoints $(x_0, z_0), \ldots, (x_{n_2}, z_{n_2})$를 지나므로, 등간격 사다리꼴 공식 적용:</p>
+<p>각 구간의 면적:</p>
+<p>$$A_k = \frac{z_k + z_{k+1}}{2} \cdot \Delta x, \quad \Delta x = \frac{x_0 - x_{n_2}}{n_2}$$</p>
+<p>전체 합산 후 전개:</p>
+<p>$$A_{\text{path}} = \frac{\Delta x}{2}\left[(z_0 + z_1) + (z_1 + z_2) + \cdots + (z_{n_2-1} + z_{n_2})\right]$$</p>
+<p>$$= \frac{\Delta x}{2}\left[z_0 + 2z_1 + 2z_2 + \cdots + 2z_{n_2-1} + z_{n_2}\right]$$</p>
+<p>$\Delta x$ 대입:</p>
+<p>$$\boxed{A_{\text{path}} = \frac{z_0 + 2z_1 + \cdots + 2z_{n_2-1} + z_{n_2}}{2n_2} \cdot (x_0 - x_{n_2})}$$</p>
+<h4 id="swept-volume">Swept Volume 조립</h4>
+<p>$$\boxed{V_{\text{swept}} = \int_{x_{n_2}}^{x_0} z_{\text{surf}}(x)\,dx - \frac{z_0 + 2z_1 + \cdots + 2z_{n_2-1} + z_{n_2}}{2n_2} \cdot (x_0 - x_{n_2})}$$</p>
+<h4 id="_9">버킷 용량 제한</h4>
+<p>아무리 넓은 면적을 쓸어도 버킷이 담을 수 있는 양에 한계가 있으므로:</p>
+<p>$$\boxed{V = \min{V_{\text{swept}},\; V_{\text{cap}}(\theta(\mathbf{L}_{n_2}))}}$$</p>
+<ul>
+<li>$\theta$ 증가 → 버킷 닫힘 → $V_{\text{cap}}$ 증가</li>
+<li>$\theta \geq \pi$ → 토양이 반대편으로 흘러내림 → 장비 고장 위험 (Fig. 4)</li>
+</ul>
+<h4 id="_10">비용함수에서의 역할</h4>
+<p>$$J_{\text{Phase2}} = w_d \sum_{k=1}^{n_2} |\mathbf{L}<em>k - \mathbf{L}</em>{k-1}|_W^2 - w_v V$$</p>
+<table>
+<thead>
+<tr>
+<th>항</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$w_d \sum |\mathbf{L}<em>k - \mathbf{L}</em>{k-1}|^2$</td>
+<td>실린더 이동거리 <strong>최소화</strong> (에너지 절약)</td>
+</tr>
+<tr>
+<td>$-w_v V$</td>
+<td>굴착 체적 <strong>최대화</strong> (부호 반전으로 minimize에 편입)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>"최소한의 에너지로 최대한 많은 흙을 퍼라"</strong>는 트레이드오프를 $w_d, w_v$로 조절.</p>
+<hr/>
+<h3 id="q3-phase-1-3">Q3. Phase 1 &amp; 3 최적화 문제 수식 유도</h3>
+<h4 id="bernstein">Bernstein 다항식 파라미터화의 동기</h4>
+<p>궤적 $\mathbf{q}_L(t)$를 직접 시간 이산화하면 변수가 폭발. 대신 정규화된 시간 $s \in [0,1]$에서 소수의 제어점 $\boldsymbol{\beta}_k$로 전체 궤적 표현.</p>
+<h4 id="bernstein_1">Bernstein 기저 함수의 핵심 성질</h4>
+<p>$$B_{k,n}(s) = \binom{n}{k} s^k (1-s)^{n-k}$$</p>
+<table>
+<thead>
+<tr>
+<th>성질</th>
+<th>수식</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>비음수성</td>
+<td>$B_{k,n}(s) \geq 0$</td>
+<td>항상 양수</td>
+</tr>
+<tr>
+<td>단위 분할</td>
+<td>$\sum_{k=0}^n B_{k,n}(s) = 1$</td>
+<td>가중 평균 구조</td>
+</tr>
+<tr>
+<td>끝점 보간</td>
+<td>$p(0)=\beta_0,\; p(1)=\beta_n$</td>
+<td>시작·끝점 정확히 통과</td>
+</tr>
+<tr>
+<td><strong>볼록 껍질</strong></td>
+<td>$\min_k \beta_k \leq p(s) \leq \max_k \beta_k$</td>
+<td>곡선이 제어점 범위를 벗어나지 않음</td>
+</tr>
+</tbody>
+</table>
+<p>궤적 파라미터화:</p>
+<p>$$q_{L,i}(s) = \sum_{k=0}^{n} \beta_{k,i}\; B_{k,n}(s), \quad s = \frac{t}{T}$$</p>
+<h4 id="_11">속도 유도</h4>
+<p>Bernstein 미분 → 차수 1 낮은 Bernstein:</p>
+<p>$$\dot{\mathbf{q}}<em>L(t) = \frac{n}{T} \sum</em>{k=0}^{n-1} (\boldsymbol{\beta}<em>{k+1} - \boldsymbol{\beta}_k)\; B</em>{k,n-1}(s)$$</p>
+<p>속도의 "제어점"은 $\frac{n(\boldsymbol{\beta}_{k+1} - \boldsymbol{\beta}_k)}{T}$.</p>
+<h4 id="_12">가속도 유도</h4>
+<p>$$\ddot{\mathbf{q}}<em>L(t) = \frac{n(n-1)}{T^2} \sum</em>{k=0}^{n-2} (\boldsymbol{\beta}<em>{k+2} - 2\boldsymbol{\beta}</em>{k+1} + \boldsymbol{\beta}<em>k)\; B</em>{k,n-2}(s)$$</p>
+<h4 id="_13">역동역학으로 제어 입력 결정</h4>
+<p>Phase 1, 3에서 외란 $\boldsymbol{\Delta}_L = 0$이므로:</p>
+<p>$$\mathbf{u}(t) = M_L(\mathbf{q}_L)\;\ddot{\mathbf{q}}_L + \mathbf{h}_L(\mathbf{q}_L, \dot{\mathbf{q}}_L)$$</p>
+<p>$\boldsymbol{\beta}_k$와 $T$를 정하면 → 궤적 결정 → 속도·가속도 계산 → 역동역학으로 $\mathbf{u}(t)$ 결정. <strong>결정 변수는 $\boldsymbol{\beta}_k$와 $T$뿐</strong>.</p>
+<h4 id="_14">비용함수</h4>
+<p>$$\min_{\boldsymbol{\beta}_k,\; T} \int_0^T \frac{1}{2} \mathbf{u}^\top W_u\, \mathbf{u}\; dt$$</p>
+<p>$s = t/T$ 치환 시 $dt = T\,ds$:
+- $T$ 커지면 → $\ddot{\mathbf{q}}_L$ 작아져서 → $\mathbf{u}$ 작아짐 (느리게 = 힘 적게)
+- 하지만 적분 구간 길어짐 → 총 에너지 증가
+- 이 <strong>트레이드오프</strong>가 최적 $T^*$ 결정</p>
+<h4 id="_15">제약조건</h4>
+<p><strong>(a) 위치 제약</strong> — 볼록 껍질 성질로 제어점만 검사:</p>
+<p>$$\mathbf{q}_L^l \leq \boldsymbol{\beta}_k \leq \mathbf{q}_L^u, \quad k = 0, \ldots, n$$</p>
+<p><strong>(b) 속도 제약</strong> — 속도 제어점으로 변환:</p>
+<p>$$\dot{\mathbf{q}}<em>L^l \leq \frac{n(\boldsymbol{\beta}</em>{k+1} - \boldsymbol{\beta}_k)}{T} \leq \dot{\mathbf{q}}_L^u, \quad k = 0, \ldots, n-1$$</p>
+<p><strong>(c) 경계 조건:</strong></p>
+<p>$$\boldsymbol{\beta}<em>0 = \mathbf{q}</em>{L,\text{start}}, \quad \boldsymbol{\beta}<em>n = \mathbf{q}</em>{L,\text{end}}$$</p>
+<p><strong>(d) Phase 3 추가 제약 (토양 흘림 방지):</strong></p>
+<p>$$\theta_0 \leq \theta(\boldsymbol{\beta}_k) \leq \pi$$</p>
+<h4 id="_16">최종 최적화 문제</h4>
+<p>$$\begin{aligned}
+&amp; \min_{\boldsymbol{\beta}<em>1, \ldots, \boldsymbol{\beta}</em>{n-1},\; T} &amp;&amp; \int_0^T \frac{1}{2} \mathbf{u}(\boldsymbol{\beta}, T)^\top W_u\, \mathbf{u}(\boldsymbol{\beta}, T)\; dt \
+&amp; \text{s.t.} &amp;&amp; \mathbf{q}<em>L^l \leq \boldsymbol{\beta}_k \leq \mathbf{q}_L^u &amp;&amp; \text{(위치 제약)} \
+&amp; &amp;&amp; \dot{\mathbf{q}}_L^l \leq \frac{n(\boldsymbol{\beta}</em>{k+1} - \boldsymbol{\beta}<em>k)}{T} \leq \dot{\mathbf{q}}_L^u &amp;&amp; \text{(속도 제약)} \
+&amp; &amp;&amp; \boldsymbol{\beta}_0 = \mathbf{q}</em>{L,\text{start}},\; \boldsymbol{\beta}<em>n = \mathbf{q}</em>{L,\text{end}} &amp;&amp; \text{(경계 조건)} \
+&amp; &amp;&amp; \theta_0 \leq \theta(\boldsymbol{\beta}_k) \leq \pi &amp;&amp; \text{(Phase 3만)}
+\end{aligned}$$</p>
+<p><strong>변수 수:</strong> 제어점 9개(양 끝 고정 → 자유 7개) × 실린더 4개 + $T$ 1개 = <strong>29개</strong>. 기존 수천 개 대비 압도적 축소.</p>
+<hr/>
+<h3 id="q4-trajectory-optimization-kim-et-al-2013">Q4. 기존 Trajectory Optimization 방법의 구체적 작동 원리 — Kim et al. (2013)</h3>
+<blockquote>
+<p>대표 논문: Y.B. Kim, J. Ha, H. Kang, P.Y. Kim, J. Park, F.C. Park, "Dynamically optimal trajectories for earthmoving excavators," <em>Automation in Construction</em>, vol. 35, pp. 568–578, 2013. (본 논문의 참고문헌 [7])</p>
+</blockquote>
+<h4 id="trajectory-optimization-5">Trajectory Optimization의 5단계 레시피</h4>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>핵심 질문</th>
+<th>기법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 모델링</td>
+<td>굴착기가 어떻게 움직이나?</td>
+<td>Euler-Lagrange 동역학</td>
+</tr>
+<tr>
+<td>② 파라미터화</td>
+<td>궤적을 어떻게 표현하나?</td>
+<td>B-스플라인 제어점</td>
+</tr>
+<tr>
+<td>③ 비용 설계</td>
+<td>무엇을 최소화하나?</td>
+<td>토크 제곱 적분 (에너지)</td>
+</tr>
+<tr>
+<td>④ 제약 설정</td>
+<td>무엇을 지켜야 하나?</td>
+<td>관절/속도/토크/경로 한계</td>
+</tr>
+<tr>
+<td>⑤ 최적화</td>
+<td>어떻게 풀까?</td>
+<td>NLP 솔버 (SQP 등)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 구조</strong>: 궤적 $\mathbf{q}(t)$를 B-스플라인 제어점 $c_{i,j}$로 파라미터화하여 무한 차원 문제를 유한 차원 NLP로 변환. 역동역학으로 토크 $\boldsymbol{\tau} = M\ddot{\mathbf{q}} + C\dot{\mathbf{q}} + G + \boldsymbol{\tau}_{\text{soil}}$를 계산하고, $\min \int_0^T \frac{1}{2}\boldsymbol{\tau}^\top W \boldsymbol{\tau}\,dt$를 SQP로 풀어 에너지 최소 궤적을 생성.</p>
+<h4 id="kim-2013-vs-lee-2021">Kim (2013) vs Lee (2021, 본 논문) 비교</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>Kim (2013)</th>
+<th>Lee (2021, 본 논문)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>계산 방식</td>
+<td>오프라인 1회</td>
+<td>Global(수 초) + Local(실시간)</td>
+</tr>
+<tr>
+<td>외란 대응</td>
+<td>❌ 불가</td>
+<td>✅ 모멘텀 기반 외란 추정</td>
+</tr>
+<tr>
+<td>제약 위반</td>
+<td>외란 시 가능</td>
+<td>✅ MPC가 매주기 보장</td>
+</tr>
+<tr>
+<td>파라미터화</td>
+<td>B-스플라인</td>
+<td>Bernstein + waypoint</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3 id="q5-fee">Q5. 토양 반력 처리 — FEE 모델의 한계와 본 논문의 해결</h3>
+<h4 id="kim-2013-feefundamental-equation-of-earthmoving">Kim (2013)의 접근: FEE(Fundamental Equation of Earthmoving) 모델 사용</h4>
+<p>$$F_{\text{soil}} = \gamma g d^2 w N_\gamma + c \cdot d \cdot w \cdot N_c + c_a \cdot d \cdot w \cdot N_{ca} + q \cdot d \cdot w \cdot N_q$$</p>
+<p>토양 파라미터($\gamma, c, c_a$ 등)를 사전에 설정하고 역동역학에 포함시켜 최적화. <strong>한계</strong>: 파라미터 불확실성, 정적 모델, 균일 토양 가정 → 실제와 괴리.</p>
+<h4 id="lee-2021">본 논문(Lee 2021)의 해결: "예측 → 관측" 패러다임 전환</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Kim (2013)</th>
+<th>Lee (2021) Global</th>
+<th>Lee (2021) Local</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>철학</strong></td>
+<td>모델로 예측</td>
+<td>아예 무시</td>
+<td>관측으로 추정</td>
+</tr>
+<tr>
+<td><strong>토양 모델</strong></td>
+<td>FEE (필수)</td>
+<td>불필요</td>
+<td>불필요</td>
+</tr>
+<tr>
+<td><strong>비용 함수</strong></td>
+<td>$\min \int \tau^2 dt$ (토양 반력 포함 토크)</td>
+<td>$\min \sum |\Delta L|^2$ (실린더 거리, 토양 무관)</td>
+<td>참조 추종 + 입력 최소화</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 통찰</strong>: Phase 2의 비용 함수를 토크 최소화 → 실린더 이동 거리 최소화로 변경. 실린더 거리는 토양과 무관하게 기하학적으로 정확히 계산 가능.</p>
+<hr/>
+<h3 id="q6-phase-bernstein-vs-waypoint-vs-b-spline">Q6. Phase별 파라미터화 선택 이유 — Bernstein vs Waypoint vs B-spline</h3>
+<h4 id="phase-2-waypoint">Phase 2에서 Waypoint를 쓴 이유</h4>
+<p>Phase 2는 <strong>시간 개념이 없는 기하학 문제</strong> (비용 함수에 $t$ 미등장). 제약 조건이 비선형 경계(지표면·목표면 다항식)이므로 Bernstein의 convex hull 성질이 무용. Waypoint에서 직접 5가지 제약을 점별 검사하는 것이 자연스러움.</p>
+<h4 id="phase-13-bernstein">Phase 1&amp;3에서 Bernstein을 쓴 이유</h4>
+<table>
+<thead>
+<tr>
+<th>Bernstein 장점</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>전역 convex hull</td>
+<td>$q_L^l \leq \beta_k \leq q_L^u$ → 전체 궤적 범위 보장</td>
+</tr>
+<tr>
+<td>도함수 = 제어점 차분</td>
+<td>$\dot{q}<em>L^l \leq n(\beta</em>{k+1}-\beta_k)/T \leq \dot{q}_L^u$ → 속도 제약 자동</td>
+</tr>
+<tr>
+<td>끝점 보간</td>
+<td>$p(0)=\beta_0$, $p(1)=\beta_n$ → 경계 조건 자동</td>
+</tr>
+</tbody>
+</table>
+<h4 id="b-spline">B-spline을 쓰지 않은 이유</h4>
+<p>B-spline은 <strong>국소 convex hull</strong>(span별)만 제공 → 제약 처리 복잡. <strong>Local support</strong>(제어점이 근처만 영향)는 국소 수정에 유리하나, 전체를 한 번에 최적화하는 이 문제에서는 이점 없음. Bernstein이 제약 처리 + 구현 단순성 + 계산 속도 모두에서 우위.</p>
+<hr/>
+<h3 id="q7">Q7. 운동학 수식 유도 — 폐쇄 사슬 기구학</h3>
+<h4 id="configuration">두 가지 Configuration 표현</h4>
+<p>$$\mathbf{q}_\theta = [\psi_U, \theta_B, \theta_A, \theta_K]^\top \quad \text{(관절 각도 — 동역학 유도에 자연스러움)}$$
+$$\mathbf{q}_L = [\psi_U, L_B, L_A, L_K]^\top \quad \text{(실린더 변위 — 센서 측정 + 제약 선형화에 유리)}$$</p>
+<h4 id="_17">폐쇄 사슬 기구학: 코사인 법칙에 의한 매핑</h4>
+<p>실린더 양 끝 피벗 위치와 코사인 법칙으로:</p>
+<p>$$L_B^2 = a_B^2 + b_B^2 - 2a_B b_B \cos(\theta_B + \phi_B) \quad \Longleftrightarrow \quad \theta_B = \cos^{-1}!\left(\frac{a_B^2 + b_B^2 - L_B^2}{2a_B b_B}\right) - \phi_B$$</p>
+<p>전체: $\mathbf{q}<em>\theta = g_L(\mathbf{q}_L)$, $\mathbf{q}_L = g</em>\theta(\mathbf{q}_\theta)$ — <strong>전단사(bijective)</strong> 매핑.</p>
+<h4 id="_18">야코비안: 속도 변환</h4>
+<p>$$\dot{\mathbf{q}}_\theta = J_L(\mathbf{q}_L)\dot{\mathbf{q}}_L, \quad J_L = \frac{\partial g_L}{\partial \mathbf{q}_L} \quad \text{(대각 행렬 — 각 실린더가 하나의 관절만 구동)}$$</p>
+<p>물리적 의미: "실린더가 1mm 늘어나면 관절이 몇 rad 회전하는가."</p>
+<h4 id="_19">버킷 팁 순방향 운동학</h4>
+<p>$$E_x = l_2\cos\theta_B + l_3\cos(\theta_B+\theta_A) + l_4\cos(\theta_B+\theta_A+\theta_K)$$
+$$E_z = l_2\sin\theta_B + l_3\sin(\theta_B+\theta_A) + l_4\sin(\theta_B+\theta_A+\theta_K)$$
+$$\theta = \theta_B + \theta_A + \theta_K$$</p>
+<hr/>
+<h3 id="q8-euler-lagrange">Q8. 동역학 수식 유도 — Euler-Lagrange → 좌표 변환</h3>
+<h4 id="_20">관절 각도 기반 동역학 유도</h4>
+<p>운동에너지 $T = \frac{1}{2}\dot{\mathbf{q}}<em>\theta^\top M</em>\theta \dot{\mathbf{q}}_\theta$에서 질량 행렬:</p>
+<p>$$M_\theta(\mathbf{q}<em>\theta) = \sum</em>{i=1}^{4}\left[m_i J_{v,i}^\top J_{v,i} + I_i J_{\omega,i}^\top J_{\omega,i}\right]$$</p>
+<p>Lagrange 방정식 적용 후 상태 공간 형태 (식 2):</p>
+<p>$$\dot{\mathbf{x}}<em>\theta = \begin{bmatrix}\dot{\mathbf{q}}</em>\theta \ M_\theta^{-1}(-\mathbf{h}<em>\theta + J</em>\theta^\top \mathbf{u} + \boldsymbol{\Delta})\end{bmatrix}$$</p>
+<p>$J_\theta^\top \mathbf{u}$: 가상 일의 원리에 의한 힘 변환 ($\tau_\theta^\top \delta q_\theta = \mathbf{u}^\top \delta q_L$ → $\tau_\theta = J_\theta^\top \mathbf{u}$).</p>
+<h4 id="3_2">실린더 변위 기반으로 좌표 변환 (식 3)</h4>
+<p>$\ddot{\mathbf{q}}_\theta = J_L \ddot{\mathbf{q}}_L + \dot{J}_L \dot{\mathbf{q}}_L$를 식 (2)에 대입하고 $J_L^\top$을 양변에 곱하면:</p>
+<p>$$M_L \ddot{\mathbf{q}}_L = -\mathbf{h}_L + \mathbf{u} + \boldsymbol{\Delta}_L$$</p>
+<p><strong>핵심 관찰</strong>: $J_L^\top J_\theta^\top = (J_\theta J_L)^\top = I^\top = I$이므로, 실린더 동역학에서는 <strong>$\mathbf{u}$가 야코비안 변환 없이 직접 등장</strong>. 제어 입력이 원래 실린더 좌표에서 정의되었기 때문.</p>
+<hr/>
+<h3 id="q9-mpc">Q9. MPC 문제 정식화 및 피드백 선형화 — 완전 유도</h3>
+<h4 id="4_1">4가지 물리적 제약의 물리적 의미</h4>
+<table>
+<thead>
+<tr>
+<th>제약</th>
+<th>수식</th>
+<th>물리적 원인</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(10a) 힘/토크</td>
+<td>$\mathbf{u}^l \leq \mathbf{u} \leq \mathbf{u}^u$</td>
+<td>실린더/모터의 최대 출력</td>
+</tr>
+<tr>
+<td>(10b) 파워</td>
+<td>$\mathbf{u}^\top\dot{\mathbf{q}}_L \leq p^u$</td>
+<td><strong>하나의 엔진</strong>이 4개 액추에이터에 파워 공급</td>
+</tr>
+<tr>
+<td>(10c) 변위</td>
+<td>$\mathbf{L}^l \leq \mathbf{L} \leq \mathbf{L}^u$</td>
+<td>실린더 물리적 스트로크 한계</td>
+</tr>
+<tr>
+<td>(10d) 유량</td>
+<td>$A_i^\top \dot{\mathbf{q}}_L^{\text{abs}} \leq f_i^u$</td>
+<td>2개 유압 펌프의 최대 유량</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_21">외란 추정기 유도</h4>
+<p>모멘텀 $\mathbf{p} = M_\theta\dot{\mathbf{q}}<em>\theta$의 시간 변화율과 $\dot{M}</em>\theta = C_\theta + C_\theta^\top$ 성질로부터:</p>
+<p>$$\dot{\mathbf{p}} = C_\theta^\top\dot{\mathbf{q}}<em>\theta - G</em>\theta + J_\theta^\top\mathbf{u} + \boldsymbol{\Delta}$$</p>
+<p>추정값 $\hat{\boldsymbol{\Delta}}$를 사용해 적분 관측기를 구성하면 (식 11), 미분하면:</p>
+<p>$$\boxed{\dot{\hat{\boldsymbol{\Delta}}} = K_E(\boldsymbol{\Delta} - \hat{\boldsymbol{\Delta}})}$$</p>
+<p><strong>1차 저역통과 필터</strong>로 작동. 정상 상태에서 $\hat{\boldsymbol{\Delta}} \to \boldsymbol{\Delta}$ (외란이 충분히 느리게 변할 때).</p>
+<h4 id="mpc_1">비선형 MPC가 느린 이유</h4>
+<p>$\ddot{\mathbf{q}}<em>L = M_L^{-1}(-\mathbf{h}_L + \mathbf{u} + \hat{\boldsymbol{\Delta}}_L)$에서, DDP 솔버가 매 반복마다:
+- $M_L^{-1}$ 계산: $O(n^3)$
+- $\frac{\partial M_L^{-1}}{\partial q</em>{L,j}} = -M_L^{-1}\frac{\partial M_L}{\partial q_{L,j}}M_L^{-1}$ 계산 (역행렬의 미분)
+- 이것을 4변수 × 50스텝 × 매 반복 → <strong>수백 번의 역행렬 + 행렬 곱</strong></p>
+<h4 id="_22">피드백 선형화 유도</h4>
+<p>가상 입력 $\mathbf{v} \in \mathbb{R}^4$ 도입. $\ddot{\mathbf{q}}_L = \mathbf{v}$가 되도록 $\mathbf{u}$를 설계:</p>
+<p>$$M_L\mathbf{v} = -\mathbf{h}_L + \mathbf{u} + \boldsymbol{\Delta}_L \quad \Longrightarrow \quad \boxed{\mathbf{u} = \mathbf{h}_L + M_L\mathbf{v} - \hat{\boldsymbol{\Delta}}_L}$$</p>
+<p>대입하면 비선형항이 상쇄되고 ($\hat{\boldsymbol{\Delta}}_L \approx \boldsymbol{\Delta}_L$ 가정):</p>
+<p>$$\ddot{\mathbf{q}}<em>L = \mathbf{v} \quad \Longrightarrow \quad \dot{\mathbf{x}} = \underbrace{\begin{bmatrix}0 &amp; I\0 &amp; 0\end{bmatrix}}</em>{A_c}\mathbf{x} + \underbrace{\begin{bmatrix}0\I\end{bmatrix}}_{B_c}\mathbf{v}$$</p>
+<p><strong>$A_c, B_c$가 상수</strong> → 편미분 사전 계산 가능, 헤시안 = 0.</p>
+<h4 id="a_c2-0">이산화 ($A_c^2 = 0$ 성질 활용)</h4>
+<p>$e^{A_c\Delta t} = I + A_c\Delta t$ (멱영 행렬)이므로:</p>
+<p>$$A_d = \begin{bmatrix}I &amp; \Delta t\cdot I\0 &amp; I\end{bmatrix}, \quad B_d = \begin{bmatrix}\frac{\Delta t^2}{2}I\\Delta t\cdot I\end{bmatrix}$$</p>
+<p>물리적 의미: $q_{k+1} = q_k + \Delta t\dot{q}_k + \frac{1}{2}\Delta t^2 v_k$ — 등가속도 운동 공식과 동일.</p>
+<h4 id="mpc-14">최종 선형화 MPC (식 14)</h4>
+<p>$$\min_{\mathbf{v}<em>k} |\mathbf{x}_N - \mathbf{x}</em>{r,N}|<em>{\tilde{P}}^2 + \sum</em>{k=0}^{N-1}\left(|\mathbf{x}<em>k - \mathbf{x}</em>{r,k}|<em>{\tilde{Q}}^2 + |\mathbf{v}_k|</em>{\tilde{R}}^2\right)$$
+$$\text{s.t.} \quad \mathbf{x}<em>{k+1} = A_d\mathbf{x}_k + B_d\mathbf{v}_k, \quad c</em>{k,i}(\mathbf{x}_k, \text{FL}(\mathbf{x}_k, \mathbf{v}_k)) \geq 0$$</p>
+<p>동역학은 선형(상수 $A_d, B_d$), 제약은 비선형 유지 → DDP + Augmented Lagrangian으로 풀이. 비선형 MPC 대비 <strong>10배 이상 가속</strong> (3.3 Hz → 33~46 Hz).</p>
+<hr/>
+<h3 id="q10-mpc-planner-vs-controller">Q10. MPC의 제어 아키텍처 — Planner vs Controller</h3>
+<h4 id="mpc-planner">MPC는 "제어 입력까지 내는 Planner"</h4>
+<p>MPC 최적화의 결정 변수는 $\mathbf{v}_0^<em>, \ldots, \mathbf{v}_{N-1}^</em>$이고, 이로부터:
+- $\mathbf{u}_d = \text{FL}(\mathbf{x}_0, \mathbf{v}_0^<em>)$ — 피드포워드 힘 (FL 변환)
+- $\mathbf{x}_d = A_d\mathbf{x}_0 + B_d\mathbf{v}_0^</em>$ — 다음 참조 상태 (동역학 등식의 <strong>부산물</strong>)</p>
+<p>$\mathbf{x}_d$는 별도의 수식이 아니라 forward pass에서 자동으로 얻어짐. <strong>$\mathbf{x}_d \neq \mathbf{x}_r$</strong> — $\mathbf{x}_r$(Global)은 제약 미고려, $\mathbf{x}_d$(MPC)는 제약 만족 버전.</p>
+<h4 id="motion-controller">Motion Controller가 필요한 이유: 제어 주파수 문제</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>MPC</th>
+<th>Motion Controller</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>주파수</td>
+<td>33~46 Hz</td>
+<td>~1000 Hz</td>
+</tr>
+<tr>
+<td>역할</td>
+<td>제약 만족 궤적 + 힘 계획</td>
+<td>정밀 추종 + 고주파 외란 거부</td>
+</tr>
+<tr>
+<td>출력</td>
+<td>$(\mathbf{x}_d, \mathbf{u}_d)$</td>
+<td>실제 $\mathbf{u}$</td>
+</tr>
+</tbody>
+</table>
+<p>Motion Controller 수식 (원문): $\mathbf{u} = J_\theta^{-\top}(\mathbf{h}<em>\theta - \hat{\boldsymbol{\Delta}} + M</em>\theta \mathbf{u}_{\text{PID}})$</p>
+<p>구조: <strong>피드포워드($\mathbf{u}_d$)</strong> + <strong>피드백 보정($K_p(\mathbf{x}_d - \mathbf{x})$)</strong>. MPC가 20ms마다 계획을 주면, Motion Controller가 그 사이 1ms마다 정밀 추종.</p>
+<blockquote>
+<p>[!tip] 핵심
+MPC를 1000Hz로 돌릴 수 있다면 Motion Controller 없이 직접 제어 가능. 현실적으로 MPC 계산이 20~30ms 걸리므로, 그 사이를 PID가 메워주는 구조.</p>
+</blockquote>
+<hr/>
+<h3 id="q11-mpc">Q11. MPC의 암묵적 외란 회피 동작</h3>
+<h4 id="mpc_2">지하 돌에 부딪힐 때의 MPC 반응</h4>
+<p>외란 추정기가 큰 $\hat{\boldsymbol{\Delta}}$를 감지 → MPC가 $\mathbf{x}_r$ 추종을 시도하지만 힘 제약 $\mathbf{u}^u$ 때문에 불가 → $\mathbf{x}_d \neq \mathbf{x}_r$ 출력 → 매 제어 주기마다 누적 → <strong>결과적으로 원래와 다른 궤적 형성</strong>.</p>
+<h4 id="_23">중요한 구분: "회피"가 아니라 "밀리는 것"</h4>
+<ul>
+<li>MPC는 돌의 <strong>존재를 모름</strong> — 단지 "이 방향은 힘이 많이 든다"만 앎</li>
+<li><strong>수동적 반응</strong>: 힘 한계에 밀려서 갈 수 있는 곳으로 감 (제약 반응)</li>
+<li><strong>능동적 회피 아님</strong>: 돌의 형상을 인식하고 경로를 재설계하는 것이 아님</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>MPC 반응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>작은 돌</td>
+<td>감속 후 밀고 통과</td>
+</tr>
+<tr>
+<td>중간 돌</td>
+<td>힘 한계에 밀려 암묵적 우회 (궤적 이탈 누적)</td>
+</tr>
+<tr>
+<td>거대 암반</td>
+<td>진행 불가 (stuck) → Global Planner 재계획 필요 (본 논문 범위 밖)</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3 id="q12-dmppid">Q12. 데이터 기반 방법(DMP+PID)과의 비교</h3>
+<blockquote>
+<p>비교 대상: Son et al., "Expert-emulating excavation trajectory planning," IROS 2020 (본 논문 참고문헌 [1], <a href="bbbae40c04f1b5a7.html">볼트 내 요약</a>)</p>
+</blockquote>
+<h4 id="_24">핵심 차이</h4>
+<table>
+<thead>
+<tr>
+<th>비교 항목</th>
+<th>데이터 기반 (DMP+PID)</th>
+<th>최적화 기반 (MPC, 본 논문)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>철학</strong></td>
+<td>전문가 모사</td>
+<td>물리 기반 최적화</td>
+</tr>
+<tr>
+<td><strong>사전 필요</strong></td>
+<td>전문가 데이터 18세트</td>
+<td>CAD 동역학 파라미터</td>
+</tr>
+<tr>
+<td><strong>제약 보장</strong></td>
+<td>❌ 명시적 보장 없음</td>
+<td>✅ 4종 물리 제약 명시적 보장</td>
+</tr>
+<tr>
+<td><strong>외란 대응</strong></td>
+<td>1차원 변조 (얕은 방향)</td>
+<td>다차원 최적 조정</td>
+</tr>
+<tr>
+<td><strong>범용성</strong></td>
+<td>△ 학습 범위 내 보간</td>
+<td>✅ 어떤 지형이든 최적화</td>
+</tr>
+<tr>
+<td><strong>계산 비용</strong></td>
+<td>매우 가벼움 (~1ms)</td>
+<td>무거움 (20~30ms)</td>
+</tr>
+<tr>
+<td><strong>실기 검증</strong></td>
+<td>✅ 38톤 실기 (Doosan DX380LC)</td>
+<td>❌ 시뮬레이션만</td>
+</tr>
+<tr>
+<td><strong>모델 의존</strong></td>
+<td>낮음</td>
+<td>높음 (CAD 파라미터)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_25">상호 보완 가능성</h4>
+<p>두 방법은 대립이 아니라 <strong>자연스러운 역할 분담</strong>으로 결합 가능:
+- <strong>DMP → Global Planner 대체</strong>: 전문가의 지혜가 담긴 자연스러운 초기 궤적 생성
+- <strong>MPC → Local Planner 유지</strong>: DMP 궤적을 물리적 제약 내에서 안전하게 추종</p>
+<p>→ "전문가처럼 자연스러우면서 물리적으로도 안전한 궤적" 동시 달성.</p>
+<h4 id="_26">모델 의존성에 대한 재평가</h4>
+<p>MPC에 필요한 "정확한 모델"은 대부분 <strong>CAD에서 바로 구할 수 있는 파라미터</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>출처</th>
+<th style="text-align: center;">구하기 쉬운가?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>링크 길이, 피벗 위치</td>
+<td>CAD 도면</td>
+<td style="text-align: center;">🟢</td>
+</tr>
+<tr>
+<td>링크 질량, 관성 모멘트</td>
+<td>CAD 3D 모델</td>
+<td style="text-align: center;">🟢</td>
+</tr>
+<tr>
+<td>실린더 단면적, 변위 한계</td>
+<td>제조사 스펙</td>
+<td style="text-align: center;">🟢</td>
+</tr>
+<tr>
+<td>펌프 유량/파워 한계</td>
+<td>제조사 스펙</td>
+<td style="text-align: center;">🟢</td>
+</tr>
+<tr>
+<td>실린더 마찰</td>
+<td>온도/마모 의존</td>
+<td style="text-align: center;">🔴 → <strong>$\boldsymbol{\Delta}$로 처리</strong></td>
+</tr>
+<tr>
+<td>토양 반력</td>
+<td>현장 조건 의존</td>
+<td style="text-align: center;">🔴 → <strong>$\boldsymbol{\Delta}$로 처리</strong></td>
+</tr>
+<tr>
+<td>유압 비선형성</td>
+<td>밸브 특성 의존</td>
+<td style="text-align: center;">🔴 → <strong>$\boldsymbol{\Delta}$로 처리</strong></td>
+</tr>
+</tbody>
+</table>
+<p>원문의 $\boldsymbol{\Delta}$ 정의: <em>"lumped disturbance describing unmodeled dynamics, e.g. </em><em>friction in hydraulic cylinders, soil-bucket interaction, and model uncertainties</em><em>"</em></p>
+<blockquote>
+<p>[!tip] 핵심 설계 철학
+<strong>"알 수 있는 것(CAD 파라미터)은 모델에 넣고, 알 수 없는 것(마찰, 토양, 유압)은 외란으로 추정한다."</strong> 피드백 선형화 $\mathbf{u} = \mathbf{h}_L + M_L\mathbf{v} - \hat{\boldsymbol{\Delta}}_L$에서 $\mathbf{h}_L, M_L$은 CAD로 정확히 구한 값으로 비선형 동역학을 상쇄하고, $\hat{\boldsymbol{\Delta}}_L$은 실시간 추정으로 미지 요소를 보상. 결과적으로 복잡한 마찰/토양 모델 구축 없이 센서 데이터만으로 동작.</p>
+</blockquote>
+<hr/>
+<h2 id="_27">나의 의견</h2>
+<p><em>(작성 예정)</em></p></main><script src="../assets/live.js"></script></body></html>

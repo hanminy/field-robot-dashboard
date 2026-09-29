@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#53 자율 건식 석벽 시공 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #053</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2020</span><span class="badge">#053</span><span class="badge score">시스템통합·현장실증</span><span class="badge">논문 PDF</span></div>
+<h1>자율 건식 석벽 시공</h1>
+<p class="title-en" lang="en">Autonomous dry stone construction</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 이 연구는 비가공 자연석의 불확실한 형상과 시공 누적오차를 사전 완성 설계가 아니라 매 배치 후 다시 계획하는 문제로 바꾸고, HEAP의 LiDAR 재구성·형상 매칭·Bullet 안정성 검증·충돌 없는 파지를 통합해 40개 톤급 석재의 3×5 m 양면벽을 실현했지만 스캔·뒤집기와 구조 안전 검증은 아직 부분 수동이다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>가공하지 않은 지역 석재를 현장에서 읽고 적응적으로 쌓는 대형 로봇 시공</h3>
+<p>건식 석벽은 시멘트나 정밀 절삭 없이 주변에서 얻은 돌을 맞물려 구조를 만든다. 자재의 embodied energy가 낮고 지역 재료를 활용할 수 있지만, 돌마다 형상·질량·접촉면이 달라 숙련 석공이 매번 적합한 돌과 방향을 판단해야 한다. 산업용 로봇이 규격 부재를 반복 배치하는 방식이나 모든 돌의 최종 자세를 미리 계산하는 방식은 이 재료 불확실성과 현장 침하를 다루기 어렵다.</p><p>논문은 높은 가반하중과 거친 지형 이동성을 가진 12톤 보행 굴착기 HEAP를 현장 제작기로 사용한다. 캐빈 LiDAR로 주변·재료·시공 중 벽을 지도화하고, 돌을 그리퍼로 들어 회전시키며 보이지 않던 전 표면을 디지털화한다. 기하 계획기는 설계자가 지정한 두 외측 목표면과 현재 벽의 상단을 기준으로 다음 돌의 위치·방향을 계산하고, 팔 계획기는 이를 잡아 충돌 없이 놓는다.</p><p>핵심은 on-the-fly 순차 계획이다. 비균질 부재의 작은 배치 오차와 침하가 누적되므로 완성벽의 모든 자세를 미리 고정하지 않는다. 한 돌을 놓은 뒤 LiDAR에서 실제 자세를 ICP로 보정하고, 수정된 as-built 형상을 다음 검색공간의 바닥으로 사용한다. 계획은 설계 의도를 유지하되 재료와 시공 현실에 매 단계 적응한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p053-figure-p0002-1-o01-5ffbb35f">
+<img alt="원문 Figure 1, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d476d431dd443dcc6d2f91c0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.2</b> — Fig. 1 Stone wall constructed with autonomous hydraulic excavator</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0003-2-o01-f6263c9e">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/88344d169160df4dba59e6f0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2 Setup diagram: A avail- able stones, B constructed wall, C search space, D rim path with keypoints, E grid map, F gripped stone, G LiDAR sen- sors, H GNSS antennas, I net- work antenna, J HEAP platform with axes indicated, K reference scale and payload comparison with human and industrial robot</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>기존 비정형 석재 조립은 고정 산업용 로봇과 RGB-D 스캐너에 의존해 부재 크기, 벽 높이, 현장 이동 범위가 제한됐다.</li><li>선행 건식 적층 시스템은 수직 탑 또는 한 겹 벽에 머물렀고, 일부는 배치 후 침하를 갱신하지 않는 open loop에서 40% 성공률을 보고했다.</li><li>비가공 3D 형상의 조합 수는 매우 커서 모든 돌·모든 위치·모든 방향을 물리 시뮬레이션하는 brute force 계획이 실용시간 안에 끝나지 않는다.</li><li>표준화된 블록이나 발포재를 쓰는 현장 로봇 연구는 자연석 고유의 접촉·안정성·재료 재사용 문제를 회피했다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>톤급 비가공 자연석을 탐지·파지·회전 스캔·재구성·배치하는 HEAP 기반 현장 시공 파이프라인을 통합했다.</li><li>석공 경험에서 얻은 두께비·안쪽 기울기 규칙과 FPFH-KNN 형상 매칭을 빠른 전처리로 사용해 백만 개 이상 후보를 수천 개로 축소했다.</li><li>ICP 접촉 정제, Bullet 물리 안정성, 목표면과 하부 공극 부피를 결합해 양면 자유형 벽의 다음 돌을 즉석 선택하는 계획기를 제안했다.</li><li>평균 757 kg의 gneiss 40개를 모두 사용해 높이 3 m, 길이 5 m의 양면 건식 석벽을 대형 이동 로봇으로 구축했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>HEAP는 총 23개 축, 3,000 kg을 9 m까지 들 수 있는 팔, 직교 배치한 VLP-16 두 대, GNSS·IMU·실린더 센서를 갖는다. 초기에는 돌을 서로 분리해 놓고 RANSAC으로 지면을 제거한 뒤 Euclidean clustering으로 개별 돌을 찾는다. 선택한 돌을 그리퍼로 들고 LiDAR 앞에서 일정 속도로 회전시키며 그리퍼 점을 제거하고, 여러 시점 점군을 합쳐 Poisson 표면 mesh를 만든다.</p><p>기하 계획기는 시공 중 벽의 상부를 가상 LiDAR와 surface reconstruction으로 연속면처럼 근사하고, 그 경계 rim path를 목표면과 만나는 검색 축으로 삼는다. 각 돌 mesh를 정리해 PCA 축, VSA 평면 패치, edge와 normal을 계산한다. FPFH가 비슷한 돌 edge와 rim 점을 먼저 찾고 석공 규칙으로 불안정 후보를 제거한 다음, ICP와 Bullet만 작은 후보 집합에 적용한다.</p><p>선택된 배치 자세와 현재 파지 자세 사이의 팔 동작은 다수 그리퍼 후보, 환경·자기 충돌, force closure를 검사하고 cubic Hermite spline으로 연결한다. 돌을 놓으면 장면 LiDAR와 돌 mesh의 ICP로 실제 자세를 다시 계산하고, 데이터베이스와 벽 모델을 갱신한 뒤 다음 돌 계획을 시작한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>현장 지도와 돌 인스턴스 탐지</h4><p>GNSS-IMU 오도메트리와 LiDAR ICP 제약을 LaserSLAM 그래프에 융합한다. 자기 몸체 점을 제거한 지도에서 RANSAC 지면 평면을 빼고 Euclidean clustering으로 흩어 둔 돌을 개별 후보로 만든다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>그리퍼 회전 스캔과 mesh 생성</h4><p>돌을 들어 두 VLP-16 앞에서 연속 회전시키고 알려진 그리퍼 형상을 필터링한다. 여러 방향 점군을 이어 Poisson surface reconstruction을 수행하고, 퇴화 삼각형과 분리 파편을 제거한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>돌 속성과 벽 검색공간 구성</h4><p>mesh 질량특성·centroid·PCA 주축을 계산하고 VSA로 표면 패치와 edge를 얻는다. 목표 외측면, 지면, 현재 벽 상부면 사이를 volumetric search space로 정의하고 rim path의 점과 법선을 표본화한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>빠른 기하 후보 축소</h4><p>돌 edge midpoint와 rim vertex의 회전불변 FPFH를 비교해 각 점에서 약 10개 최근접 형상만 남긴다. 돌 깊이/높이 비와 상부면 normal 규칙으로 얇은 veneer 및 바깥쪽으로 기운 후보를 제거한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>정밀 접촉·안정성 평가</h4><p>남은 각 자세를 ICP로 주변 돌 및 목표면에 맞추고, Bullet에서 제한 시간 안에 평형에 도달하지 못하거나 과도하게 움직인 후보를 버린다. 하부 공극과 외측 목표면 공극 부피의 결합 점수로 최종 배치를 고른다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>파지·배치·재계획</h4><p>충돌·force closure를 통과한 그리퍼 자세와 배치 접근을 cubic Hermite spline으로 잇는다. 실제 배치 뒤 돌 자세를 ICP로 재측정해 as-built wall을 갱신하고 다음 돌의 검색을 다시 수행한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>벽 깊이-높이 비 규칙</h4><code>d/h&gt;0.5</code><p>rim path 기준 돌 중심의 수평 깊이 d가 수직 높이 h의 절반보다 커야 하며, 가장 얇은 치수가 벽 깊이가 되는 불안정한 veneer 배치를 제거한다.</p></div><div class="eq"><h4>안쪽 기울기와 상면 경사 제약</h4><code>\hat e_y\cdot\hat n\ge 0,\qquad \hat e_z\cdot\hat n&gt;0.7</code><p>노출 상부면 normal이 벽 안쪽을 향하고 지나치게 가파르지 않은 후보만 허용해 이후 돌이 양쪽 벽 사이로 지지되도록 한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p053-figure-p0005-3-o01-1172f264">
+<img alt="원문 Figure 3, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6a9e09853396d52c6b236b72.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.5</b> — Fig. 3 Initial state of stones, loosely distributed on the terrain. LiDAR mapping and RANSAC ground segmentation allow for initial detection and grasping for refined scanning in the gripper</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0006-4-o01-dbed52c7">
+<img alt="원문 Figure 4, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7b830db9cb78324421143dd0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.6</b> — Fig. 4 Stone solver goals and methods. a Minimize volume under stone, b minimize volume between stone face and goal surface, c compute faces and edges, d sample along rim path, e compute</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0008-6-o01-db33a5f0">
+<img alt="원문 Figure 6, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4f7defe4f4ae9eed07dda51d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.8</b> — Fig. 6 Screen capture of geometric planning software. a Imgui Interface, b active environment with search space, solutions, and placed stones, c available scanned stones in inventory, d selected stone viewer with VSA faces</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0008-7-o01-fbe08a7d">
+<img alt="원문 Figure 7, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/485d7865a55a7eb8ffb8d362.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.8</b> — Fig. 7 Grasp planning and placement of a stone to its desired location (red). A Col- lision and localization point cloud, B stones localized in point cloud, C spline motion tra- jectory, (D, green) collision-free grasp hypotheses, (E, red) grasp hypotheses with collisions, F selected grasp configuration. G The collision point cloud is augmented with point clouds of already localized stones</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>완전 형상을 얻는 active stone scanning</h3><p>지면 위 한 방향에서 본 LiDAR 점군만으로는 접촉면과 후면이 비어 안정성 판단이 불가능하다. HEAP는 자체 팔을 스캐닝 턴테이블처럼 사용해 돌을 들고 회전시킨다. 그리퍼 geometry를 제거한 여러 시점 점군을 Poisson mesh로 바꾸므로 별도 고정 스캐너나 자재 운반 라인이 필요 없다.</p><p>스캔 mesh는 질량특성, PCA, VSA face, edge descriptor, 충돌과 물리 시뮬레이션의 공통 표현이다. 즉 한 번의 디지털화가 건축 배치와 로봇 동작 계획을 동시에 지지한다.</p><ul><li>두 VLP-16을 서로 직교 배치해 캐빈 회전과 주행에서 점밀도 확보</li><li>돌을 연속 회전하고 그리퍼 점을 자기 모델로 제거</li><li>Poisson reconstruction과 ICP로 객체 mesh·pose 갱신</li></ul></article><article class="tech-card"><h3>석공 지식으로 축소하는 조합 검색</h3><p>계획기는 모든 후보에 고비용 물리 계산을 하지 않는다. 형상 유사성과 전통 석공 규칙처럼 싸고 배제력이 큰 검사를 앞에 배치하고, 접촉 정합·물리 안정성·공극 부피는 뒤에 적용한다. FPFH-KNN 하나만으로 백만 개가 넘는 edge-rim 조합이 수천 개 수준으로 감소했다.</p><p>이 설계는 휴리스틱을 임의 규칙으로 쓰는 데 그치지 않고 양면벽의 구조 논리와 연결한다. 충분한 벽 깊이, 안쪽으로 향한 상면, 외측 목표면 적합성은 다음 돌을 받칠 수 있는 시공 가능성을 동시에 보존한다.</p><ul><li>FPFH 최근접 이웃 k≈10</li><li>d/h&gt;0.5로 얇은 veneer 후보 제거</li><li>상면 normal의 안쪽 방향과 경사 제한</li></ul></article><article class="tech-card"><h3>as-built 피드백 기반 순차 설계</h3><p>비정형 돌은 계획 자세에 놓여도 접촉하면서 가라앉거나 돌아간다. 각 배치 뒤 실제 LiDAR와 mesh를 ICP로 맞춰 위치를 수정하고, 이 벽을 다음 검색공간의 하부 경계로 삼는다. 따라서 오차를 다음 단계에 숨기지 않고 설계 상태 자체를 다시 정의한다.</p><p>돌의 성질을 시작 전에 모두 알 수 없다는 조건에서도 매 단계 사용할 inventory와 현재 벽을 바탕으로 해를 찾는다. 논문의 실험은 시간을 줄이기 위해 모든 돌을 먼저 스캔했지만, 알고리즘 구조는 현장 도착·발견 순서에 따라 inventory가 늘어나는 운용도 허용한다.</p><ul><li>한 돌 계획-배치-ICP 갱신 후 다음 돌 계획</li><li>목표면은 고정하되 내부 공극과 실제 상단 형상은 단계마다 변화</li><li>오차 누적을 open-loop 완성 배치 대신 폐루프 재계획으로 억제</li></ul></article><article class="tech-card"><h3>기하 계획과 톤급 동작 계획의 결합</h3><p>건축적으로 좋은 자세라도 그리퍼가 잡을 수 없거나 벽과 충돌하면 실행할 수 없다. 시스템은 6자유도 파지 후보의 force closure와 주변 점군 충돌을 검사하고, 파지 자세에서 배치 자세까지 Hermite spline을 구성한다. 배치 접근 방향도 raycasting으로 장애물 여유가 가장 큰 방향을 고른다.</p><ul><li>그리퍼와 기존 벽을 포함한 점군 충돌검사</li><li>Bullet은 배치 후 평형을, 파지 계획기는 운반 중 실행 가능성을 검증</li><li>3,000 kg을 9 m까지 드는 HEAP 팔로 건축 규모 확보</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p053-figure-p0007-5-o01-2fa7b4bb">
+<img alt="원문 Figure 5, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9d86421743abea6ef85c06e0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.7</b> — Fig. 5 Elevation detail of the constructed wall. Rotationally invariant shape descriptors allow for a tight fit by initially matching available stone surfaces to corresponding negative geometry of the wall</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>12톤 HEAP 보행 굴착기, 23축, 최대 3,000 kg을 9 m까지 들어 올리는 유압 팔</li><li>캐빈 전방 직교 Velodyne Puck VLP-16 두 대, GNSS 안테나, IMU, 실린더 draw-wire 센서</li><li>Ubuntu 18.04, Intel i7-8750H 4.1 GHz, 16 GB RAM 노트북에서 기하 solver 실행</li><li>실외 시험장, gneiss 자연석 40개, 양면벽 목표면과 주변 주행·파지 공간</li><li>논문 실험 석재 질량 평균 757 kg, 범위 230–1,584 kg</li></ul>
+<h3>실험 프로토콜</h3><ul><li>돌을 지면에 느슨하게 분산해 LiDAR 지면 제거와 개별 군집화를 수행하고, 각각 들어 회전시키며 mesh를 만들었다.</li><li>실험 시공 속도를 높이고 초기부터 선택폭을 확보하기 위해 벽 시공 전에 40개 돌을 모두 스캔했다.</li><li>각 단계에서 기하 solver가 다음 자세를 선택하고 HEAP가 파지·운반·배치한 뒤, 실제 돌 자세를 ICP로 갱신하고 다음 단계를 시작했다.</li><li>Bullet 평형, 충돌 없는 팔 궤적, 외측 목표면 적합과 하부 공극을 통과한 해를 순차적으로 실행했다.</li></ul>
+<h3>비교 기준</h3><ul><li>선행 open-loop 단층 석벽의 보고 성공률 40%와 달리 배치 후 자세를 매번 갱신하는 폐루프 구조</li><li>brute-force 백만 개 이상 조합 대 FPFH-KNN과 석공 휴리스틱을 먼저 적용한 수천 개 후보</li><li>규격 ashlar가 아닌 가공하지 않은 자연석을 100% 사용했으며 절단·드레싱 기반 접근과 개념적으로 비교</li></ul>
+<h3>평가 지표</h3><ul><li>완성 벽 높이·길이·석재 수와 질량 범위</li><li>외측 벽면과 설계 목표면의 거리</li><li>석재당 solver 실행시간과 후보 축소 규모</li><li>사용 가능한 원재료의 실제 사용 비율과 배치 후 갱신 여부</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p053-figure-p0010-8-o01-b5a27008">
+<img alt="원문 Figure 8, PDF 10쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/baf68eee446fc16523335384.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.10</b> — Fig. 8 Digital model of con- structed wall with goal surfaces and indicated distance between placed stones and one target surface</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0010-9-o01-39f2bb48">
+<img alt="원문 Figure 9, PDF 10쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9121273b484d4938d3a74e79.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.10</b> — Fig. 9 Side elevation of constructed wall conveying double-faced structure and near-vertical orientation</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0011-10-o01-cde14f42">
+<img alt="원문 Figure 10, PDF 11쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5caa1741aeb99bd2967be750.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.11</b> — Fig. 10 Wall construction in progress with 2 (above) and 20 (below) placed stones out of the 40 used in this experiment</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>통합 시스템은 40개의 gneiss 자연석으로 높이 3 m, 길이 5 m의 양면 건식 석벽을 완성했다. 실험 절의 질량은 평균 757 kg, 230–1,584 kg 범위이며, 저자들은 당시 불규칙 석재로 자율 시공된 조적 구조 가운데 높이와 구성요소 수 모두 가장 큰 사례라고 기술한다. 벽의 외측면은 목표면에서 대체로 10 cm 안에 놓였고, 돌을 깎지 않은 채 가용한 40개를 모두 사용했다.</p><p>계획 계산은 i7-8750H 4.1 GHz·16 GB 노트북에서 돌 하나당 약 1분이었다. 실제 굴착기가 돌을 찾고 잡아 운반·배치하는 시간보다 짧게 solver를 끝내 작업 흐름을 막지 않는다는 설계 목표를 충족했다. FPFH-KNN은 백만 개를 넘는 가능한 돌 edge와 rim 점 조합을 수천 개로 낮춰 ICP와 Bullet 평가를 감당할 수 있게 했다.</p><p>결과는 완성벽의 단일 평균 오차보다 적응 과정의 성립을 보여준다. 2개와 20개 돌 단계의 중간벽에서 계속 다음 해를 찾았고, 매 배치 후 돌 자세가 다시 입력됐다. 반면 논문은 전체 시공시간, 자동 파지 성공률, 구조 하중시험을 수치로 보고하지 않아 생산성과 안전성을 사람 시공 또는 다른 로봇과 직접 비교할 수는 없다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>완성벽 규모</td><td>높이 3 m × 길이 5 m</td><td>양면 비정형 건식 석벽</td><td>PDF p.9</td></tr><tr><td>사용 석재</td><td>40개, 평균 757 kg</td><td>실험 절 보고 범위 230–1,584 kg</td><td>PDF p.9</td></tr><tr><td>외측면 적합도</td><td>대체로 목표면 10 cm 이내</td><td>완성벽의 설계 외측 표면</td><td>PDF p.9</td></tr><tr><td>기하 solver 시간</td><td>석재당 약 1 min</td><td>i7-8750H 4.1 GHz, 16 GB, Ubuntu 18.04</td><td>PDF p.5</td></tr><tr><td>기하 후보 축소</td><td>&gt;1,000,000 조합→수천 개</td><td>FPFH와 k≈10 KNN 전처리</td><td>PDF p.7</td></tr><tr><td>돌 깊이 규칙</td><td>d/h&gt;0.5</td><td>얇은 veneer 자세 제거</td><td>PDF p.7</td></tr><tr><td>원석 운송 거리</td><td>40 km</td><td>시험장으로 운반한 quarry 위치</td><td>PDF p.12</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>실시간 동적 추적이 없어 돌을 뒤집을 때 LiDAR 누적 스캔만으로 객체 자세를 안정적으로 유지하기 어렵고, 실험에서는 사람이 뒤집기를 보조했다.</li><li>돌이 서로 닿은 더미가 아니라 느슨하게 분산된 초기 배치여서 RANSAC과 군집화의 가장 어려운 가림 조건을 회피했다.</li><li>기하적으로 맞고 Bullet에서 평형인 자세가 실제 하중 아래 장기 구조 안전을 보장하지 않으며, force-torque 기반 실물 검증이 없다.</li><li>완성벽 내부 공극은 원석의 비정형성을 흡수하지만 정량적 구조성능 대신 경험적 석공 규칙에 의존한다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p053-figure-p0012-12-o01-60236f75">
+<img alt="원문 Figure 12, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f0afec9665688e626f36e6c2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.12</b> — Fig. 12 Constructed wall with figure (left) for scale and indicated potential extensions</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>LiDAR만으로 완전 mesh를 얻으려면 센서나 돌을 계속 움직여야 해 스캔 시간이 길고 뒤집기 중 동적 추적에 부적합하다.</li><li>돌을 처음부터 분리 배치하고 모두 사전 스캔한 실험 프로토콜은 실제 채석장·철거 더미의 가림과 순차 발견을 충분히 대표하지 않는다.</li><li>실제 돌 뒤집기와 일부 사용자 인터페이스 선택에 사람이 관여해 전체 공정이 완전 무인 폐루프는 아니다.</li><li>Bullet과 기하 규칙은 실물 접촉 마찰·변형·장기 하중을 직접 계측하지 않으며 완성 구조의 하중 안전성 시험도 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>RGB 카메라와 textured reconstruction을 추가해 석재 인스턴스를 시각 특징으로 인식하고 뒤집기 중 자세를 추적한다.</li><li>그리퍼 force-torque 센서와 능동 probing으로 놓인 돌과 완성 구조에 하중을 가해 안정성과 변형을 실물에서 측정한다.</li><li>돌 더미에서의 instance segmentation과 자율 뒤집기를 개발해 느슨한 분산 배치와 사람 보조 가정을 제거한다.</li><li>색·스케일·표면 패턴까지 설계 목적에 포함하고 철거 콘크리트 등 재사용 자재로 재료 inventory를 확장한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>LiDAR 회전 스캔, VSA/FPFH 형상 표현, 석공 휴리스틱, ICP·Bullet 검증, 충돌 없는 파지, 배치 후 pose 갱신을 순차 계획으로 묶었다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>평균 757 kg인 자연석 40개를 가공 없이 모두 써서 3×5 m 양면벽을 만들고, 외측면을 대체로 목표 10 cm 이내에 맞췄다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>분산·사전 스캔된 재료와 사람 보조 뒤집기를 가정하며, 전체 생산시간과 자동 파지율, 실물 구조 하중성능은 보고하지 않았다.</p></div></div>
+<div class="kw"><span>#시스템통합·현장실증</span><span>#환경인식</span><span>#작업·궤적계획</span><span>#석재 3D 스캔</span><span>#안정 배치 계획</span><span>#재스캔 폐루프</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 설계 모델을 절대적인 완성 좌표 목록이 아니라 현장 상태와 매번 화해하는 목표면으로 다룬다. 자율굴착에서도 목표 지형과 실제 굴착면 사이 오차를 한꺼번에 보정하기보다, 한 버킷 사이클 뒤의 as-built 지형으로 다음 절삭 위치·접근각·토적 위치를 다시 계산하는 구조에 직접 연결된다.</p><ul><li>배치 후 ICP 재측정은 굴착 후 표면 재스캔과 동일한 as-built 폐루프 패턴이다.</li><li>전통 작업자의 규칙을 명시적 기하 제약으로 바꾸면 학습데이터가 적은 톤급 현장에서도 안전한 후보 제거가 가능하다.</li><li>설계 목표면과 숨은 내부 공극을 분리한 점은 토공에서도 최종 외형 정밀도와 내부 토질·다짐 불확실성을 별도 관리하게 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p053-figure-p0012-11-o01-cbdfa24e">
+<img alt="원문 Figure 11, PDF 12쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7f0101e12f5cb121b04691b1.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.12</b> — Fig. 11 In progress wall with overlay of potential extension of structure, generated by allowing the solver to continue with addi- tional digital stone models</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3, p.4</li><li><b>방법론</b>: p.4, p.5, p.6, p.7, p.8, p.9</li><li><b>실험</b>: p.5, p.7, p.9, p.10</li><li><b>결과</b>: p.5, p.7, p.9, p.10, p.12, p.13</li><li><b>한계</b>: p.10, p.11, p.13</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2020 Autonomous dry stone.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-052.html"><span class="lbl">← 이전 #52</span>자율굴착기를 위한 시간 가변 최소 토크 궤적 최적화</a><a class="next" href="paper-054.html"><span class="lbl">다음 #54 →</span>지형 적응 전신 계획·제어</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

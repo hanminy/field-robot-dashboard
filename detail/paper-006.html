@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#6 온라인 모델기반 RL 제어 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #006</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2025</span><span class="badge">#006</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF</span></div>
+<h1>온라인 모델기반 RL 제어</h1>
+<p class="title-en" lang="en">Efficient model-based reinforcement learning for robot control via online optimization</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li><li><a href="../notes/b856eea1a9027744.html">ETH 자율굴착 최신 연구 동향 2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 모델 예측 자체가 아니라 모델 Jacobian으로 실제 궤적 손실의 정책 기울기를 근사하고 trust-region식 전처리를 적용해 분포 이동 중에도 온라인 학습을 안정화했으며, 대형 굴착기에서 180 episode·약 2.5시간의 실데이터로 고속 궤적을 평균 4.5 cm 오차로 추종했다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>시뮬레이터 없이 실기에서 배우는 연속 제어</h3>
+<p>대형 굴착기 같은 유압 시스템은 마찰, 밸브 dead-zone, 부착물과 페이로드 변화가 커서 정확한 해석 모델을 만들기 어렵다. 강화학습은 이런 비선형성을 데이터에서 흡수할 수 있지만 model-free 방법은 수천~수만 시간의 상호작용을 요구하고, 실기 탐색 중 위험한 명령을 낼 수 있다. 고정 시뮬레이터에서 학습한 정책도 sim-to-real 오차와 장비 상태 변화에 취약하다.</p><p>Model-based RL은 학습한 동역학으로 가상 rollout을 만들어 데이터 효율을 높이지만, 모델 오차가 긴 horizon에서 누적되면 정책이 실제 시스템이 아니라 모델의 허점을 최적화한다. 특히 온라인 환경에서는 매 episode 데이터 분포가 정책과 함께 변하므로, 모델이 이전 구간에 잘 맞아도 새 궤적에서 Jacobian과 기울기 방향을 틀리게 예측할 수 있다.</p><p>논문은 미래 상태를 길게 상상해 보상값을 학습하는 대신, 방금 실제로 수행한 궤적의 tracking loss를 출발점으로 삼는다. 학습 모델은 그 실제 trajectory 주변에서 정책 파라미터가 바뀌었을 때 손실이 어떻게 변할지 미분하는 도구로만 사용한다. 이 관점은 짧은 실데이터를 최대한 재활용하면서 모델 bias의 영향을 정책 업데이트 크기로 제한한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p006-figure-p0004-1-o01-51f590c6">
+<img alt="원문 Figure 1, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1e3f5c407e74d131ab5f8d72.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.4</b> — Figure 1. A diagram showing the workflow of the proposed online model-based RL algorithm. It involves online model learning and policy optimization at the same time. The red blocks highlight the process of model learning, and the blue components show the workflow of policy optimization.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>Model-free PPO류는 실물 굴착기에서 허용하기 어려운 매우 큰 상호작용 예산이 필요하다.</li><li>고정된 모델이나 sim-to-real 정책은 payload, 마찰, 유압 상태 변화에 온라인 적응하지 못한다.</li><li>긴 model rollout을 직접 최적화하면 작은 one-step 오차가 누적되고 정책이 모델 오류를 악용할 수 있다.</li><li>온라인 SGD는 정책 변화로 입력 분포가 이동할 때 episode 간 손실이 갑자기 커지는 불안정성이 있다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>실제 episode loss와 학습 동역학의 Jacobian을 결합한 온라인 model-based policy gradient 알고리즘을 제시한다.</li><li>예측 기울기 오차가 제곱합 가능할 때 sublinear regret를 얻는 조건을 분석하고 분포 이동과 모델 정확도의 역할을 연결한다.</li><li>12.5 t HEAP 굴착기에서 시뮬레이터·사전학습 없이 약 3시간 안에 궤적 추종 정책을 학습한다.</li><li>payload 급변, soft robot arm, frozen-model·저주기 model update ablation으로 온라인 적응과 일반성을 확인한다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>각 episode에서 현재 정책으로 실제 시스템을 실행하고 상태·행동·reference를 buffer에 저장한다. 신경망 동역학은 이 데이터의 one-step 다음 속도 MSE로 온라인 갱신된다.</p><p>정책 업데이트 때는 실제로 관측한 trajectory에서 tracking loss를 계산하되, 정책 변화에 대한 상태 전파 미분은 학습 모델의 Jacobian으로 얻는다. 기울기를 curvature/preconditioner로 정규화하고 trust-region 반경 안에서 한 번 갱신해 과도한 model exploitation을 막는다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>실제 episode 수집</h4><p>현재 정책으로 무작위 polynomial reference를 추종한다. HEAP에서는 한 episode가 5초 궤적 10개로 구성되며, 현재 관절 위치·속도, 앞으로의 reference, 이전 valve command를 입력하고 새 valve current를 출력한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>온라인 동역학 학습</h4><p>buffer의 실제 전이로 다음 관절 속도를 예측하는 2개 hidden-layer 신경망을 one-step MSE로 최적화한다. 매 episode 새 분포를 반영하므로 payload나 마찰 변화 뒤 모델이 계속 수정된다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>실제 손실의 모델 보조 미분</h4><p>실제 수행 궤적의 tracking loss를 기준으로 삼고, action과 다음 state의 국소 민감도만 학습 모델에서 backpropagation한다. 따라서 손실값 자체를 허구의 긴 rollout에 의존하지 않는다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>전처리된 제한 업데이트</h4><p>기울기를 Jacobian에서 얻은 preconditioner로 스케일링하고 반경 epsilon의 제한 안에서 정책 파라미터를 갱신한다. 같은 loop를 다음 실제 episode에서 반복해 model과 policy를 공동 적응시킨다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>one-step 모델 손실 (식 3)</h4><code>\ell(\theta)=\mathbb{E}_{(x,u,x^+)\sim D}\|f_\theta(x,u)-x^+\|_2^2</code><p>누적 real transition에서 신경망 동역학의 단일 단계 다음 상태 예측 MSE를 최소화한다.</p></div><div class="eq"><h4>정책 갱신 (식 6)</h4><code>\phi_{t+1}=\phi_t-\eta_t\Lambda_t^{-1}\widehat{\nabla}_\phi g(\phi_t;\tilde{x}^t)</code><p>실제 episode cost를 학습 모델 Jacobian으로 미분한 근사 기울기를 preconditioner Λt로 정규화해 갱신한다.</p></div><div class="eq"><h4>기대 누적 후회 (식 8)</h4><code>\mathbb{E}[R_T]:=\mathbb{E}\left[\sum_{t=1}^{T}g(\phi_t;\tilde{x}^t)-g(\phi^*;\tilde{x}^t)\right]</code><p>온라인 정책이 기대 손실 최적 정책 φ*와 비교해 episode 동안 누적한 성능 차이를 정의한다.</p></div></div>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>실제 궤적 중심의 analytical policy gradient</h3><p>알고리즘은 실제 trajectory에서 발생한 tracking error를 그대로 사용한다. 모델은 그 trajectory의 국소 동역학 미분을 제공해 정책 파라미터가 조금 바뀔 때 다음 상태가 어떻게 달라질지 계산한다. 이는 model-free gradient보다 표본 효율적이면서 장기 hallucinated rollout 의존을 낮춘다.</p><p>핵심 요구는 모든 상태를 완벽하게 예측하는 것이 아니라 방문 분포에서 정책 기울기 방향을 충분히 맞추는 것이다. 이 때문에 one-step 모델의 평균 오차만 보는 대신 기울기 예측 오차가 regret bound에 직접 들어간다.</p><ul><li>loss 값은 실측 trajectory에서 계산</li><li>동역학 모델은 국소 Jacobian 제공</li><li>장기 rollout model bias 억제</li></ul></article><article class="tech-card"><h3>온라인 regret와 분포 이동 분석</h3><p>이론은 model-derived gradient와 true gradient의 차이가 시간에 따라 충분히 감소하면 누적 regret가 sublinear해짐을 보인다. 즉 평균 episode 성능이 최적 고정 정책에 접근하려면 모델의 단순 예측 정확도보다 gradient alignment가 중요하다.</p><p>정책이 바뀌면서 데이터 분포가 이동하면 연속 episode의 gradient가 갑자기 달라질 수 있다. 부록 분석과 실험은 온라인 SGD가 같은 mini-batch를 반복 사용할 때 생기는 상관과 update 주기 효과를 드러내며, 지속적인 real-data refresh의 필요성을 설명한다.</p><ul><li>제곱합 gradient prediction error 조건</li><li>sublinear regret 보장</li><li>episode-wise distribution shift를 명시적으로 분석</li></ul></article><article class="tech-card"><h3>trust-region 전처리와 지속 적응</h3><p>모델 Jacobian은 관절과 명령 축마다 크기가 달라 raw gradient를 그대로 쓰면 특정 축이 update를 지배한다. 전처리 행렬로 민감도를 균형화하고 제한 반경으로 한 episode의 변화량을 억제한다.</p><p>모델과 정책을 매 episode 갱신하기 때문에 episode 157의 payload 교체처럼 시스템이 갑자기 바뀌어도 새 전이로 두 구성요소가 함께 적응한다. frozen model 또는 16 episode마다 갱신한 ablation에서 성능이 악화된 결과가 이 설계의 필요성을 지지한다.</p><ul><li>축별 민감도 전처리</li><li>과도한 정책 이동 제한</li><li>payload 변화 뒤 model-policy 공동 재적응</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p006-figure-p0009-3-o01-c72e75ea">
+<img alt="원문 Figure 3, PDF 9쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9d336aa26569a362389d26be.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.9</b> — Figure 3. Performance of the proposed online model-based RL and baseline algorithms in HEAP simulation. The plots show the average loss in model learning and control policy learning over multiple runs. The shaded area represents the standard deviation. Both mean and standard deviation are computed on a log scale. The horizontal axis has been normalized to represent the same number of environment interactions across algorithms. The Model Loss curves represent the sum of all loss metrics for forward prediction quality and are normalized by the value after the first episode, to enable a qualitative comparison.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0013-12-o01-9392fd36">
+<img alt="원문 Figure 12, PDF 13쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c285c551f8c0b85166fe3696.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.13</b> — Figure 12. Comparison between the proposed algorithm and an ablation with the model update paused after 100 episodes. The bold dashed line marks the point where model learning stops.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0013-13-o01-405ae80e">
+<img alt="원문 Figure 13, PDF 13쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c288d0f7d483025a0c9edd51.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 13 · PDF p.13</b> — Figure 13. Comparison between the proposed algorithm and an ablation with the model update at a reduced frequency of every 16 episodes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0017-14-o01-3b645475">
+<img alt="원문 Figure 14, PDF 17쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/03ad8b0c0d9db60a65c5667a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 14 · PDF p.17</b> — Figure 14. SGD update with shifting episode-wise data. Given the sequence {µt}, draws ˆzt ∼µt and ˆzt+1 ∼µt+1 are independent conditioning on current parameters.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>주 플랫폼은 약 12.5 t HEAP 자율 굴착기다. 정책은 현재 관절 위치·속도, look-ahead reference, 이전 command를 받아 valve current를 내고, 모델은 현재 상태와 행동에서 다음 관절 속도를 예측한다. reference는 5초 polynomial curve이며 한 episode에 10개가 포함된다.</li><li>비교 실험은 시뮬레이션과 실기 HEAP에서 수행하고, 별도 플랫폼으로 cable-driven soft robot arm을 사용한다. 학습 계산기는 Intel i9-12900K와 NVIDIA RTX 4090이며 제어와 학습 pipeline을 온라인으로 실행한다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>시뮬레이션에서는 10 episode burn-in 뒤 학습 곡선과 데이터 효율을 비교한다. 실기 HEAP은 180 episode, 실제 동작 데이터 약 2.5시간을 수집하며 계산을 포함한 전체 학습은 약 3시간이다. 무작위 spline reference로 성능을 평가한다.</li><li>학습 도중 episode 157에서 payload를 갑자기 바꾸고 회복 속도를 본다. soft arm은 30 episode로 별도 학습한다. frozen dynamics model과 16 episode 간격 모델 update를 두어 지속 갱신의 효과를 ablation한다.</li></ul>
+<h3>비교 기준</h3><ul><li>TD-MPC2와 DreamerV3: 대표적인 latent/world-model 기반 강화학습과 동일 interaction budget에서 비교한다.</li><li>PPO: model-free 학습의 데이터 요구량을 시뮬레이션에서 비교한다.</li><li>Nubert &amp; Hutter 2024 제어기와 Egli &amp; Hutter 2024 제어기: HEAP 실기 속도·추종 오차·진동성 비교군이다.</li><li>Frozen model 및 16-episode model update: 온라인 동역학 갱신 빈도의 ablation이다.</li></ul>
+<h3>평가 지표</h3><ul><li>평균·최대 관절 trajectory tracking error와 normalized error ratio</li><li>평균·최대 reference velocity와 동일 속도 대비 정확도</li><li>episode 수, 실제 interaction 시간, 수렴 속도</li><li>payload 교체 뒤 오차 증가와 회복 episode 수</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p006-figure-p0009-2-o01-7d45fa54">
+<img alt="원문 Figure 2, PDF 9쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c15177ab519e47c645e4cfda.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.9</b> — Figure 2. HEAP, the autonomous excavator used in the experiments.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0012-9-o01-94422e6e">
+<img alt="원문 Figure 9, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e412508fecb3a4af86e9f371.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.12</b> — Figure 9. The cable-driven soft robot arm used in the experiments.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>시뮬레이션에서 10 episode burn-in 이후 제안법의 loss는 초기에 약 t^-4에 가까운 속도로 감소하고 약 200 episode에서 바닥에 도달했다. TD-MPC2와 DreamerV3는 같은 데이터 예산에서 더 느리거나 높은 손실에 머물렀으며 PPO는 유사 제어 학습에 10,000시간 이상이 필요했다. 시뮬레이션 200 episode는 2.78시간 상호작용이며 평균 오차는 5.5 cm였다.</p><p>HEAP 실기에서 180 episode, 약 2.5시간의 실제 데이터로 평균 4.5 cm, 최대 12.4 cm 추종 오차를 얻었다. 평균 속도 52.3 cm/s, 최대 129.3 cm/s, normalized error ratio 0.09였다. Nubert &amp; Hutter 제어기는 평균 8.56 cm·최대 16.2 cm·ratio 0.27, Egli &amp; Hutter 제어기는 평균 2.8 cm·최대 6.7 cm·ratio 0.13으로 더 정확하지만 더 느렸다. 제안법은 속도를 높이면서 정규화 오차를 낮추는 절충을 보였다.</p><p>episode 157에서 payload를 교체하자 추종 오차가 약 두 배로 증가했지만 episode 162까지 5 episode 안에 이전 수준으로 회복했다. 이는 offline sim-to-real 정책과 달리 운전 중 변화에 적응할 수 있음을 보여준다. soft robot arm도 30 episode 뒤 평균 2.95 cm를 기록해 기존 2.8 cm 결과와 비슷한 수준을 짧은 온라인 학습으로 얻었다.</p><p>100 episode 뒤 모델을 고정하면 이후 정책 개선이 악화했고, 모델을 16 episode마다만 갱신하면 loss가 주기적으로 나빠졌다 회복되는 cycle이 나타났다. 즉 모델이 완전히 정확해질 때까지 기다리는 것이 아니라 현재 정책의 방문 분포를 매 episode 따라가야 안정적인 정책 gradient를 제공할 수 있다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>HEAP 평균 추종 오차</td><td>4.5 cm</td><td>180 episode 실기 온라인 학습</td><td>PDF p.11</td></tr><tr><td>HEAP 최대 추종 오차</td><td>12.4 cm</td><td>제안 정책의 실기 평가</td><td>PDF p.11</td></tr><tr><td>HEAP 평균·최대 속도</td><td>52.3 cm/s, 129.3 cm/s</td><td>제안 정책 trajectory</td><td>PDF p.11</td></tr><tr><td>정규화 오차 비율</td><td>0.09</td><td>제안법; 비교군 0.27 및 0.13</td><td>PDF p.11</td></tr><tr><td>실제 데이터 예산</td><td>180 episode, 약 2.5 h</td><td>계산 포함 전체 약 3 h</td><td>PDF p.10</td></tr><tr><td>payload 변화 회복</td><td>5 episode</td><td>episode 157 교체 후 162까지 회복</td><td>PDF p.11</td></tr><tr><td>soft arm 평균 오차</td><td>2.95 cm</td><td>30 training episodes 후</td><td>PDF p.12</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>동역학 모델을 고정하면 정책이 새 방문 분포로 이동할수록 gradient 품질이 떨어져 성능이 악화된다.</li><li>모델을 16 episode 간격으로 갱신하면 update 직전·직후 손실이 주기적으로 변하는 불안정성이 나타난다.</li><li>payload 급변 직후에는 오차가 일시적으로 약 두 배가 되어 적응 기간 중 안전 제한이 필요하다.</li><li>실험은 부드러운 연속 trajectory tracking이라 충돌·암석 걸림 같은 불연속 접촉에서 같은 안정성을 보장하지 않는다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p006-figure-p0010-4-o01-9f404980">
+<img alt="원문 Figure 4, PDF 10쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a452894443f44316f5d93668.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.10</b> — Figure 4. Evaluation of the control policy in simulation. The plots show the tracking error of the control policy with the proposed online MBRL algorithm and a baseline using TD-MPC2 on unseen reference trajectory that consists of straight lines and circles. The dashed line represents the reference.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0010-5-o01-9224b1e0">
+<img alt="원문 Figure 5, PDF 10쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3ab2fa5ebe91b5455eedec00.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.10</b> — Figure 5. Real-world deployment results on the HEAP excavator. The plots show convergence, evaluation metrics, and adaptation to payload changes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0011-6-o01-ecb534e8">
+<img alt="원문 Figure 6, PDF 11쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/db33731356f5ba5cb9f87b90.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.11</b> — Figure 6. Real-world deployment results on the HEAP excavator at different training episodes. The plots show the tracking performance and adaptation over time.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0011-7-o01-fefd937a">
+<img alt="원문 Figure 7, PDF 11쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/cfbb208b3643ad5f4c3843dd.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.11</b> — Figure 7. Experiment on HEAP with changing payload conditions. The plots show loss evolution with different colors showing episodes collected under different payload conditions. The first episode after each payload change is highlighted with a dot.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0012-8-o01-1c5c9306">
+<img alt="원문 Figure 8, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4473d5debd968407d73adc4d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.12</b> — Figure 8. An example of online adaptation on HEAP with changing payload conditions. The plots show the tracking performance at (a) episode 156 with a small rock payload, (b) episode 157 right after switching to a large rock payload, and (c) episode 162 after a few episodes of adaptation.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0012-10-o01-0512fe84">
+<img alt="원문 Figure 10, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b1e88af1c4d4b0fffbd1a30c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.12</b> — Figure 10. Convergence of the online model-based RL algorithm on the soft robot arm.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0012-11-o01-f09e79ea">
+<img alt="원문 Figure 11, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/502801d98aa502f2ee8295cd.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.12</b> — Figure 11. Tracking performance of the control policy on the soft robot arm. The top plot shows the trajectory in the xy-plane over time, while the bottom plot shows the trajectory in the xy-plane.</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>regret 분석은 모델 학습과 정책 업데이트가 결합된 실제 비선형 신경망 과정 전체를 엄밀히 포괄하지 않는다.</li><li>주 검증 과제는 연속 궤적 추종이며 sparse reward, 접촉 전환, 충격이 있는 굴착 작업은 시험하지 않았다.</li><li>센서 outlier와 강한 노이즈가 model Jacobian 및 policy gradient에 미치는 내고장성은 충분히 다루지 않았다.</li><li>payload 변경 뒤 5 episode의 일시 성능 저하가 있으므로 안전-critical 운전에는 별도 보호 제어가 필요하다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>고차원 관측을 위한 latent dynamics와 perception encoder를 결합해 실제 굴착 상태를 다룬다.</li><li>기존 데이터의 pretraining과 expert demonstration을 이용해 초기 burn-in과 위험 탐색을 줄인다.</li><li>증가하는 mini-batch, robust loss, uncertainty를 도입해 noise·outlier·분포 급변에서 안정성을 높인다.</li><li>불연속 접촉과 sparse-reward 작업에서 이론 조건과 실기 성능을 확장 검증한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>실제 episode 손실을 모델 Jacobian으로 미분하고 제한된 전처리 update를 반복하며 동역학과 정책을 온라인 공동 학습한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>12.5 t 굴착기에서 180 episode·2.5시간 데이터로 평균 4.5 cm를 달성하고 payload 변화에 5 episode 안에 재적응했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>현재 결과는 연속 추종 중심이며 불연속 접촉, outlier, 초기 탐색 안전성과 완전한 결합 이론이 남는다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#제어·MPC</span><span>#온라인 동역학 학습</span><span>#replay buffer</span><span>#모델 미분 정책최적화</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 방법은 정밀 grading 제어의 모델 식별을 작업 중 계속 수행하는 학습 계층으로 볼 수 있다. 고정 hydraulic calibration이 장기적으로 변할 때 실제 추종 오차에서 모델과 정책을 함께 보정해 장비별 수동 튜닝 부담을 낮춘다.</p><p>Boulder excavation이나 ExT의 고수준 skill policy에 직접 적용하려면 연속 valve tracking에서 contact-rich reward로 확장해야 한다. 그 전 단계로 각 skill이 내는 reference를 저수준 온라인 학습기가 추종하는 계층 구조가 가장 자연스럽다.</p><ul><li>고수준 굴착 정책의 joint reference를 빠르게 추종하는 장비별 adaptive low-level controller로 연결할 수 있다.</li><li>센서리스 힘 추정값을 상태와 loss에 추가하면 payload·토양 저항 변화의 원인을 더 빨리 식별할 수 있다.</li><li>Holistic Fusion의 jump-free odometry와 결합하면 base motion이 있는 이동형 굴착기의 상태 분포 이동을 안정적으로 관측할 수 있다.</li><li>trust-region과 uncertainty 기반 safety filter를 결합해 payload 변화 직후의 일시 오차를 제한할 필요가 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p006-table-p0011-1-o01-39900836">
+<img alt="원문 Table 1, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d98fbcd549496a7b2200ac69.webp" tabindex="0"/>
+<figcaption><b>원문 Table 1 · PDF p.11</b> — Table 1. Trajectory tracking performance and comparison with previous approach. The data of the baseline methods is taken from Egli and Hutter (2022) and by reproducing the result in Nan and Hutter (2024) at a higher speed.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p006-figure-p0013-13-o02-c285d99f">
+<img alt="원문 Figure 13, PDF 13쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/bf2a92bf44691c3a870fa401.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 13 · PDF p.13</b> — Figure 13 shows the learning curve of the proposed algorithm with the model update at a reduced frequency of every 16 episodes, which shows a cyclic pattern of performance degradation and improvement with prolonged experiments. In this case, the prediction error stays at a higher level, suggesting the model is constantly unable to explain the data due to the slow update and data distribution shift, which leads to unstable learning of the control policy.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.4, p.5, p.6, p.7, p.8</li><li><b>실험</b>: p.9, p.10, p.11, p.12, p.13</li><li><b>결과</b>: p.10, p.11, p.12, p.13</li><li><b>한계</b>: p.14</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><a href="../notes/b856eea1a9027744.html" rel="noopener" target="_blank">ETH 자율굴착 최신 연구 동향 2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2025 Efficient model-based reinforcement learning for robot control via online optimization.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-005.html"><span class="lbl">← 이전 #5</span>유압장비 힘·적재량 추정</a><a class="next" href="paper-007.html"><span class="lbl">다음 #7 →</span>ExT 다중작업 굴착 사전학습</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

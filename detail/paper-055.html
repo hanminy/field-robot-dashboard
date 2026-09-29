@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#55 데이터 기반 유압 RL 제어 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #055</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2020</span><span class="badge">#055</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF</span></div>
+<h1>데이터 기반 유압 RL 제어</h1>
+<p class="title-en" lang="en">Towards RL-based hydraulic excavator automation</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 관절·밸브·엔진 회전수·유온 이력으로 4개 유압 액추에이터의 결합 동역학을 학습하고, 그 신경 시뮬레이터의 TRPO 정책이 파일럿 밸브 전류를 직접 출력해 12톤 굴착기의 말단을 안정화했으나 실험은 수평 차체의 2차원 자유공간에 한정된 무부하 sim-to-real이다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>기계별 유압 모델과 게인 튜닝을 데이터로 대체할 수 있는가</h3>
+<p>상용 유압 굴착기의 팔 위치제어는 유압 결합, 실린더 마찰, 밸브 데드존, 입력 지연 때문에 선형 제어기로 다루기 어렵다. 같은 모델의 장비라도 제작 공차와 마모가 다르고, 엔진 회전수와 오일 온도 및 작업 자세에 따라 응답이 달라진다. 특히 연구에 사용한 12 t Menzi Muck M545는 디퍼 링크가 비표준이고 붐 실린더가 캐빈 아래에 있어 전체 기구를 정밀 계측해 해석모델을 만드는 비용이 크다. 저자들은 이 문제를 기계별 모델 식별과 게인 조정이 아니라 운전 데이터로 흡수하는 제어 합성 문제로 바꾼다.</p><p>목표는 굴착기 링크 길이와 관절 상태만으로 삽 접촉점의 목표 위치를 주면, 정책이 네 개 팔 액추에이터의 파일럿 밸브 전류를 바로 생성하도록 하는 것이다. 실제 장비에서 모은 입출력 데이터로 비선형 액추에이터 모델을 지도학습하고, 그 모델을 고정한 시뮬레이터에서 강화학습 정책을 훈련한 다음 출력 필터나 사후 보정 없이 실차에 배치한다. 논문은 이를 전 크기 굴착기에 시뮬레이션 학습 RL 정책을 직접 배치한 최초 사례로 규정하며, 자유공간 위치 스텝과 원형 궤적을 통해 가능성을 검증한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p055-figure-p0002-1-o01-70c0683c">
+<img alt="원문 Figure 1, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ff19418b545ab494ca7dc4e9.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.2</b> — Fig. 1. Menzi Muck M545, a 12t hydraulic walking excavator.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p055-figure-p0003-2-o01-65bae575">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fe470899f7f778d947192094.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2. Non-standard dipper joint linkage on the Menzi Muck M545.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p055-figure-p0003-3-o01-1db730be">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/00b83beb0a008637802c10a3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3. Side view of the Menzi Muck M545 and its 4 main arm joints that are controlled to reach a desired shovel contact position relative to the cabin in task-space.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>PD/PID 제어는 특정 자세·엔진 속도·예열 상태에 맞춘 게인과 속도-밸브 전류 룩업테이블이 필요하며, 기준 자세에서 멀어질수록 성능이 저하된다.</li><li>고정밀 비선형 모델 기반 제어는 기구와 유압계의 해석모델을 요구하고, 많은 선행 실험은 상용 장비의 2단 파일럿 밸브가 아니라 고가의 메인단 서보밸브에 의존했다.</li><li>학습형 역동역학이나 온라인 신경제어 선행연구는 시뮬레이션에 머물거나 자유공간 추종오차가 컸고, 표준 굴착기가 직접 받을 수 있는 밸브 명령으로 실차 sim-to-real을 입증하지 못했다.</li><li>토양-도구 모델을 포함한 학습은 토양모델의 20~30% 오차 또는 높은 계산비용 때문에 RL용 대규모 시뮬레이션에 그대로 쓰기 어렵다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>4개 액추에이터의 결합효과를 하나의 MLP로 학습하고, 속도·명령 이력과 rpm·유온으로 지연과 운전조건 의존성을 표현했다.</li><li>학습된 액추에이터 모델을 물리 장비 대신 사용하는 신경 시뮬레이터를 만들고, TRPO 정책이 목표 삽 위치에서 파일럿 밸브 전류까지의 역기구학·역동역학을 함께 학습하게 했다.</li><li>2시간의 실차 데이터만으로 학습한 정책을 12 t 굴착기에 수정 없이 배치해 1 m 기준 스텝을 안정화하고, 학습하지 않은 연속 원형 궤적도 추종했다.</li><li>수동 튜닝 IK 제어기와의 정량 비교를 제시해 데이터 기반 정책의 현재 정확도와 기계별 설계 지식 절감이라는 장점을 동시에 드러냈다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>방법은 데이터 수집, 액추에이터 모델 학습, RL 제어기 학습, 실차 직접 배치의 네 단계다. M545의 붐·디퍼·텔레스코픽·삽 관절에 대해 관절 위치와 속도, 정규화된 밸브 명령, 엔진 회전수, 유압유 온도를 기록한다. 액추에이터 모델은 현재 관절속도만 베끼는 해를 피하도록 다음 속도 자체가 아니라 두 시점의 속도 차이를 예측하며, 예측 속도는 시간 적분해 관절 위치로 전개된다.</p><p>제어 정책은 목표 삽 접촉점과 현재 말단 상태, 액추에이터 모델과 동일한 상태·명령 이력을 관측하고 네 개 밸브 설정값을 출력한다. 10 s 에피소드마다 임의 자세와 유효 목표를 표본화하고, 데이터에서 관측된 범위의 유온과 엔진 rpm을 다시 표본화한다. 관절한계·자기충돌·지면충돌이면 -1로 종료하며, 목표거리 보상과 입력 크기·입력 변화 페널티를 결합해 안정적이고 매끄러운 제어를 유도한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>실차 계측과 탐색 명령</h4><p>Sick 드로와이어 센서로 실린더 변위를 0.01 mm 해상도로 읽고 미분해 속도를 얻는다. 붐·디퍼는 충돌을 피하도록 게임패드로 기본 신호를 주고, 텔레스코픽·삽은 무작위 램프를 사용한다. 여기에 최대 약 2 Hz의 진폭·주파수 변조 사인을 중첩해 2시간 동안 100 Hz로 작업영역을 탐색한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>결합 액추에이터 신경모델</h4><p>3개 은닉층과 층당 128 ReLU 노드인 단일 MLP가 네 관절을 함께 모델링한다. 최근 0.1 s 관절속도 이력, 0.99 s 밸브명령 이력, 현재 관절위치, 엔진 rpm, 유온에서 0.01 s 뒤 관절속도를 예측해 공동 유압공급에 의한 결합과 최대 0.7 s 입력지연을 포함한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>지도학습과 롤아웃 점검</h4><p>입력을 평균 0·표준편차 1로 정규화하고 Adam과 MSE로 단일 배치 20,000 epoch를 학습한다. 학습 90%와 검증 10%를 분리하고, 실차와 모델에 동일 명령을 주되 모델은 자기 예측상태로 전진시켜 장시간 누적오차와 지연 재현을 확인한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>TRPO 정책 최적화</h4><p>정책망과 가치망은 각각 2층·128 ReLU MLP다. TRPO와 GAE로 10 Hz 행동 정책을 학습하고 액추에이터 모델은 100 Hz로 적분한다. 할인율 0.99, 입력 크기 및 입력 변화 페널티, 200/400 반복 동안 1에서 10으로 증가하는 커리큘럼 계수를 사용한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>노이즈 주입과 운전조건 랜덤화</h4><p>관절 위치·속도, 말단 위치·속도, 엔진 rpm, 밸브 입력에 원문에 명시된 균등 백색잡음을 더하고 에피소드마다 유온과 rpm을 실측 범위에서 뽑는다. 학습 모델의 작은 편차와 실차 센서·구동 오차를 정책이 견디게 하는 단계다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>실차 직접 배치와 비교</h4><p>학습된 정책 출력을 보정 없이 Hawe PMZ 파일럿단 비례감압밸브에 전달한다. 정책은 학습 때 10 Hz였지만 실차에서는 100 Hz로 실행하며, 1 m 위치 스텝과 작업공간 여러 위치의 원형 궤적에서 수동 튜닝 계층형 IK 제어기와 비교한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>데이터 수집용 변조 사인 신호</h4><code>s(t)=0.3\sin(2\pi 0.02t+\phi_1)\,\sin(2\pi(t+0.99\sin(2\pi 0.1t)+\phi_2))</code><p>관절별 위상차를 둔 사인을 기본 명령에 중첩해 액추에이터 속도대역보다 넓은 약 2 Hz까지 자극하면서 작업영역을 덮는다.</p></div><div class="eq"><h4>RL 보상</h4><code>r_t=r_{g,t}+r_{u,t}+r_{r,t},\quad r_{g,t}=0.005(0.5+e^{-k_{c,1}\lVert\chi_t^*-\chi_t\rVert^2}),\quad r_{u,t}=-0.0005k_{c,2}\lVert u_t\rVert^2,\quad r_{r,t}=-0.025k_{c,2}\lVert u_t-u_{t-1}\rVert^2</code><p>목표 삽 위치 오차를 줄이되 큰 밸브입력과 급격한 입력변화를 벌한다. 마지막 항이 매끄러운 실차 명령에 특히 중요하며 커리큘럼 계수가 학습 난도를 점차 높인다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p055-figure-p0003-4-o01-3dbde91b">
+<img alt="원문 Figure 4, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/be0853c0ec10235dd4c398ba.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.3</b> — Fig. 4 shows an overview of our approach. First, an actuator model is trained based on input-output data collected</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p055-figure-p0004-5-o01-2827765a">
+<img alt="원문 Figure 5, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/990cec35a10573b938c48e10.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.4</b> — Fig. 5. Valve current setpoint command u ∈[−1, 1] (fully closed/open) for data collection (blue) consists of a base signal (red) that ensures coverage of the joint’s motion range and a modulated sine (yellow, see eq. 1).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p055-figure-p0005-6-o01-2e316347">
+<img alt="원문 Figure 6, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ff252b92a3de1527e8b0ebbf.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.5</b> — Fig. 6. Actuator model performance with joint velocities and inputs (top) and positions (bottom). Starting from the same state, the output of the model is compared to the measurements on the machine. The same inputs are applied to the model and the machine, the model however is rolled forward based on its own predicted states.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>지연·데드존·결합을 담는 이력 기반 액추에이터 모델</h3><p>핵심은 각 실린더를 독립 모델로 보지 않고 네 액추에이터를 하나의 네트워크에 넣는 것이다. 같은 펌프와 어큐뮬레이터에서 유량을 나누므로 여러 관절을 빠르게 움직일 때 엔진 rpm이 순간 저하되고 응답이 바뀐다. 속도·명령 이력과 rpm·유온을 함께 주고 속도 증분을 예측해 결합, 마찰, 지연과 항등복사 위험을 함께 다룬다.</p><ul><li>밸브 이력 0.99 s, 0.03 s 간격 표본</li><li>관절속도 이력 0.1 s</li><li>MLP 3×128 ReLU, 네 액추에이터 공동 출력</li><li>엔진 rpm·유압유 온도를 운전조건 변수로 포함</li></ul></article><article class="tech-card"><h3>말단 목표에서 파일럿 밸브까지 직접 학습하는 TRPO 정책</h3><p>정책은 별도 역기구학과 속도 PID 없이 목표 삽 위치에서 네 밸브 명령까지 직접 매핑한다. 여유자유도, 비선형 응답, 관절한계 회피를 함께 학습하며, 한계·충돌을 종료조건으로 경험해 IK 제어기가 텔레스코픽 한계에 닿은 원형 궤적에서도 급변을 피했다.</p><ul><li>TRPO actor-critic와 GAE</li><li>정책·가치망 각각 2×128 ReLU</li><li>10 s 무작위 목표 에피소드</li><li>출력 후 필터·수동 보정 없음</li></ul></article><article class="tech-card"><h3>표준 파일럿단 밸브를 유지한 실차 sim-to-real</h3><p>M545는 steer-by-wire가 아니므로 Hawe PMZ 비례감압밸브를 파일럿단에 병렬 장착했다. 고가 메인단 서보밸브 없이 정책이 전류 설정값을 직접 명령하며, 큰 위치 스텝과 학습하지 않은 원형 궤적을 추종했다. 다만 이는 수평 차체의 2차원 자유공간 sim-to-real 입증이다.</p><ul><li>12 t Menzi Muck M545</li><li>붐·디퍼·텔레스코픽·삽 4관절</li><li>실차 실행 100 Hz</li><li>삽 접촉점의 캐빈 상대 2D 위치제어</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p055-figure-p0004-4-o02-2619615b">
+<img alt="원문 Figure 4, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/00b1aa12084bd2cebaf8b93b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.4</b> — Fig. 4. Architecture overview. The actuator model is trained on input-output data collected on the machine. In simulation the actuator model replaces the physical machine to train a control policy with RL. The controller as well as the actuator model take a history of past states as inputs.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>12 t Menzi Muck M545 보행 굴착기, Hawe PMZ 파일럿단 전기비례밸브, Sick 드로와이어 변위센서, AMD Ryzen 9 3950X·32 GB RAM·RTX 2080S 학습 PC를 사용했다.</li><li>4개 팔 관절 위치·미분 속도, 밸브 설정값, 디젤 엔진 rpm, 유압유 온도를 수평 캐빈·일정 엔진 설정에서 2시간 동안 100 Hz로 수집했다.</li><li>실험 환경은 토양 접촉이 없는 자유공간이며, 말단 삽 접촉점은 캐빈 상대 x-z 평면에서 제어된다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>액추에이터 데이터는 90% 학습·10% 검증으로 나누고 항등 속도예측과 RMSE를 비교하며, 동일 명령열로 자기회귀 롤아웃을 정성 점검했다.</li><li>실차에서는 1 m x방향 위치 기준 스텝을 주어 안정화를 확인한 뒤, 작업공간 여러 위치에서 6개 원형 궤적을 5차 스플라인으로 시간척도화해 추종했다.</li><li>원형 궤적은 평균 말단속도 0.1 m/s, 최대 0.1875 m/s로 주고 학습 정책에는 100 Hz 위치목표만, IK 비교기에는 스플라인 위치와 속도를 함께 제공했다.</li></ul>
+<h3>비교 기준</h3><ul><li>액추에이터 모델은 현재 속도를 그대로 다음 속도로 내는 identity mapping과 비교했다.</li><li>궤적 추종은 실린더 속도 PID와 피드포워드 전류 룩업테이블, 기구학적 실린더-관절 변환을 수동 조정한 계층형 최적화 IK 제어기와 비교했다.</li></ul>
+<h3>평가 지표</h3><ul><li>관절속도 예측 RMSE(boom, dipper, telescope, shovel)</li><li>6개 원형 궤적의 평균·최대 Cartesian 위치오차</li><li>최대 Cartesian 속도와 정규화 성능지표 ρ=최대오차/최대속도의 궤적 평균</li><li>기준 스텝 및 원형 궤적의 안정성·관절한계 회피</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p055-figure-p0006-7-o01-72322f08">
+<img alt="원문 Figure 7, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f57994219fa120ff96d7f646.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.6</b> — Fig. 7. Shovel position reference step in x direction (top) and corresponding valve setpoints (bottom) relative to the cabin.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p055-figure-p0006-8-o01-2cd737f2">
+<img alt="원문 Figure 8, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2b94a67128647e53b8b4cba4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.6</b> — Fig. 8. Circular trajectory tracking in free-space (top). Distances are measured relative to the cabin position. Valve current setpoints generated by the learned controller (middle) and for the IK controller (bottom) for the circular trajectory starting at x=4.75m, z=0.69m.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>액추에이터 모델은 검증 데이터에서 네 관절 모두 항등 예측보다 낮은 속도 RMSE를 냈다. 특히 명령·속도 이력을 사용해 최대 0.7 s 응답지연을 재현했고, 텔레스코픽 롤아웃은 모델의 이전 예측을 다시 입력하는 조건에서도 넓은 동작범위에 걸쳐 실차 위치·속도와 가깝게 유지됐다. 이는 RL 환경이 단일 스텝 회귀뿐 아니라 연속 폐루프 학습에 사용할 만한 동특성을 담았다는 근거다.</p><p>학습 정책은 1 m 위치 스텝을 안정화했고 6개 원형 궤적을 직접 학습하지 않았는데도 평균 7.8 cm, 최대 13.5 cm 오차로 추종했다. 전용 IK 제어기의 1.4 cm·3.6 cm보다 정확도는 낮고 정규화 지표도 0.61 s 대 0.14 s로 불리하다. 저자들은 정책이 기준속도를 입력받지 않아 움직이려면 목표와 오프셋이 필요하다는 구조적 이유를 짚는다. 그럼에도 기계별 게인 조정 없이 2시간 데이터로 얻은 정책을 표준 파일럿 밸브 장비에 그대로 옮겨 안정 제어했다는 것이 주된 결과다.</p><p>실차 100 Hz 실행은 학습의 10 Hz보다 성능을 높였고, RL 정책은 IK가 명령 급변을 보인 텔레스코픽 관절한계를 피했다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>액추에이터 검증 RMSE</td><td>2.28, 2.10, 2.44, 7.96 ×10^-3 [rad 또는 m]/s</td><td>검증 10%에서 boom·dipper·telescope·shovel 순서; identity는 3.58, 4.00, 4.64, 11.36</td><td>PDF p.5</td></tr><tr><td>학습 정책 원형궤적 평균·최대 오차</td><td>7.8 cm / 13.5 cm</td><td>작업공간의 6개 원형 궤적 평균; IK는 1.4 cm / 3.6 cm</td><td>PDF p.6</td></tr><tr><td>정규화 성능지표 ρ</td><td>0.61 s</td><td>학습 정책; IK 비교기는 0.14 s</td><td>PDF p.6</td></tr><tr><td>데이터·액추에이터 모델 학습 시간</td><td>실차 데이터 2 h, 모델 약 10 h</td><td>100 Hz 수집과 20,000 epoch 지도학습</td><td>PDF p.4</td></tr><tr><td>실차 제어주기</td><td>100 Hz</td><td>10 Hz로 학습한 정책을 실차에서 100 Hz로 직접 실행</td><td>PDF p.6</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>RL 정책은 기준속도를 관측하지 않으므로 연속 궤적에서 이동을 만들기 위한 위치오프셋이 생겨 전용 IK보다 추종오차가 컸다.</li><li>현재 모델과 정책은 토양 접촉하중을 관측하지 않아 실제 굴착 중 힘 변화나 돌 충돌에 대한 성능을 보장하지 않는다.</li><li>캐빈 수평 가정으로 경사지의 중력방향 변화를 상태에 포함하지 못한다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>토양 상호작용이 없는 자유공간 실험뿐이며, 압력 또는 액추에이터 하중을 입력으로 사용하지 않았다.</li><li>캐빈 선회축을 제어하지 않아 네 팔 관절의 x-z 평면, 즉 2차원 말단 위치만 다룬다.</li><li>말단 자세와 기준속도를 명령하지 않아 전용 궤적제어기보다 원형 추종오차가 크다.</li><li>캐빈이 수평이라는 가정 때문에 거친 경사에서 중력방향 변화가 모델·정책 입력에 반영되지 않는다.</li><li>2시간의 한 장비 데이터로만 검증되어 장비 노화·적재·다른 굴착기 형식으로의 전이성은 실험하지 않았다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>정책 입력에 기준속도와 말단 자세 목표를 추가해 연속 궤적의 정상상태 오프셋을 줄인다.</li><li>캐빈 선회 액추에이터 모델을 추가해 삽의 임의 3차원 목표 위치를 팔과 선회축으로 분담한다.</li><li>IMU로 중력방향을 측정해 액추에이터 모델과 정책 상태를 확장하고 경사 차체 조건을 처리한다.</li><li>실린더당 압력센서 두 개로 부하를 계측하고 굴착 데이터를 수집해, 단순 토양모델과 동역학 랜덤화를 결합한 접촉 작업 RL로 확장한다.</li><li>실차 온라인 학습으로 새 데이터를 반영한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>실차 이력으로 네 유압 액추에이터의 결합 신경모델을 만들고 그 모델 안에서 TRPO 정책이 목표 삽 위치에서 파일럿 밸브 전류까지 직접 학습하게 했다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>수정 없는 sim-to-real로 12 t 굴착기의 1 m 스텝을 안정화하고 원형 궤적 평균 7.8 cm를 달성했으나, 전용 IK의 1.4 cm보다는 낮았다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>성과는 수평 차체·2차원·자유공간에 한정되며 토양 하중, 선회축, 기준속도·자세 명령 및 장비 간 일반화가 남았다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#제어·MPC</span><span>#신경 유압 액추에이터 모델</span><span>#강화학습</span><span>#sim-to-real</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>자율굴착 시스템 관점에서 이 논문은 작업계획보다 아래쪽의 유압 실행계층을 자동으로 만드는 방법을 제시한다. 상위 계획기가 버킷 위치·속도·힘 목표를 생성해도 파일럿 밸브의 데드존과 지연을 안정적으로 역변환하지 못하면 실차 성능이 무너진다. 실차 로그에서 만든 신경 액추에이터 모델을 정책 학습용 디지털 대리모델로 쓰는 구조는 장비별 제어기 튜닝 비용을 줄이는 현실적인 경로다.</p><p>다만 현 단계의 정책을 곧바로 굴착에 적용할 수는 없다. 접촉작업에서는 실린더 압력, 토양저항, 차체 자세와 지지상태가 필수 상태가 되고 안전 제약도 힘·관절·충돌 한계를 명시해야 한다. 따라서 이 연구는 힘 기반 굴착 상태기나 작업계획기와 결합될 저수준 데이터 기반 유압 제어 모듈로 보는 것이 정확하다.</p><ul><li>장비별 2시간 탐색 로그로 액추에이터 대리모델을 만들면 여러 굴착기 형식에 동일한 학습 파이프라인을 반복 적용할 수 있다.</li><li>밸브·속도 이력과 rpm·유온을 포함한 관측설계는 압력 이력과 중력방향을 더해 토양접촉용 정책으로 확장할 수 있다.</li><li>관절한계·충돌을 종료조건으로 학습한 방식은 상위 버킷 궤적을 실행할 때 저수준 정책이 기구학 한계를 피하도록 만드는 안전학습 단서가 된다.</li><li>전용 IK보다 낮은 정확도는 정책에도 기준속도·자세와 명시적 제약이 필요함을 보여준다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p055-table-p0005-ii-o01-07747d8a">
+<img alt="원문 Table II, PDF 5쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/be4676cf69dbabfc271f3080.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.5</b> — TABLE II ACTUATOR MODEL ERRORS.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p055-table-p0005-iii-o01-65d68457">
+<img alt="원문 Table III, PDF 5쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2913775d1cd0c2660e9cdc35.webp" tabindex="0"/>
+<figcaption><b>원문 Table III · PDF p.5</b> — TABLE III CONTROLLER INPUTS AND OUTPUTS.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.2, p.3</li><li><b>방법론</b>: p.4, p.5, p.6</li><li><b>실험</b>: p.5, p.6</li><li><b>결과</b>: p.5, p.6, p.7</li><li><b>한계</b>: p.7</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2020 Towards RL-based hydraulic excavator automation.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-054.html"><span class="lbl">← 이전 #54</span>지형 적응 전신 계획·제어</a><a class="next" href="paper-056.html"><span class="lbl">다음 #56 →</span>현장 자율 건설 로봇: 무감독 시공을 향하여</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

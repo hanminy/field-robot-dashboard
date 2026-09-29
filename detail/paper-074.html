@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#74 토공 장비 자동화의 핵심 과제 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Luleå University of Technology / ProcessIT Innovations · #074</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-other">Luleå University of Technology / ProcessIT Innovations</span><span class="badge">2016</span><span class="badge">#074</span><span class="badge score">서베이·산업동향</span><span class="badge">리뷰논문</span></div>
+<h1>토공 장비 자동화의 핵심 과제</h1>
+<p class="title-en" lang="en">Key Challenges in Automation of Earth-moving Machines</p>
+<p class="authors">Siddharth Dadhich, Ulf Bodin, Ulf Andersson · Automation in Construction 68 (2016) 212-222</p>
+</header>
+<main>
+<div class="oneliner"><b>한줄 요약</b> — 버킷-재료 상호작용의 불확실성 때문에 단일 고정궤적이나 정밀 토양모델만으로는 휠로더 적재를 자동화하기 어렵다는 진단 아래, 안전·생산성·통신·운전자 인터페이스를 포함한 전 시스템을 검토하고 당시 굴착 적용사례가 없던 모델프리 강화학습을 재료·장비 변화에 적응할 유망 경로로 제안한 2016년 리뷰다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>완전자율 적재가 늦어지는 이유를 기계 밖까지 확장해 묻다</h3>
+<p>휠로더와 지하광산 LHD는 토양·자갈·파쇄암을 가까운 덤프트럭이나 컨베이어로 옮기는 단주기 적재를 반복한다. 작업은 짧지만 버킷이 재료와 강하게 접촉하고 장비 자체도 V-Y 경로로 계속 이동한다. 논문은 장비 기구모델과 이동항법보다 버킷-재료 상호작용, 특히 비균질 파쇄암이 완전자율의 가장 어려운 부분이라고 본다.</p><p>2016년까지 약 30년간 자동화 연구가 이어졌지만 상용 완전자율 mobile earth-moving machine의 실증은 보고되지 않았다는 문제에서 출발한다. 정확한 pile model은 매 scoop 뒤 바뀌고, 큰 저항력은 유압구동기를 포화시키며 wheel slip까지 일으킨다. 따라서 단순 위치궤적은 낮은 밀도 재료에서는 가능해도 파쇄암에서는 일반해가 되기 어렵다.</p><p>논문은 자율화를 기계측 제어만의 문제로 좁히지 않는다. 원격운전에서는 영상·음향·진동·상태정보를 무선으로 보내야 하고 지연·손실·jitter가 운전자와 제어 성능을 바꾼다. HMI는 정보를 많이 보여주는 것이 아니라 필요한 정보만 지연 없이 제시해야 한다. 이 때문에 저자들은 완전자율을 단기 목표로 보기보다 보조 원격운전을 산업경험과 데이터를 축적할 수 있는 중요한 중간 단계로 제시한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p074-figure-p0003-1-o01-f94bf59c">
+<img alt="원문 Figure 1, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/77848bbec63ce49b7a5e5a8a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.3</b> — Fig. 1. Components of tele-remote operation of earth-moving machine.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p074-figure-p0003-2-o01-549836f6">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/59252b30618f5e9858425965.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2. Short loading cycle. The steps performed by a wheel loader in one operation cycle are as follows: 1: Approach to the pile, 2: Loading, 3: Retract from the pile 4: Approach the dumper, 5: Dumping, 6: Retract from the dumper.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>버킷-재료 상호작용과 변화하는 더미 형상을 실시간으로 정확히 모델링할 수 없다.</li><li>고정 위치궤적은 고밀도 파쇄암의 큰 저항력에서 actuator saturation과 wheel slip을 일으킨다.</li><li>순응·퍼지·규칙·전향 제어의 결과가 서로 다른 장비와 토질에서 보고되어 직접 우열 비교가 어렵다.</li><li>자동 hauling은 산업적 성숙도가 높지만 자동 bucket loading은 인간 숙련자 수준의 충전률·시간·연료성능을 달성하지 못했다.</li><li>원격운전 연구는 통신계층과 운전자 경험을 기계 보조기능과 통합해 평가한 증거가 부족했다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>단주기 적재의 자동화 수준, 절차, 안전·성능 요구를 하나의 문제분해로 제시했다.</li><li>자동적재를 위치, 순응, 전향, AI, 강화학습의 다섯 접근으로 평가했다.</li><li>pile characterization, 항법, 경로계획, 통신, HMI, IoT까지 자동화 범위를 확장했다.</li><li>Kiruna 광산의 수동·보조 원격 LHD 생산자료를 이용해 중간 자동화 단계의 이점과 격차를 함께 보였다.</li><li>파쇄암, 원격통신 성능, 운전자 경험을 핵심 지식공백으로 정리하고 모델프리 deep RL을 후속 후보로 제안했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>이 논문은 Automation in Construction에 출판된 리뷰로, 휠로더·LHD의 단주기 적재를 공통 작업골격으로 삼아 기존 연구를 정리한다. 수동에서 완전자율까지 5단계를 정의하고, 한 cycle을 더미 접근·적재·후진·덤프트럭 접근·덤프·복귀로 분해한다. 각 단계에 필요한 보조기능과 안전·성능 요구를 배치해 개별 기술의 위치를 비교한다.</p><p>기계측 문헌은 기구·유압 및 bucket-media 모델링, 자동적재 전략, pile characterization, 위치추정·항법, 경로계획으로 분류한다. 원격측 문헌은 무선 네트워크, end-to-end transport, HMI, task planning으로 분류하며 powertrain, 시뮬레이션, CPS·IoT를 보완영역으로 포함한다. 마지막으로 성숙한 연구와 현장검증이 부족한 영역을 대조해 지식공백과 향후 시스템구성을 제안한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>자동화 성숙도 정의</h4><p>수동, 현장 가시권 원격, 원거리 원격, 보조 원격, 완전자율의 5단계로 사람과 기계의 역할을 구분한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>단주기 작업분해</h4><p>25~30초 범주의 적재주기를 6개 절차로 나누고 각 단계에 위치선정·항법·버킷준비·적재·덤프 기능을 배치한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>요구사항과 산업사례 분석</h4><p>충돌·wheel slip 같은 안전요구와 충전률·연료효율·주기시간을 정리하고 Kiruna LHD 수동·보조 원격 자료를 비교한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>자동적재 접근 비교</h4><p>위치, 순응, 전향, AI, 강화학습을 모델 의존성·센싱·적응성·실험매체 관점에서 평가한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>통신·HMI 검토</h4><p>WLAN·4G의 변동성, TCP·UDP·SCTP·DCCP·TFRC 특성, 다중감각 원격 HMI와 task planner를 검토한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>지식공백과 미래 시스템 제시</h4><p>파쇄암 학습, 통신 프로토콜, 운전자 감각을 우선 공백으로 정하고 RL, SLAM, machine-to-machine 협조, 보조 원격운전을 후속 방향으로 제시한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"></div>
+<figure class="source-figure figure-asset" data-figure-id="p074-figure-p0005-3-o01-ac0273a8">
+<img alt="원문 Figure 3, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5e1df08a5d600441b53c6c19.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.5</b> — Fig. 3. Control block diagram of a loading process. Gi is the transfer function for i = c (controller), m (machine), p (process/pile) and s (sensors).</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>자동적재 전략의 다섯 갈래</h3><p>위치제어는 계획경로를 따르지만 더미 내부가 보이지 않고 비균질 재료에서 실행가능 경로를 미리 알 수 없다. 순응제어는 bucket cylinder pressure나 힘으로 경로를 바꾸며, 전향제어는 토양력을 외란으로 간주해 미리 보상한다. AI는 전문가 규칙을 퍼지·신경망으로 옮기고, 강화학습은 모델 없이 환경과 상호작용해 행동을 찾는다.</p><p>저자들은 2016년 당시 로봇 굴착에 RL이 적용된 사례를 알지 못한다고 명시하면서도 작업이 episodic이고 scoop 사이 계산시간이 있어 실시간 제약이 상대적으로 덜하며, 숙련자 데이터를 imitation learning의 초기정책으로 쓸 수 있다고 본다. 다만 모델프리라는 이유만으로 최적성이나 안전을 보장하지는 않는다고 선을 긋는다.</p><ul><li>낮은 밀도 재료에는 위치제어가 가능하지만 파쇄암에는 불충분</li><li>순응제어는 저항력 기반 궤적수정에 적합</li><li>전향제어는 반복력에 유리하나 일반 토질 예측오차가 남음</li><li>RL은 재료·장비 변화 대응 후보지만 당시 굴착 직접 적용증거 없음</li></ul></article><article class="tech-card"><h3>안전·생산성 요구의 정량 프레임</h3><p>안전에는 사람 접근, wheel slip, 벽·암석·차량 충돌, 도랑 진입이 포함된다. 레이저·레이더 항법은 성숙했지만 분진과 안개에서 성능이 떨어질 수 있다. wheel slip은 적재 시 큰 저항력에 운전자가 과도한 throttle을 넣을 때 발생하며 타이어와 운용비를 악화시킨다.</p><p>생산성은 충전률을 주기시간으로 나눈 물질처리율과 연료효율을 함께 봐야 한다. 원격 LHD가 수동보다 bucket weight가 낮았던 Kiruna 사례는 부분 자동화가 특정 하위지표는 개선해도 전체 인간 성능을 바로 넘지는 못한다는 점을 보여준다.</p><ul><li>충전률, 연료효율, 주기시간을 공동 평가</li><li>실린더 압력으로 bucket weight 추정 가능</li><li>짧은 주기와 연료소비 사이 trade-off</li><li>보조기능 효과와 전체 생산성 격차를 구분</li></ul></article><article class="tech-card"><h3>원격운전의 실시간 통신 설계</h3><p>원격 운전에는 제어명령 상향과 video, audio, sensor vibration, monitoring data 하향 스트림이 공존한다. WLAN과 LTE-Advanced는 높은 명목속도를 제공하지만 광산의 다중경로와 간섭 때문에 실제 용량이 변하고, 포화 시 queue와 link retransmission이 큰 지연·jitter를 만든다.</p><p>TCP는 손실 패킷 재전송과 순서보장 때문에 head-of-line blocking을 일으키고 UDP는 혼잡제어가 없어 네트워크를 과부하시킬 수 있다. SCTP의 unordered delivery, multihoming, partial reliability와 DCCP·TFRC의 rate control이 대안으로 검토되며 mission-critical stream에는 QoS 우선순위가 필요하다.</p><ul><li>통신부하는 항상 가용 무선용량보다 충분히 낮게 설계</li><li>제어·안전 메시지를 영상보다 우선 전송</li><li>SCTP multihoming으로 WLAN 장애 시 4G 전환 가능</li><li>오래된 영상·제어메시지는 partial reliability로 폐기 가능</li></ul></article><article class="tech-card"><h3>Pile 인지와 이동계획의 결합</h3><p>stereo vision과 laser는 다음 scoop의 attack pose, 장기 작업계획, 큰 암석 검출, 버킷 충전률 추정에 사용된다. 단주기 항법에서는 wheel loader와 dump truck의 상대위치, 벽과 바위 회피, 울퉁불퉁한 지면의 3D 관계가 중요하다.</p><p>미래 시스템은 SLAM으로 발파 뒤 계속 변하는 현장의 최신 지도를 만들고, loader와 dumper가 machine-to-machine 통신으로 경로와 점유를 조정해야 한다. 이는 자동적재 알고리즘만이 아니라 site management와 유지보수까지 연결되는 CPS 구조다.</p><ul><li>더미 형상·암석분포·적재위치를 시각·LiDAR로 추정</li><li>2D보다 3D 상대위치가 단주기 지면변화에 적합</li><li>SLAM 지도를 장비와 현장관리 시스템에 공유</li><li>CAN·추가 센서 데이터를 IoT 기반 상태감시와 연결</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p074-figure-p0007-4-o01-7f370eec">
+<img alt="원문 Figure 4, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7e6b7b170bf09604034b287c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.7</b> — Fig. 4. Data Streams between mobile machine and remote control station.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>새로운 독립 장비실험을 수행한 논문이 아니라 문헌리뷰와 기존 Kiruna 광산 생산사례를 분석한 연구다.</li><li>대상 플랫폼은 건설·광산 휠로더와 지하 LHD이며, 매체는 토양·자갈·파쇄암이다.</li><li>정량 사례는 1999~2009년 Kiruna 지하광산의 tele-remote·semi-automatic LHD 운영과 1년 생산자료를 인용한다.</li><li>자동적재 문헌은 굴착기·휠로더의 위치·순응·전향·AI 접근과 전규모 운전자 연구를 비교한다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>자동화 5단계와 단주기 6절차를 정의해 기존 기술을 기능별로 배치한다.</li><li>안전·충전률·연료효율·주기시간 요구를 기준으로 문헌과 산업사례를 해석한다.</li><li>자동 bucket loading 방법을 모델 의존성, 실험재료, 센서요구, 적응성 관점에서 비교한다.</li><li>원격운전은 무선링크, transport protocol, HMI, task planning으로 나누어 위험과 후보해법을 정리한다.</li><li>연구가 많은 영역과 직접 현장증거가 부족한 영역을 대조해 지식공백을 도출한다.</li></ul>
+<h3>비교 기준</h3><ul><li>수동 LHD와 tele-remote·semi-automatic LHD</li><li>순수 원격 scoop과 자동 boom·bucket 보조 scoop</li><li>위치·순응·전향·AI·강화학습 적재전략</li><li>TCP·UDP·SCTP·DCCP·TFRC 전송특성</li><li>굴착기 중심 연구와 이동성이 큰 휠로더·LHD 연구</li></ul>
+<h3>평가 지표</h3><ul><li>평균 bucket weight와 fill factor</li><li>연료효율·operation cost 비중</li><li>short loading cycle time</li><li>무선 throughput·delay·jitter·loss</li><li>운전자 경험과 수동운전 대비 생산성</li></ul>
+<h3>핵심 결과 해석</h3><p>Kiruna 사례에서 보조기능은 순수 tele-remote scooping보다 두 시험장비의 평균 bucket weight를 거의 5% 높였다. 그러나 1년 생산자료의 평균 bucket weight는 수동 LHD 26.7톤, semi-automatic LHD 23.3톤으로 여전히 수동이 높았다. 저자들은 발파 파쇄도와 큰 암석이 bucket 내부 공극을 바꾸므로 이 값들을 절대적인 알고리즘 성능치가 아니라 산업지표로 해석해야 한다고 경고한다.</p><p>자동적재 방법 가운데 어떤 접근도 인간 숙련자를 일반적으로 능가했다고 결론낼 수 없었다. 위치제어는 파쇄암 저항력에서 취약하고, 순응제어는 힘센싱과 튜닝이 필요하며, 전향제어는 모델오차에 노출된다. 퍼지·신경망은 전문가 지식을 옮기지만 그 행동이 기계적으로 최적인지 보장하지 않는다. RL은 유망하지만 당시 굴착 직접 적용과 현장 안전증거가 없었다.</p><p>리뷰의 가장 강한 결론은 완전한 단주기 자동화가 단·중기에는 실현 가능성이 낮으며, 보조 원격운전이 유효한 전환단계라는 것이다. 향후 자동적재는 재료와 장비 변화에 적응해야 하고, LiDAR 기반 pile 인지, SLAM, loader-dumper 통신, QoS가 보장된 무선링크, 최소정보 HMI, 현장관리 시스템이 하나의 운영체계로 결합되어야 한다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>보조 적재기능의 bucket weight 개선</td><td>거의 5%</td><td>Kiruna 광산의 두 LHD에서 순수 tele-remote scooping 대비 자동 boom·bucket 보조기능 사용 시; 인용 산업사례</td><td>PDF p.3</td></tr><tr><td>1년 평균 bucket weight</td><td>수동 26.7 ton, semi-automatic 23.3 ton</td><td>Kiruna 광산의 수동 LHD 8대와 semi-automatic LHD 5대 생산자료; 파쇄도 차이 때문에 지표로 해석</td><td>PDF p.4</td></tr><tr><td>단주기 적재시간</td><td>25~30 s</td><td>가까운 dumper에 입상재료를 적재하는 선행문헌 값</td><td>PDF p.2</td></tr><tr><td>연료의 운용비 기여</td><td>적재물 단위 운용비의 약 30~60%</td><td>휠로더 operator-assistance 선행연구에서 인용한 범위</td><td>PDF p.4</td></tr><tr><td>WLAN 포화 시 buffer delay</td><td>300 ms 초과 가능</td><td>IEEE 802.11n 송신 인터페이스가 최대 1,600 datagram을 buffer하는 선행 통신연구 사례</td><td>PDF p.7</td></tr><tr><td>인간의 audio delay 허용</td><td>최대 약 400 ms</td><td>원격운전 통신공백에서 인용한 인간 지각 한계</td><td>PDF p.9</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>자동 적재보조가 bucket weight를 높여도 수동 LHD의 연평균 적재량에는 미치지 못했다.</li><li>파쇄가 불량해 큰 암석과 공극이 많으면 bucket weight가 낮아져 제어성능과 재료상태의 효과를 분리하기 어렵다.</li><li>고정궤적은 파쇄암에서 유압 포화와 wheel slip을 일으킬 수 있다.</li><li>P-ILC와 같은 전향보상은 균질토양 시험에서는 유효해도 파쇄암으로 일반화하기 어렵다.</li><li>WLAN 용량저하와 큰 buffer는 영상·제어 지연을 만들고 TCP와 UDP 모두 원격 실시간성에 고유한 단점이 있다.</li><li>분진·안개에서 레이저·레이더 성능이 저하되고, remote HMI의 과도한 정보는 운전자 스트레스를 높일 수 있다.</li><li>RL은 모델프리여도 최적성과 안전을 보장하지 않으며 당시 굴착 현장검증이 없었다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>정량사례가 저자들의 통제실험이 아니라 Kiruna 산업자료와 선행문헌에서 인용되어 조건통제가 제한된다.</li><li>문헌검색·선정·품질평가의 재현 가능한 절차와 포함 논문 수가 제시되지 않는다.</li><li>휠로더·LHD 단주기 적재에 강하게 기울어 굴착기의 정밀 grading, 장거리 earthwork, 다중 패스 설계면 추종은 충분히 다루지 않는다.</li><li>리뷰 시점이 2016년이므로 이후 deep RL, foundation policy, 고충실도 GPU 토양시뮬레이션, 대규모 현장 데이터가 포함되지 않는다.</li><li>강화학습은 유망성만 논증하며 굴착 적용 실험이나 안전제약 설계를 제시하지 않는다.</li><li>통신 후보프로토콜의 실제 광산 네트워크 비교결과와 운전자 workload 실험이 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>재료·장비 차이에 적응하면서 인간과 동등 이상의 충전률·시간·연료성능을 내는 학습 기반 자동적재가 필요하다.</li><li>파쇄암 크기분포를 직접 인지하고 실제 전규모 LHD에서 순응·학습 제어를 비교해야 한다.</li><li>SLAM 최신지도와 loader-dumper machine-to-machine 통신으로 협조항법·경로계획을 구현해야 한다.</li><li>SCTP·DCCP·TFRC·QoS 조합을 실제 무선환경의 지연·손실·jitter와 안전사건으로 검증해야 한다.</li><li>운전자에게 필요한 영상·음향·진동·haptic 정보의 최소 조합과 workload를 정량화해야 한다.</li><li>보조 원격운전에서 자동기능의 권한·fallback·운전자 override를 명시한 shared-autonomy 체계가 필요하다.</li><li>CPS·IoT 상태감시와 predictive maintenance를 자율운영·현장관리 시스템에 통합해야 한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>단주기 적재를 작업·자동화·안전·성능 단계로 나누고 자동적재, 인지, 항법, 통신, HMI 문헌과 Kiruna 산업사례를 비교한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>보조 적재가 원격 scoop을 개선하지만 수동 성능에는 미달했으며, 파쇄암·통신·운전자 경험이 핵심 미해결 영역으로 남았다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>리뷰와 인용 사례 중심이어서 강화학습·통신 대안·통합 shared autonomy의 실제 성능과 안전성은 직접 검증되지 않았다.</p></div></div>
+<div class="kw"><span>#서베이·산업동향</span><span>#학습·RL·IL·VLA</span><span>#안전·HRI</span><span>#literature review</span><span>#short-loading-cycle decomposition</span><span>#knowledge-gap analysis</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 논문이 제안한 RL 방향은 현재 기술로 구체화할 수 있지만, 리뷰가 경고한 시스템 문제를 잊어서는 안 된다. 정책은 bucket motion만 학습하는 것이 아니라 fill factor, cycle time, fuel, slip, collision을 함께 보상에 넣고 압력·안정성 제약을 별도 안전층으로 가져야 한다. 파쇄암 크기와 더미 형상에 따른 정책 조건화도 필수다.</p><p>원격감독과 완전자율을 이분법으로 나누지 않고 통신상태와 불확실성에 따라 권한을 전환하는 shared autonomy가 자연스러운 후속 구조다. 정상 링크에서는 사람이 attack pose를 승인하고, 순간 지연에서는 로컬 적재기가 계속하며, 인지·힘 예측의 불확실성이 커지면 안전정지와 재요청으로 전환하는 상태기계를 설계할 수 있다.</p><ul><li>파쇄암 point cloud·압력·slip을 관측하는 안전제약 RL 적재정책</li><li>fill factor·cycle time·fuel을 함께 쓰는 다목적 보상과 Pareto 평가</li><li>통신 QoS와 정책 불확실성에 따른 수동-보조-자율 권한 전환</li><li>loader와 dumper의 상대 3D 위치·점유시간을 공유하는 협조계획</li><li>운전자 workload·override·near-miss까지 포함한 현장 HRI 검증</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p074-table-p0003-1-o01-67ae2fe9">
+<img alt="원문 Table 1, PDF 3쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c5bc42d3f2811b60cd7bad58.webp" tabindex="0"/>
+<figcaption><b>원문 Table 1 · PDF p.3</b> — Table 1 Steps in assisted remote-control operation for a short loading cycle.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p074-table-p0004-2-o01-0ce57e66">
+<img alt="원문 Table 2, PDF 4쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/efdf2ad4b476c5255994d696.webp" tabindex="0"/>
+<figcaption><b>원문 Table 2 · PDF p.4</b> — Table 2 Comparison of manual operation and tele-remote operation in terms of loaded bucket weight averaged over one year (Data from LKAB Mine, Kiruna) [10].</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3, p.4</li><li><b>방법론</b>: p.2, p.3, p.4, p.5, p.6, p.7, p.8, p.9</li><li><b>실험</b>: p.3, p.4, p.5, p.6</li><li><b>결과</b>: p.3, p.4, p.5, p.6, p.7, p.8, p.9, p.10</li><li><b>한계</b>: p.6, p.7, p.8, p.9, p.10</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2016 Key challenges in automation of earth-moving machines.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-073.html"><span class="lbl">← 이전 #73</span>거친 지형 계층형 주행계획</a><a class="next" href="paper-075.html"><span class="lbl">다음 #75 →</span>미래 지형 조성: 굴착기 자율 랜드스케이핑 제어 아키텍처</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

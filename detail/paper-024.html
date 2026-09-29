@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#24 LPV-MPC를 이용한 자율 휠로더 궤적 추종 제어 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #024</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2022</span><span class="badge">#024</span><span class="badge score">제어·MPC</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>LPV-MPC를 이용한 자율 휠로더 궤적 추종 제어</h1>
+<p class="title-en" lang="en">Autonomous Wheel Loader Trajectory Tracking Control Using LPV-MPC</p>
+<p class="authors">Ruitao Song, Zhixian Ye, Liyang Wang, Tianyi He, Liangjun Zhang</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html">Baidu 자율굴착 논문 핵심 분석 2019-2024</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 저속 휠로더의 무슬립 기구학과 굴절각·장애물 제약으로 NL-MPC 기준 궤적을 먼저 만들고, 전진 때 전차체·후진 때 후차체 좌표를 선택하는 LPV-MPC로 5Hz 추종해, 비선형 MPC에 가까운 0.120m 평균 오차와 선형 QP 수준의 온라인 계산 효율을 함께 얻은 계획·제어 프레임워크다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>굴절조향 비선형성과 실시간 계산량 사이의 절충</h3>
+<p>휠로더는 pile과 dump truck 사이를 전진·후진하며 Y자 loading cycle을 반복한다. 전·후 차체가 힌지와 유압 조향장치로 연결돼 회전반경은 작지만 운동은 강한 비선형을 띤다. 적재·하역 지점에서는 위치뿐 아니라 heading과 articulated angle이 접근 자세를 결정하므로 중심선만 따라가는 제어로는 부족하다.</p><p>비선형 MPC는 기구학과 제약을 예측구간 전체에 반영하지만 매 주기 비선형 프로그램을 풀기 무겁다. 반대로 현재 운전점의 선형화를 고정하는 adaptive LTI-MPC는 빠르지만 heading과 굴절각이 변할 때 예측이 부정확하다. 저자들은 무거운 NL-MPC는 오프라인 계획에, nominal trajectory의 Jacobian 열을 쓰는 LPV-MPC는 온라인 추종에 배치한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p024-figure-p0002-1-o01-abd94538">
+<img alt="원문 Figure 1, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7ba561fc812fe163d9bcbb34.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.2</b> — Figure 1: A typical loading cycle of the wheel loader.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p024-figure-p0003-2-o01-664394ac">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8fd3b9a21ceb06361be8db5b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Figure 2: The wheel loader model used for planning and control design.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>Reeds-Shepp·A*·RRT 계열 계획은 전체 기구학과 굴절각을 충분히 반영하지 않아 추종이 어렵다.</li><li>현재점 선형화를 horizon에 고정한 MPC는 비선형 변화가 큰 구간에서 성능을 잃는다.</li><li>일부 제어 연구는 articulated angle을 평가하지 않아 적재·하역 자세 품질을 설명하지 못한다.</li><li>온라인 NL-MPC는 prediction horizon이 길어질수록 계산시간이 빠르게 증가한다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>오프라인 NL-MPC 계획과 온라인 LPV-MPC 추종으로 전체 Y자 작업주기를 구성했다.</li><li>비선형 기구학을 nominal scheduling parameter에 담은 quasi-LPV 오차모델을 유도했다.</li><li>전진·후진 방향에 따라 전차체·후차체 좌표를 바꿔 반대 차체의 오차 누적을 줄였다.</li><li>AGX Dynamics에서 NL·LPV·adaptive LTI-MPC의 정확도와 계산량을 동일 조건으로 비교했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>계획기는 loading·unloading pose, pile·truck 사각 장애물, 상태·입력·굴절각·안전거리 제약을 받아 두 Y자 구간을 만든다. 첫 구간은 pile에서 후진한 뒤 truck으로 전진하고, 두 번째는 truck에서 후진해 pile로 복귀한다. 비용은 제어입력과 입력 변화량을 줄이며, 이동 장애물을 가정하지 않아 작업 전 오프라인으로 계산한다.</p><p>추종기는 nominal state-control point마다 비선형 모델을 1차 Taylor 전개하고 Jacobian의 비선형 항을 ρ로 묶는다. 예측구간의 A(ρ), B(ρ)가 계획 결과에 있으므로 tracking error와 control deviation의 QP를 receding horizon으로 푼다. 위치·heading·굴절각은 GPS·IMU·encoder로 측정하고, 속도와 굴절각속도 명령을 하위 제어기로 보낸다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>저속 기구학 정의</h4><p>slip angle과 횡력을 무시하고 상태를 [xr,yr,θ,γ] 또는 [xf,yf,θ,γ], 입력을 v와 γ̇로 둔다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>작업주기 분해</h4><p>pile 후진, truck 접근·하역, truck 후진, pile 접근의 네 단계와 경계 pose를 정의한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>오프라인 NL-MPC</h4><p>제어량·변화량 비용과 비선형 기구학, 상태·입력·굴절각·장애물 안전거리 제약으로 기준 궤적을 계산한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>Nominal Jacobian 열</h4><p>계획된 (x*,u*) 각 점에서 A(x*,u*), B(x*,u*)를 구해 ρ에 의존하는 LPV 모델로 표현한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>LPV-MPC QP</h4><p>예측구간의 ρ 열을 읽어 상태오차·제어편차 비용과 δX·δU 제약을 풀고 첫 입력만 적용한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>방향별 상태 전환</h4><p>전진 step 2·4는 전차체, 후진 step 1·3은 후차체 좌표를 쓰고 작업점에서 제어기를 전환한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>속도·조향 실행</h4><p>LPV-MPC의 γ̇는 조향에, vref는 Stanley 계열 속도제어기의 가감속·gear 명령에 사용한다.</p></div><div class="pipeline-card"><span class="step-num">8</span><h4>고충실도 평가</h4><p>Matlab/Simulink 제어기와 AGX 토양·타이어·구동계 plant를 연동해 추종오차와 solve time을 비교한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>굴절조향 기구학 (Eq.1)</h4><code>\dot{x}_r=v_r\cos\theta,\quad \dot{y}_r=v_r\sin\theta,\quad \dot{\theta}=\frac{v_f\sin\gamma-L_r\dot{\gamma}\cos\gamma}{L_f\cos\gamma+L_r}</code><p>후차체 위치와 heading 변화를 나타내며 Lf·Lr는 힌지에서 앞·뒤 axle까지 거리다.</p></div><div class="eq"><h4>이산 비선형 모델 (Eq.3)</h4><code>x(k+1)=x(k)+T_s f\bigl(x(k),u(k)\bigr)</code><p>Euler 이산화이며 계획과 추종 모두 Ts=0.2초를 사용한다.</p></div><div class="eq"><h4>오프라인 NL-MPC (Eq.4)</h4><code>\min_U\sum_{i=0}^{N-1}\!\left(\lVert Ru(i|k)\rVert^2+\lVert R_d\Delta u(i|k)\rVert^2\right),\quad D_{sf}^2-D^2(x(i|k))&lt;0,\quad -\gamma_{max}&lt;\gamma&lt;\gamma_{max}</code><p>입력과 변화량을 줄이면서 pile·truck 안전거리, 굴절각, 시작·종료 및 상태·입력 제약을 만족한다.</p></div><div class="eq"><h4>LPV 오차 동역학 (Eq.9)</h4><code>x_e(k+1)=A(x^*(k),u^*(k))x_e(k)+B(x^*(k),u^*(k))u_e(k)</code><p>nominal trajectory 주변 오차를 선형 시변 형태로 전개하고 비선형 항을 ρ로 다룬다.</p></div><div class="eq"><h4>LPV-MPC 비용 (Eq.10)</h4><code>\min_{U_e}\;\lVert Q_f x_e(N|k)\rVert^2+\sum_{i=0}^{N-1}\!\left(\lVert Qx_e(i|k)\rVert^2+\lVert Ru_e(i|k)\rVert^2\right)</code><p>예측구간의 위치·heading·굴절각 오차와 제어편차를 줄이는 QP다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p024-figure-p0006-3-o01-6a707cf3">
+<img alt="원문 Figure 3, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/eedfa61a35c1eda7bb40368d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.6</b> — Figure 3: Overall architecture of the wheel loader trajectory planning and tracking control system.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>비선형 계획과 선형시변 추종의 역할 분리</h3><p>계획 시점에는 안전거리·굴절각·경계 pose를 포함한 비선형 문제를 풀어 실행 가능한 nominal trajectory를 만든다. 실행 중에는 그 주변의 작은 오차만 LPV QP로 다룬다. 정적인 작업구역에서 큰 계산을 선행하고 제어주기에는 예측정확도를 보존하는 설계다.</p><ul><li>계획 horizon N=100, Ts=0.2초, 최대 굴절각 0.40rad를 사용했다.</li><li>추종 horizon은 N=10이고 5Hz로 실행했다.</li><li>미래 ρ를 모르는 계획 전에는 LPV-MPC를 직접 쓰기 어렵다.</li></ul></article><article class="tech-card"><h3>Scheduling parameter로 보존한 비선형성</h3><p>adaptive LTI-MPC는 현재점 모델을 horizon에 고정하지만 LPV-MPC는 nominal sequence의 각 점에서 다른 Jacobian을 사용한다. heading과 articulated angle이 변해도 A(ρ), B(ρ)에 기구학 변화가 남는다. 실제 상태가 nominal 근방이라는 전제에서 NL-MPC보다 가볍고 LTI보다 정확한 예측을 얻는다.</p><ul><li>tracking error xe=x-x*, control deviation ue=u-u*를 최적화한다.</li><li>LPV와 LTI는 매 step QP를 풀어 계산복잡도가 유사하다.</li><li>NL-MPC는 nonlinear programming 때문에 horizon 증가에 더 민감하다.</li></ul></article><article class="tech-card"><h3>진행 방향에 맞춘 차체 좌표 선택</h3><p>한 차체 위치만 비용에 넣으면 다른 차체 오차가 heading·굴절각을 통해 커질 수 있다. 전진 중에는 선두인 전차체, 후진 중에는 선두가 되는 후차체를 직접 추종하면 반대 차체가 자연스럽게 따라온다. loading·unloading·turning point에서 표현을 바꾸는 실용적 안정화 장치다.</p><ul><li>전진은 (xf,yf), 후진은 (xr,yr)를 상태에 쓴다.</li><li>heading과 articulated angle은 두 표현 모두에 포함된다.</li><li>GPS·IMU·encoder로 필요한 상태를 직접 측정할 수 있다.</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p024-figure-p0006-3-o02-c9dfdf0a">
+<img alt="원문 Figure 3, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5c21a3de3102c45a969c6950.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.6</b> — Fig. 3 is an overview of the whole trajectory planning and control system. The nonlinear MPC trajectory planner sends the desired trajectory points to the LPV-MPC controller who calculates the reference speed, vref, and the articulated angle rate ˙γ command signals. The reference speed is sent to the Stanly speed controller developed based on [20]. Since the speed controller is out of the scope of this paper, the details will not be introduced here.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>AGX Dynamics와 Matlab/Simulink를 연동한 고충실도 휠로더 simulation을 사용했다.</li><li>AGX는 토양 변형·탄성·slip·비등방 마찰과 engine·clutch·gearbox·differential을 포함했다.</li><li>YALMIP으로 문제를 만들고 LPV/LTI는 SeDuMi, NL-MPC는 fmincon으로 풀었다.</li><li>i7-6820HQ 2.70GHz x8에서 추종기를 5Hz, Ts=0.2초, horizon 10으로 실행했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>NL-MPC로 pile→truck→pile 전체 주기의 기준 궤적을 오프라인 생성했다.</li><li>세 제어기에 같은 가중치와 기준을 쓰고 시작점에 0.5m lateral error를 넣었다.</li><li>위치·heading·굴절각 추종과 horizon별 평균 계산시간·분산을 비교했다.</li></ul>
+<h3>비교 기준</h3><ul><li>비선형 모델을 매 주기 직접 푸는 NL-MPC</li><li>현재점 선형화를 horizon에 고정하는 adaptive LTI-MPC</li><li>nominal scheduling sequence를 쓰는 제안 LPV-MPC</li></ul>
+<h3>평가 지표</h3><ul><li>전체 주기의 mean absolute position error</li><li>heading과 articulated angle의 시간 추종</li><li>horizon별 평균 solve time과 분산</li><li>속도·굴절각속도 명령과 AGX 응답</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p024-figure-p0007-4-o01-fb2f39ca">
+<img alt="원문 Figure 4, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6f50931aba003f7c4a050081.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.7</b> — Figure 4: A typical loading cycle simulated with AGX Dynamics: (a) Loading material; (b) Transporting material; (c) Following trajectory; (d) Unloading material.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>전체 loading cycle에서 NL-MPC와 LPV-MPC의 평균 절대 위치오차는 각각 0.103m와 0.120m였고 adaptive LTI-MPC는 0.246m였다. heading·articulated angle도 NL·LPV가 우세했으며 적재·하역 지점인 약 20초와 40초에서 차이가 중요했다. nominal 비선형 변화를 horizon별로 유지한 효과다.</p><p>계산시간은 horizon이 늘수록 NL-MPC가 빠르게 증가했지만 LPV는 LTI와 거의 같았다. LPV는 NL보다 오차가 0.017m 크지만 QP 수준으로 계산을 줄였고, LTI와 비슷한 계산량으로 오차를 0.126m 낮췄다. 속도가 상태에 없어 speed-loop 지연과 오차가 공통 외란으로 남았다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>NL-MPC 평균 절대 위치오차</td><td>0.103 m</td><td>AGX 전체 loading cycle</td><td>PDF p.8</td></tr><tr><td>LPV-MPC 평균 절대 위치오차</td><td>0.120 m</td><td>제안 추종기, 동일 기준</td><td>PDF p.8</td></tr><tr><td>adaptive LTI-MPC 평균 절대 위치오차</td><td>0.246 m</td><td>동일 작업주기</td><td>PDF p.8</td></tr><tr><td>초기 횡오차</td><td>0.5 m</td><td>세 제어기의 안정화 비교</td><td>PDF p.7</td></tr><tr><td>온라인 제어주기</td><td>5 Hz</td><td>N=10, Ts=0.2 s</td><td>PDF p.6</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>LTI-MPC는 heading과 굴절각이 빠르게 변할 때 모델이 실제 운동과 벌어져 가장 큰 오차를 보였다.</li><li>속도 응답은 굴절각 응답보다 지연·오차가 컸고 이 하위루프 오차가 MPC 외란으로 작용했다.</li><li>LPV-MPC는 미래 ρ sequence가 필요해 nominal trajectory가 없는 계획 단계에 쓰기 어렵다.</li><li>지면 외란·모델 불확실성의 강건성은 분석하지 않았고 실차 시험도 없었다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p024-figure-p0008-5-o01-08ecbe8c">
+<img alt="원문 Figure 5, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9ba256b26495783ae343d34a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.8</b> — Figure 5: Wheel loader position tracking performance of NL-MPC, LPV-MPC, and LTI-MPC controllers.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p024-figure-p0009-6-o01-0d7d4b1a">
+<img alt="원문 Figure 6, PDF 9쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b3ea412f42814cd04c123f02.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.9</b> — Figure 6: Wheel loader heading angle and articulated angle tracking performance of NL-MPC, LPV-MPC, and LTI-MPC controllers.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p024-figure-p0008-7-o01-992fa8d8">
+<img alt="원문 Figure 7, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5aa18bb08351f722ee594d4e.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.8</b> — Fig. 7 plots the control actions calculated by the LPV-MPC controller and the corresponding response measured from the wheel loader AGX model. The speed response has a larger delay and tracking error than the articulated angle response, since we are not considering the speed as the state in the vehicle model. The performance of the speed controller is out of the scope of this paper, so will not be discussed here. However, it needs to be noted that the tracking error of the speed controller acts as one of the disturbances of the whole system and greatly affects the performance of MPC controllers used for trajectory tracking.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p024-figure-p0010-8-o01-8e4a700c">
+<img alt="원문 Figure 8, PDF 10쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/88efd68b9c13467bb8ae64ea.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.10</b> — Figure 8: Computation burden comparison.</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>검증이 AGX simulation에 한정돼 실제 유압·센서 지연과 안전 제약의 영향은 확인되지 않았다.</li><li>저속·무슬립 기구학으로 tire slip angle, 횡력, full dynamics를 생략했다.</li><li>지면 외란과 모델 불확실성에 대한 robust stability·constraint 보장이 없다.</li><li>payload 변화와 속도 하위루프를 차량 상태모델에 포함하지 않았다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>외란·모델 불확실성 분석 도구와 robust LPV-MPC를 개발한다.</li><li>payload에 따라 변하는 full wheel-loader dynamics를 포함한다.</li><li>slip·payload를 온라인 추정해 ρ와 불확실성 집합을 갱신한다.</li><li>실차에서 위치·각도 RMSE, 제약위반, solve time, 작업주기를 함께 검증한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>NL-MPC가 Y자 기준 궤적을 만들고 nominal Jacobian 열의 LPV-MPC가 방향별 차체 좌표를 바꿔 추종한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>평균 오차 0.120m로 LTI의 0.246m를 개선하고 NL의 0.103m에 근접하면서 계산은 LTI QP와 유사했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>실차가 아닌 simulation이며 무슬립 기구학, payload 미반영, 속도루프 외란과 강건성 보장 부재가 남는다.</p></div></div>
+<div class="kw"><span>#제어·MPC</span><span>#작업·궤적계획</span><span>#비선형 MPC</span><span>#LPV 모델</span><span>#LPV-MPC</span><span>#LTI-MPC 비교</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 굴착 장비의 계획과 실시간 제어를 계산 경계로 나누는 방법을 보여준다. 지도와 작업점이 비교적 정적일 때 비선형 제약을 충분히 반영한 궤적을 먼저 계산하고, 실행 중에는 계획에서 얻은 local model로 빠르게 오차를 줄이는 구조는 굴착기 팔 계획·추종에도 대응한다.</p><p>현장에서는 지반과 payload가 nominal sequence를 무효화할 수 있어 ρ의 온라인 갱신이 핵심이다. wheel slip·IMU·구동 토크·적재량을 추정하고 tube 또는 constraint tightening을 결합하면 계산 장점을 유지하면서 안전여유를 만들 수 있다.</p><ul><li>전후진에서 선두 차체 좌표를 바꾸는 방식은 articulated vehicle 추종에 유용하다.</li><li>NL 계획·LPV 실행 분리는 edge computer의 계산 예산을 배분하는 실용적 패턴이다.</li><li>실차 적용에는 GPS·IMU·encoder 외에 slip·payload 추정이 필요하다.</li><li>평가에는 평균 오차뿐 아니라 각도·제약위반·최악 solve time·작업주기를 포함해야 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p024-table-p0007-1-o01-f5a12cfd">
+<img alt="원문 Table 1, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/87a8709a546788e00baa3b5b.webp" tabindex="0"/>
+<figcaption><b>원문 Table 1 · PDF p.7</b> — Table 1: Nonlinear MPC planner design parameters.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p024-table-p0007-2-o01-2dfa9add">
+<img alt="원문 Table 2, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0151aad4c6c4fb6da841e423.webp" tabindex="0"/>
+<figcaption><b>원문 Table 2 · PDF p.7</b> — Table 2: MPC controller design parameters.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p024-table-p0008-3-o01-734809ef">
+<img alt="원문 Table 3, PDF 8쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/235d7af0b466a67a289b6175.webp" tabindex="0"/>
+<figcaption><b>원문 Table 3 · PDF p.8</b> — Table 3: Tracking Error Comparison</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p024-figure-p0009-7-o02-d0e4521f">
+<img alt="원문 Figure 7, PDF 9쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/218ae2157109f48cc91dccf2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.9</b> — Figure 7: Control actions of LPV-MPC controller.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.3, p.4, p.5, p.6</li><li><b>실험</b>: p.6, p.7</li><li><b>결과</b>: p.8, p.9, p.10</li><li><b>한계</b>: p.10</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/a96574636e4165f16818fa06.webp" rel="noopener" target="_blank">LPV-MPC 결과</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 핵심 분석 2019-2024.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2022 Autonomous wheel loader trajectory tracking control using LPV-MPC.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-023.html"><span class="lbl">← 이전 #23</span>실환경 배치형 자율굴착기 시스템</a><a class="next" href="paper-025.html"><span class="lbl">다음 #25 →</span>기하 표현을 이용한 굴착 강화학습</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

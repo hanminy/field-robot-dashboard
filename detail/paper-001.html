@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#1 대형 굴착기 고정밀 정지작업 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #001</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2026</span><span class="badge">#001</span><span class="badge score">제어·MPC</span><span class="badge">논문 PDF</span></div>
+<h1>대형 굴착기 고정밀 정지작업</h1>
+<p class="title-en" lang="en">High precision hydraulic excavator control for heavy-duty grading</p>
+<p class="authors">RSS 2026</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li><li><a href="../notes/b856eea1a9027744.html">ETH 자율굴착 최신 연구 동향 2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 하중에 따라 유량 응답이 달라지는 NFC에는 압력 적응형 2차원 LUT를, LS에는 단순 유량-밸브 LUT를 두고 공통 MPC와 결합함으로써, 최대 40 cm 절삭의 중부하 정지작업을 두 유압 굴착기에서 2 cm 미만 오차로 수행한 범용 retrofit 제어 스택이다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>깊은 절삭과 센티미터 정밀도를 동시에 요구하는 정지작업</h3>
+<p>Heavy-duty grading은 단순히 표면을 살짝 다듬는 작업이 아니라 한 번의 스트로크 안에 버킷이 찰 만큼 재료를 제거하면서도 버킷 날을 목표 평면에 붙여야 하는 작업이다. 토양 반력은 절삭 깊이와 위치에 따라 크게 변하고, 유압 구동은 밸브 입력에 즉각적이고 강체적으로 반응하지 않으므로 숙련 운전자의 장비별 경험이 정밀도와 생산성을 좌우한다.</p><p>상용 반자동 정지 시스템과 기존 IK·PI·contouring 제어는 가벼운 절삭이나 공중 궤적에서는 유용하지만, 깊은 절삭에서는 목표 깊이에 도달하기 전에 멈추거나 초기 overshoot와 말단 편차를 보인다. 특히 동일한 밸브 명령도 Load Sensing(LS)과 Negative Flow Control(NFC)에서 전혀 다른 하중 의존성을 보여, 한 장비에서 식별한 역모델을 다른 장비에 옮기기 어렵다.</p><p>논문은 이 차이를 고수준 경로 추종기의 문제가 아니라 저수준 유압 인터페이스의 문제로 분리한다. 사용자는 목표 높이·경사와 버킷 끝 속도만 주고, 장비별 유압 모델과 PID가 목표 관절속도를 재현하며, 그 위의 비선형 MPC는 동일한 비용함수와 제약으로 설계면을 추종한다. 이 분리는 서로 다른 중량과 유압 회로에서도 같은 정지 알고리즘을 재사용하게 한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p001-figure-p0001-1-o01-cb0076b2">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/77744450bd3a86c86a527038.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1. Heavy-duty grading with the Menzi Muck M445. Grading denotes the removal of uneven ground to form a prescribed planar surface. In the shown setting, this requires substantial soil interaction while maintaining the bucket edge on the target plane. The proposed retrofittable, hydraulics- aware controller automates such in-soil grading passes across excavators and achieves centimeter-level surface accuracy.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>기존 IK·PI 또는 contouring 방식은 토양 하중에 따른 관절 응답 변화를 명시적으로 모델링하지 않아 깊은 절삭에서 정확도가 저하된다.</li><li>학습 역모델과 데이터 기반 MPC는 수 시간의 장비별 데이터나 특정 시뮬레이터·유압 구조를 요구해 짧은 현장 retrofit에 불리하다.</li><li>상용 시스템의 내부 유압 제어는 공개되지 않으며 실험에서는 최대 기능 압력 350 bar에 훨씬 못 미친 채 약 5 m 부근에서 조기 정지했다.</li><li>선행 실차 결과 다수는 경절삭 또는 공중 속도 추종에 한정되어, LS와 NFC 모두에서 중부하·2 cm 이하 정밀도를 보인 사례가 없었다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>LS와 NFC를 모두 다루는 유압 인지형 저수준 속도제어와 장비 독립 경로추종 MPC의 계층 분리 구조를 제안한다.</li><li>NFC의 부드럽고 하중 의존적인 응답을 압력 제어 루프와 가변 오리피스 저항으로 근사해 역변환 가능한 2차원 LUT를 구성한다.</li><li>분해나 제조사 내부 신호 없이 온보드 압력·관절 상태와 기구학만으로 약 20분에 끝나는 1회성 보정 절차를 제시한다.</li><li>11.5 t LS M445와 25 t NFC CASE250에서 최대 40 cm 절삭을 검증하고, 동일 CASE250 상용 시스템 대비 RMSE를 4.7 cm에서 1.8 cm로 낮춘다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>제어기는 설계면 높이와 경사, 목표 말단 속도를 입력받는다. 10 Hz 비선형 MPC가 boom·stick·bucket의 목표 관절속도를 만들고, 관절 기구학이 이를 실린더 속도로 바꾼다. 각 관절의 feed-forward 유압 모델과 병렬 PID가 밸브 또는 pilot-stage 전류를 계산해 굴착기에 전달한다.</p><p>LS에서는 펌프가 DCV 압력강하를 거의 일정하게 유지하므로 목표 유량과 밸브 명령의 1차원 LUT면 충분하다. NFC에서는 펌프 설정압과 기능측 배압의 차이가 실제 유량을 결정하므로, 측정 압력에서 관성력을 제거한 pseudo back pressure와 목표 유량을 함께 입력으로 쓰는 2차원 LUT가 필요하다.</p><p>MPC는 저수준 폐루프와 장비의 과도응답을 관절별 2차 시스템과 dead time으로 식별한다. 예측된 말단 위치·속도·pitch를 이용해 전진속도, 수직속도, pitch rate, 목표 평면 높이, 명령 변화량을 비용으로 구성하고 관절 위치·속도 한계를 직접 제약한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>설계면과 작업속도 입력</h4><p>상위 계획기 또는 사용자가 목표 높이 h*, 경사 α*, 버킷 날의 진행속도 v*x를 제공한다. 제어는 단일 grading pass가 이동 끝 또는 최대 기능 압력 stall에 이를 때까지 계속된다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>장비별 유압 feed-forward 보정</h4><p>LS는 -0.85부터 0.85까지 0.1 간격의 밸브 명령에서 3초째 정상속도를 표본화해 선형 보간 LUT를 만든다. NFC는 stick·bucket의 단계적 stall과 boom의 empty·curled·full 자세를 이용해 하중별 유량 응답을 식별한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>NFC 압력 적응 역모델</h4><p>실린더 양측 압력으로 힘을 구하고 관성 성분을 빼 pseudo back pressure를 계산한다. 밸브 명령별 펌프 압력 LUT와 오리피스 저항 곡선을 결합한 뒤 역변환하여 목표 유량·현재 배압에서 밸브 명령을 찾는다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>PID와 과도응답 식별</h4><p>feed-forward가 주 명령을 담당하고 PID가 flow sharing, pump boost, recuperation 등 남은 오차를 보상한다. 저수준 폐루프의 step response로 gain, damping ratio, natural frequency, dead time을 관절별로 식별한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>제약식 비선형 MPC</h4><p>Δt=0.1 s, horizon N=20에서 forward kinematics를 반복 평가한다. 수평 진행, 목표 높이·경사, 버킷 pitch, 부드러운 명령을 함께 최적화하고 관절 위치와 속도 한계를 만족하는 첫 명령만 실행한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>정지 pass와 표면 검증</h4><p>약 0.5 m/s의 버킷 날 속도로 깊이가 다른 절삭을 반복하고, proprioceptive 궤적 오차와 Leica MS60 레이저 스캔의 최종 표면 오차를 분리해 평가한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>관절 폐루프 2차 과도모델</h4><code>\dot a_i=-2\zeta_i\omega_{n,i}a_i-\omega_{n,i}^2v_i+K_i\omega_{n,i}^2u_i(t-\tau_i)</code><p>속도 v_i와 가속도 a_i에 gain K_i, 감쇠비 ζ_i, 고유진동수 ω_n,i, dead time τ_i를 두어 저수준 제어기와 유압 장비의 과도응답을 MPC 안에서 예측한다.</p></div><div class="eq"><h4>NFC 기능측 pseudo back pressure</h4><code>P_f=(f_m-f_{inertia})/A_{articulation}</code><p>압력으로 측정한 실린더 힘에서 관성력을 제거하고 유효 면적으로 나눠, 외부 하중이 밸브 유량에 미치는 배압을 나타낸다.</p></div><div class="eq"><h4>가변 오리피스 저항 모델</h4><code>R(x)=\frac{a}{b(x+c)^2},\qquad \Delta P=R\,Q^2</code><p>NFC DCV 명령 x에 따른 lumped resistance를 fit하고 펌프압과 배압 차에서 유량 Q를 계산하여 2차원 역 LUT를 만든다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p001-figure-p0003-2-o01-dd278f57">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f9ca036f46bec09dce1b3297.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2. Flow graph of the grading controller and split between path tracking and joint velocity stage. The user sets the design surface and EE speed. The MPC path-tracking controller outputs joint velocities, which are tracked by the hydraulic controller consisting of a hydraulic model and a parallel PID element.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0006-5-o01-b3dd2577">
+<img alt="원문 Figure 5, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9cb1fc3ee941f4f4c1cef5aa.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.6</b> — Fig. 5. Flow chart of the FF element for NFC hydraulics. Inertia compen- sation for removal of system torques.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>유압 구조별 최소 모델과 공통 인터페이스</h3><p>장비 일반화의 핵심은 모든 유압기를 하나의 복잡한 물리모델로 설명하는 것이 아니라, LS와 NFC 각각에 필요한 최소 보정만 저수준에서 수행하는 데 있다. LS의 stiff response는 1차원 LUT로, NFC의 load-dependent softness는 배압을 포함한 2차원 LUT로 바뀌며 상위 MPC에는 동일한 관절속도 인터페이스가 노출된다.</p><ul><li>LS: 목표 실린더 유량→밸브 명령 1D LUT</li><li>NFC: 목표 유량·pseudo back pressure→밸브 명령 2D LUT</li><li>병렬 PID가 미모델링 coupling과 외란을 보상</li></ul></article><article class="tech-card"><h3>관성 보상형 NFC calibration</h3><p>순간 가속이 압력에 만든 힘을 실제 외부 하중으로 오인하면 feed-forward가 더 큰 명령을 내는 양의 피드백이 생긴다. 논문은 관절 위치·가속도와 식별된 동역학으로 관성력을 먼저 제거한 뒤 배압을 추정하여 이 불안정을 막는다.</p><p>Stick과 Bucket은 같은 밸브 개도에서 지면에 점진적으로 stall시켜 유량-압력 곡선을 얻고, Boom은 progressive stall이 어려워 세 가지 하중 자세를 사용한다. 작은 저항 영역의 정확도를 유지하도록 로그 비용으로 오리피스 파라미터를 fitting한다.</p><ul><li>분해 없이 압력·관절 상태만 사용</li><li>방향별 회로가 달라 각 작동방향을 별도 식별</li><li>보정은 관절별 순차 수행하며 전체 약 20분</li></ul></article><article class="tech-card"><h3>말단 작업목표를 직접 다루는 MPC</h3><p>MPC는 단순 관절 위치 추종 대신 예측 기구학에서 버킷 날의 수평속도, 수직속도, pitch rate와 설계면 높이 오차를 계산한다. dead-time input buffer와 2차 과도모델은 시작부 overshoot를 억제하며, 입력 변화 페널티는 유압 루프를 자극하는 급격한 관절속도 명령을 줄인다.</p><ul><li>10 Hz 재계획, 20-step horizon</li><li>joint-rate와 joint-position constraint</li><li>bucket joint를 쓰지 않을 때 상태 차원은 유지하고 해당 속도·가속도·입력을 0으로 고정</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p001-figure-p0007-7-o01-b3c5dc1c">
+<img alt="원문 Figure 7, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/06dac264c602b1ddaa309e07.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.7</b> — Fig. 7. Hydraulic model for the Stick function on CASE250. Load-dependent mapping from valve command to flow (cylinder speed).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0007-8-o01-4454f720">
+<img alt="원문 Figure 8, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e379b208ea637df6006ce9f6.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.7</b> — Fig. 8. CASE250 Boom step response identification with a commanded joint rate of 0.05 rad/sec.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>LS 플랫폼은 11.5 t Menzi Muck M445(105 kW, 0.54 m³ 버킷), NFC 플랫폼은 25 t CASE250(138 kW, 0.8 m³ 버킷)이다.</li><li>두 장비 모두 cabin-mounted computer에서 제어하며 Leica iCON Machine Control이 관성·관절 위치·속도를 제공한다. M445는 vendor remote CAN, CASE250은 Husco Exacto를 통해 밸브 명령을 받는다.</li><li>compact material에서 2~40 cm 깊이의 경절삭·중절삭·near-stall pass를 수행했고, 모든 CASE250 비교는 약 0.5 m/s blade speed를 사용했다.</li><li>최종 표면 평가는 Leica MS60 Multistation 고정 스캔으로 수행했다. 약 25 cm 깊이, 버킷 폭 네 배 영역을 20% 겹침의 다섯 pass로 좌우 방향 시공했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>먼저 payload가 다른 조건에서 feed-forward 단독 관절속도 추종을 확인하고, 이어 MPC까지 포함한 전체 정지 궤적을 각 장비에서 깊이별 10회 평가했다.</li><li>CASE250에서는 동일 장비·토양·속도에서 상용 반자동 controller와 제안법을 비교해 장비 차이를 제거했다.</li><li>접근 첫 1 m 이후의 목표면 대비 blade 높이를 경로 RMSE와 최대 편차로 집계하고, 별도 표면시험은 점군의 목표면 상대 높이와 oscillation을 비교했다.</li></ul>
+<h3>비교 기준</h3><ul><li>동일 CASE250에 설치된 상용 state-of-the-art semi-automatic grading controller</li><li>관련연구 표의 IK+PI, contouring/observer, learned model inversion, data-driven MPC는 성능 맥락 비교에 사용되지만 동일 실험 재현 비교군은 아니다.</li></ul>
+<h3>평가 지표</h3><ul><li>목표 평면 대비 blade path RMSE와 maximum deviation</li><li>최대 기능 압력 도달 여부 및 조기 stall 위치</li><li>Leica MS60 점군의 목표면 상대 높이·표면 평탄도</li><li>하중 변화에 따른 목표 관절속도 추종 오차</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p001-figure-p0008-13-o01-adb52c74">
+<img alt="원문 Figure 13, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8a74a887f54ec922b4335850.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 13 · PDF p.8</b> — Fig. 13. Experiment Setup for Surface Quality Measurements on CASE250. Fixed Leica MS60 scan used for evaluation of the surface quality.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>CASE250에서 상용 제어기는 접근부 이후 RMSE 4.7 cm, 최대 편차 17 cm였고 단단한 토양에서는 목표 깊이에 못 미치거나 약 5 m 지점에서 350 bar 최대압보다 낮은 압력으로 멈췄다. 제안법은 같은 조건에서 RMSE 1.8 cm, 최대 편차 5 cm를 기록하고 약 1 m 접근 뒤 목표 높이를 안정적으로 유지했다. 조기 정지가 발생한 경우에도 stick 압력이 실제 최대 기능 압력에 도달해 장비 torque envelope를 끝까지 사용했다.</p><p>LS M445에서도 깊이에 따른 정확도 저하 없이 RMSE 1.4 cm, 최대 편차 4 cm를 얻었다. 별도 CASE250 표면시험에서 상용법은 영역 중간에 이르러서야 목표 높이에 접근하고 10 cm가 넘는 진동을 보인 반면, 제안법은 더 일찍 목표면에 도달해 평탄하고 일관된 점군을 남겼다. 즉 개선은 공중 경로추종만이 아니라 실제 compacted soil의 최종 시공품질에서 확인됐다.</p><p>LS M445 feed-forward LUT는 서로 다른 하중에서 약 2% 관절속도 오차를 보였고, NFC CASE250은 배압 적응 항이 empty·curled·full payload에서 0.05 rad/s boom 목표속도를 유지했다. 전체 retrofit calibration은 약 20분이며, 두 중량급 장비와 서로 다른 유압 구조에서 동일한 상위 MPC를 유지했다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>CASE250 제안법 path RMSE</td><td>1.8 cm</td><td>compact soil, 깊이가 다른 10회 pass, x=9 m 이후</td><td>PDF p.8</td></tr><tr><td>CASE250 상용법 path RMSE</td><td>4.7 cm</td><td>동일 장비·속도·토양, 10회 pass</td><td>PDF p.7</td></tr><tr><td>M445 제안법 path RMSE</td><td>1.4 cm</td><td>LS 장비, compact soil 10회 pass, x=5.2 m 이후</td><td>PDF p.8</td></tr><tr><td>정밀도 개선 배수</td><td>2.6×</td><td>CASE250에서 4.7 cm 대비 1.8 cm</td><td>PDF p.8</td></tr><tr><td>절삭 깊이 범위</td><td>2~40 cm</td><td>경절삭부터 near-stall 중부하 pass</td><td>PDF p.7</td></tr><tr><td>표면시험 pass 구성</td><td>5 passes, 약 20% overlap</td><td>약 25 cm 절삭, 버킷 폭 네 배 영역</td><td>PDF p.8</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>상용 제어기는 hard soil에서 목표 깊이에 도달하지 못하고 최대 기능 압력 전에 조기 stall했다.</li><li>상용 제어기의 light grading에는 초기 overshoot가, 장비 가까운 구간에는 버킷 날이 위로 밀리는 현상이 나타났다.</li><li>제안법도 토양 저항이 장비 한계를 넘으면 stall하지만, 이때는 실제 최대 기능 압력에 도달하며 임의의 낮은 한계에서 멈추지 않는다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p001-figure-p0007-10-o01-de23bd67">
+<img alt="원문 Figure 10, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b8334d9bb9afa8ff7dd5bb73.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.7</b> — Fig. 10. CASE250, Commercial Controller: Evaluation of 10 grading passes of varying depth in compacted soil. RMSE: 4.7 cm (9 m and closer)</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0008-11-o01-6efe9a4e">
+<img alt="원문 Figure 11, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/67a268f21a7c3b4586bb108f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.8</b> — Fig. 11. CASE250, Our Controller: Evaluation of 10 grading passes of varying depth in compacted soil. RMSE: 1.8 cm (9 m and closer)</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0008-12-o01-46e59954">
+<img alt="원문 Figure 12, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9b4323ab1a769a407699d34c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.8</b> — Fig. 12. M445, Our Controller: Evaluation of 10 grading passes of varying depth in compacted soil. RMSE: 1.4 cm (5.2 m and closer). Varying starting distances are a result of different extensions of the telescopic stick on M445.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0008-14-o01-22fc5078">
+<img alt="원문 Figure 14, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/678fcb138b3f9c272b5457e1.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 14 · PDF p.8</b> — Fig. 14. CASE250: Comparison of the two graded surfaces: target surface was not reached with the commercial system, higher precision and consistency from our method. Gray points are outside of the testing area and included for context, white areas are shadowed in the scan.</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>실험은 한 번의 평면 grading pass와 compacted material 중심이며 자유곡면·다중 패스의 온라인 갱신은 검증하지 않았다.</li><li>Positive Flow Control 장비는 사용할 수 없어 적용성을 평가하지 못했다.</li><li>관절 간 coupling은 목표 속도에서 PID로 보상 가능하다고 보고 MPC 모델에서 생략했으므로 더 빠른 복합동작에서는 오차가 커질 수 있다.</li><li>NFC는 방향별·관절별 calibration과 압력 센서 정확도에 의존하며, 장비마다 약 20분의 보정이 여전히 필요하다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>더 표현력 있는 비용함수로 평면이 아닌 임의 3D 형상과 곡면 추종을 확장한다.</li><li>말단 Cartesian force를 MPC 목적에 포함해 impedance 방식의 다짐과 토사 재분배를 수행한다.</li><li>기능 간 flow sharing과 coupling을 유압 모델에 포함해 더 빠른 속도에서도 정밀도를 유지한다.</li><li>힘·적재량 추정 및 설계면 측량을 결합해 절삭 깊이와 다음 pass를 폐루프로 재계획한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>유압 구조 차이는 장비별 FF+PID에서 흡수하고, 공통 비선형 MPC가 말단의 설계면·속도·자세를 제약식으로 추종한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>11.5 t LS와 25 t NFC에서 1.4·1.8 cm RMSE를 달성했고, 동일 CASE250 상용법 4.7 cm보다 2.6배 정밀했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>평면 단일 pass와 LS/NFC에 한정되며 PFC, 자유곡면, 고속 다기능 coupling과 폐루프 다중-pass 계획은 후속 과제다.</p></div></div>
+<div class="kw"><span>#제어·MPC</span><span>#시스템통합·현장실증</span><span>#유압별 저수준 속도제어</span><span>#장비 독립 MPC</span><span>#짧은 장비 보정</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>자율굴착 시스템에서 작업계획기가 좋은 버킷 경로를 만들어도 실제 유압기가 하중에 따라 다르게 움직이면 설계면 품질은 보장되지 않는다. 이 논문은 계획과 장비 사이에 명시적 관절속도 계약을 두어, 장비별 유압 보정과 작업공간 계획을 분리하는 실용적 인터페이스를 제공한다.</p><p>특히 최대 기능 압력까지 쓰면서도 cm급 높이를 유지한 결과는 벌크 굴착 뒤 finish grading을 같은 장비로 이어가는 데 중요하다. force/payload estimator와 결합하면 토질·적재량에 따라 속도와 절삭 깊이를 바꾸고, 레이저 또는 LiDAR 표면지도로 다음 pass를 재계획하는 폐루프 토공 시스템으로 확장할 수 있다.</p><ul><li>전역 굴착계획기의 설계면·속도 명령을 서로 다른 굴착기 유압 구조에 공통으로 전달하는 실행 계층이 된다.</li><li>정지 중 압력과 경로 오차를 함께 기록하면 토양 강도와 장비 한계를 온라인 추정하는 작업 피드백으로 활용할 수 있다.</li><li>LiDAR/total-station 표면검사와 연결해 pass 종료→오차지도 갱신→다음 절삭 깊이 결정의 폐루프를 구성할 수 있다.</li><li>조기 stall을 피하고 전체 torque envelope를 사용하므로 같은 품질에 필요한 추가 pass와 작업시간을 줄일 가능성이 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p001-table-p0003-i-o01-ead24e0f">
+<img alt="원문 Table I, PDF 3쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f58ed02a9c389d45fedfc1b3.webp" tabindex="0"/>
+<figcaption><b>원문 Table I · PDF p.3</b> — TABLE I COMPARISON TO PRIOR GRADING AND HYDRAULIC MOTION-CONTROL METHODS.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0005-3-o01-4c5c7333">
+<img alt="원문 Figure 3, PDF 5쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9bae714067d6be826d5eded7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.5</b> — Fig. 3. FF data collection for the Boom joint. Normalized commands from -0.85 to 0.85 in steps of 0.1 with the resulting joint velocity response and steady-state part shown as a solid line. Data from Menzi Muck M445.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0005-4-o01-936b253c">
+<img alt="원문 Figure 4, PDF 5쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fa9a26b54769d29ad0f291da.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.5</b> — Fig. 4. Hydraulic FF model of the LS M445. LS enables a direct mapping between cylinder velocity and command.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0006-6-o01-4a692e22">
+<img alt="원문 Figure 6, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/50a5bb1a84f5cb5596f0e13b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.6</b> — Fig. 6. Identified orifice function for Stick. It maps hydraulic resistance to the valve command.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0007-9-o01-e9f667fe">
+<img alt="원문 Figure 9, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a5c24d71e19b8557abc92260.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.7</b> — Fig. 9. Contribution of calibrated NFC hydraulics FF model. PID controller disabled. The pressure-dependent FF term achieves the target joint velocity independent of the joint loading.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0011-16-o01-cd5e1236">
+<img alt="원문 Figure 16, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f42e72413f9f12ee88a038c8.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 16 · PDF p.11</b> — Fig. 16. Simplified schematic of a single hydraulic function in an NFC circuit. The central bypass is used as a reference for pump control. Pump control remains mainly unaffected by changing load on the function side.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0011-16-o02-2ea187dc">
+<img alt="원문 Figure 16, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9fd48a189896aaabf1d11c69.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 16 · PDF p.11</b> — Figure 16 shows a simplified NFC schematic for a single function. Since the active hydraulic circuit depends on the travel direction, we model and identify each direction sepa- rately. We break the hydraulic model down further into func- tional elements for modeling a single direction in Figure 17. The abstraction intentionally simplifies the underlying physical effects. It does not represent all aspects of the true oil flow, but the calculated values match observed and measurable behavior on hardware. In Section V, we provide the experimental validation of the presented model. For a more comprehensive explanation of NFC hydraulics, we refer the reader to Dell [6], which gives a detailed description of all mechanisms and their differences across implementations, including Caterpillar, Sumitomo, and Kobelco. We decompose the DCV into two active orifices, one for the NFC central bypass 𝑅1 and one for the function power line 𝑅3. The resistances of 𝑅1 and 𝑅3 depend on spool displacement and are inversely proportional to each other. We further assume 𝑅2 ≫𝑅1, so the NFC path flow 𝑄NFC is negligible. NFC uses a variable-displacement pump whose stroke decreases with increasing control-line pressure 𝑃NFC, that is generated by the accumulative resistance of the central bypass 𝑅1 with a reference orifice 𝑅2. Opening the DCV reduces the bypass- orifice-induced pressure and increases pump flow. An addi-</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0011-17-o01-b047be54">
+<img alt="원문 Figure 17, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c5c0e83fb69a19cac2f8e905.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 17 · PDF p.11</b> — Fig. 17. Broken down schematic of NFC for modeling. Highlighted in blue are the abstracted orifices from the DCV in an actuated position. The flow resistance follows a curve based on the spool displacement of the valve.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p001-table-p0011-ii-o01-1c3b601e">
+<img alt="원문 Table II, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9ad617d651f4a016b7dbe409.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.11</b> — Table II compares the two platforms used for evaluation. The Menzi Muck M445 as shown in Figure 18 is controlled through the vendor remote control interface. A cabin mounted computer is running our controller and sends valve commands</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0011-15-o01-43f4964c">
+<img alt="원문 Figure 15, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/cd3ac8812d3fda28429fe0b6.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 15 · PDF p.11</b> — Fig. 15. Simplified schematic of a LS hydraulic function. The pump is regulated by the function pressure.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0012-18-o01-72bb2339">
+<img alt="원문 Figure 18, PDF 12쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9d22ac087be76f759edbb521.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 18 · PDF p.12</b> — Fig. 18. Menzi Muck M445</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p001-figure-p0012-19-o01-8fc9401f">
+<img alt="원문 Figure 19, PDF 12쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8a73e0b18a86dbe4a25bb717.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 19 · PDF p.12</b> — Fig. 19. CASE250</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p001-table-p0012-ii-o02-da79f569">
+<img alt="원문 Table II, PDF 12쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6be2c30668ca319eb368b852.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.12</b> — TABLE II COMPARISON OF MENZI MUCK M445 AND CASE250 EXCAVATORS</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.3, p.4, p.5, p.6</li><li><b>실험</b>: p.7, p.8, p.12</li><li><b>결과</b>: p.7, p.8, p.9</li><li><b>한계</b>: p.8, p.9</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><a href="../notes/b856eea1a9027744.html" rel="noopener" target="_blank">ETH 자율굴착 최신 연구 동향 2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2026 High precision hydraulic excavator control for heavy-duty grading.pdf</span></li></ul>
+</section>
+<div class="pager"><span class="spacer"></span><a class="next" href="paper-002.html"><span class="lbl">다음 #2 →</span>Holistic Fusion 범용 센서융합</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

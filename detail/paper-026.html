@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#26 모방학습과 모델을 통합한 굴착기 궤적 계획 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #026</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2022</span><span class="badge">#026</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>모방학습과 모델을 통합한 굴착기 궤적 계획</h1>
+<p class="title-en" lang="en">Imitation Learning and Model Integrated Excavator Trajectory Planning</p>
+<p class="authors">Qiangqiang Guo, Zhixian Ye, Liyang Wang, Liangjun Zhang</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html">Baidu 자율굴착 논문 핵심 분석 2019-2024</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 128개 전문가 시연에서 굴착기-POA 선상의 상대높이 단면과 재료 특징을 버킷 자세열로 매핑하고, 사람이 적합성을 확인한 초기 궤적을 관절공간 STOMP가 IK·경계·부드러움·참조 이탈·목표 체적으로 최적화해, pure IL의 낮은 분산과 pure STOMP의 실행 가능성을 결합한 2단계 굴착 궤적 계획법이다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>전문가 작업패턴과 모델 제약을 한 궤적에 결합하는 이유</h3>
+<p>굴착 궤적은 토질·형상에 따라 달라지고 버킷-자재 접촉을 정확히 모델링하기 어렵다. rule-based 방식은 고정 환경에서 잘 작동해도 조건 변화에 약하고, model optimization은 기구학·안전 제약을 다룰 수 있지만 접촉모델 오차와 초기 궤적에 민감하다. RL은 많은 탐색 데이터와 simulation-real 전이 문제가 있으며, 순수 IL은 시연 범위 밖에서 실패하거나 IK·경계를 위반할 수 있다.</p><p>저자들은 전문가가 아는 '좋은 궤적 형상'과 모델이 확인할 수 있는 '실행 가능성'을 두 단계로 분리한다. IL actor가 지형 형상과 재료에서 초기 버킷 궤적을 생성하고, STOMP가 관절공간에서 기구학·작업영역·smoothness·참조 이탈·목표 굴착체적 비용을 최적화한다. 실행 결과와 사람의 0~10 평가는 다시 시연셋에 들어가 actor를 갱신한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p026-figure-p0002-1-o01-32c7d1dc">
+<img alt="원문 Figure 1, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/631a88e45ff4645706ae0f05.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.2</b> — Fig. 1: Algorithm framework</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>rule-based 궤적은 고정 환경에 맞춘 규칙을 다른 지형·재료에 일반화하기 어렵다.</li><li>model-based 최적화는 접촉 동역학 모델과 경험 파라미터가 자재가 바뀔 때 부정확해진다.</li><li>STOMP 같은 최적화는 초기 궤적에 따라 탐색 방향과 최종해가 크게 달라질 수 있다.</li><li>IL은 제한된 시연의 편향과 OOD 상태에서 비현실적·IK 불가능한 궤적을 낼 수 있다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>IL이 초기 형상을 만들고 STOMP가 실행 가능성과 목적을 보정하는 2단계 계획 구조를 제안했다.</li><li>전체 grid 대신 POA-굴착기 선상의 상대높이 단면과 재료 특징으로 작은 상태를 구성했다.</li><li>인간 판정·직접 시연·실행 평가를 모아 importance sampling으로 actor를 갱신하는 DAgger형 루프를 만들었다.</li><li>Franka의 모래·목재 블록 실험에서 pure IL·pure STOMP와 평균중량·분산·성공률을 비교했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>상태 s는 기하 특징 sg와 재료 특징 sm의 결합이다. sg는 POA에서 굴착기 베이스로 이어지는 작업 관련 영역을 n개 단면으로 나누고 각 단면의 POA 대비 상대높이를 합산해 만든다. sm은 point cloud와 같은 시점의 지형 이미지를 사전학습 분류기에 넣어 얻는다. 행동 a는 전문가 궤적에서 시간축으로 균등 선택한 m개 버킷 자세로, 각 자세는 평면거리·z·버킷각의 3변수라 3m차원이다.</p><p>actor가 새 상태의 궤적을 만들면 사람이 형상을 검사한다. 좋지 않으면 전문가가 로봇을 직접 조작해 시연을 추가하고, 좋으면 actor 궤적을 STOMP의 초기·참조 궤적으로 사용한다. STOMP는 관절공간 noisy trajectory를 반복 샘플링해 IK 가능성을 확보하고, 경계 위반·smoothness·초기궤적 이탈·목표체적 비용을 줄인다. 실행 뒤 사람 평가 r∈[0,10]을 (s,a,r)과 저장해 높은 평가 궤적을 더 자주 재학습한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>지형 센싱</h4><p>Azure Kinect point cloud를 grid map으로 만들고 같은 시점의 RGB 지형 이미지를 재료 분류기에 넣는다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>Sectional-volume 특징</h4><p>POA-베이스 선상의 주황 영역을 n구간으로 나누고 각 구간의 POA 대비 높이차 합을 sg로 만든다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>재료 특징 결합</h4><p>모래·암석성 재료의 궤적 차이를 반영하도록 분류기의 sm을 sg와 연결해 상태 s={sg,sm}을 구성한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>IL actor 학습</h4><p>전문가 버킷 궤적의 m개 자세를 행동 a∈R^(3m)로 만들고 예측과 시연 사이 MSE를 최소화한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>인간 적합성 게이트</h4><p>새 궤적이 좋으면 STOMP로 넘기고 부적합하면 사람이 직접 시연해 demonstration dataset을 보강한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>관절공간 STOMP</h4><p>초기 궤적 주변의 noisy joint trajectory를 샘플링하고 비용에 따라 확률적으로 갱신해 기구학을 만족한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>다중 비용 보정</h4><p>작업영역 경계, smoothness, IL 참조 이탈, raw-volume과 목표체적 차이를 비용으로 함께 사용한다.</p></div><div class="pipeline-card"><span class="step-num">8</span><h4>실행·재학습</h4><p>Franka에서 실행하고 사람이 0~10으로 평가한 (s,a,r)을 저장해 높은 평가 sample을 우선 재학습한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>2단계 정책 구성</h4><code>\pi(s)=\pi_{\mathrm{Model}}\!\left(\pi_{\mathrm{IL}}(s)\right)</code><p>IL actor가 초기 궤적을 만들고 model·rule 기반 STOMP가 이를 실행 가능하고 목적에 맞게 보정한다.</p></div><div class="eq"><h4>IL actor MSE</h4><code>\min_{\pi_{\mathrm{IL}}}\frac{1}{N}\sum_{i=1}^{N}\left(a_i-\pi_{\mathrm{IL}}(s_i)\right)^2</code><p>N개 전문가 상태-궤적 쌍에서 시간 균등 표본의 버킷 자세열을 모방한다.</p></div><div class="eq"><h4>작업영역 hard-constraint 비용 (Eq.1)</h4><code>c_{hc,i}=\begin{cases}\exp\!\left(w_{hc}d(p_i,A)\right),&amp;p_i\notin A\\0,&amp;p_i\in A\end{cases}</code><p>버킷 자세 pi가 3차원 허용 굴착영역 A 밖으로 나가면 거리 d에 따라 지수 페널티를 준다.</p></div><div class="eq"><h4>IL 참조 이탈 비용 (Eq.2)</h4><code>c_{ini,i}=w_{ini}\lVert p_i-\hat{p}_i\rVert</code><p>최적 궤적이 actor의 전문가형 초기 자세 p-hat에서 과도하게 벗어나지 않게 한다.</p></div><div class="eq"><h4>목표체적 및 총비용 (Eq.3-5)</h4><code>C_{vo}=w_{vo}\exp\!\left(\lVert V_{raw}-\hat{V}\rVert\right),\quad C_{traj}=C_{sm}+C_{vo},\quad c_{point,i}=c_{hc,i}+c_{ini,i}</code><p>terrain과 궤적이 둘러싼 raw volume을 대용값으로 쓰고 smoothness·체적 비용과 point별 경계·참조 비용을 결합한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p026-figure-p0003-2-o01-beacec1b">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fc11ff6b3e926fdadeaf5dd5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2: Architecture of actor trajectory generation</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p026-figure-p0003-3-o01-46423734">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5f90839de52597019bd68f5a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3: An illustration of the geometric feature extraction of the excavation-related terrain: top view of the terrain and the excavator (left), and side view of the terrain for feature extraction(right)</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>굴착 관련 영역만 압축하는 sectional-volume 상태</h3><p>베이스가 single excavation 동안 swing하지 않는다는 가정을 이용하면 POA와 베이스를 잇는 좁은 영역이 궤적에 가장 직접적이다. 전체 grid를 CNN에 넣지 않고 이 영역을 n개 단면으로 나누어 상대높이 합을 사용하면 상태와 데이터 요구량을 줄인다. 재료 특징을 별도 연결해 같은 형상이라도 모래와 목재 블록에서 다른 형상을 낼 수 있게 한다.</p><ul><li>geometry feature는 sg∈R^n이고 material feature sm과 연결한다.</li><li>action은 swing을 제외한 버킷 평면거리·높이·각도의 m개 시점이다.</li><li>논문은 n·m과 actor 층 구성을 공개하지 않아 완전 재현에는 정보가 부족하다.</li></ul></article><article class="tech-card"><h3>전문가 형상을 보존하는 안전 STOMP</h3><p>STOMP는 gradient가 필요 없고 좋은 초기값에서는 적은 반복으로 수렴할 수 있어 접촉모델이 불완전한 굴착에 적합하다. 관절공간에서 샘플링해 순·역기구학 가능성을 확보하고, IL 참조 비용으로 인간 작업패턴을 보존한다. 경계 지수비용은 바닥·trench 외부 접촉을 막고 smoothness는 에너지와 급격한 동작을 줄인다.</p><ul><li>pure-STOMP의 linear initialization보다 IL 초기궤적이 높은 체적과 계획성공률을 만들었다.</li><li>pure-IL의 일부 자세는 IK를 만족하지 않아 실험에서 linear interpolation이 필요했다.</li><li>raw volume은 실제 접촉체적의 단순 대용값이며 재료 상호작용을 정확히 모델링하지 않는다.</li></ul></article><article class="tech-card"><h3>사람 평가를 포함한 DAgger형 폐루프</h3><p>actor가 낸 형상을 사람이 먼저 판정하고, 실행 뒤 다시 0~10으로 평가한다. 부적합 상태에는 직접 시연을 추가하고 좋은 실행은 높은 확률로 재학습한다. 이 루프는 policy가 방문하는 상태에서 데이터셋을 확장하지만 사람 개입이 필수이고, 논문에서 일정 episode 이후 데이터 추가 효과가 정체됐다.</p><ul><li>초기 actor 학습에는 128개 demonstration trajectory를 사용했다.</li><li>평가값이 큰 궤적을 importance sampling으로 더 자주 선택한다.</li><li>완전 자율 online adaptation이 아니라 인간 확인과 평가를 포함한 데이터 수집 체계다.</li></ul></article></div>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>bucket end-effector를 단 Franka Panda와 Azure Kinect point cloud를 사용했다.</li><li>굴착영역은 로봇 앞 0.8m×0.4m 사각형이며 base origin에서 0.2m offset을 뒀다.</li><li>재료는 모래와 여러 크기의 wooden block이고 terrain은 grid map으로 표현했다.</li><li>비교법은 IL+STOMP, pure-IL, linear initialization의 pure-STOMP다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>방법별 세 episode, episode당 15회로 총 45회 모래 굴착을 수행했고 초기 지형을 수동으로 같게 맞췄다.</li><li>POA는 terrain 최고점을 찾고 그보다 일정 거리 바깥에 두는 동일 rule-based 알고리즘으로 골랐다.</li><li>목재 블록에서는 전체 재료로 학습한 generic actor와 해당 재료만 학습한 specialized actor를 STOMP baseline과 비교했다.</li></ul>
+<h3>비교 기준</h3><ul><li>actor 궤적을 interpolation 후 직접 실행하는 pure-IL</li><li>POA와 종료점 사이 linear initialization을 STOMP로 최적화하는 pure-STOMP</li><li>고정 template를 STOMP로 보정하는 목재 블록 baseline</li></ul>
+<h3>평가 지표</h3><ul><li>average·minimum·maximum excavation weight</li><li>45회 굴착중량의 standard deviation</li><li>trajectory planning success rate</li><li>pure-STOMP·pure-IL 대비 평균중량과 분산 개선율</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p026-figure-p0005-4-o01-b0866435">
+<img alt="원문 Figure 4, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4cc7d680eadccf89e5de5c7b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.5</b> — Fig. 4: Experiment settings: Two types of material for experiment, (a) sand and (c) wooden block; (b) Terrain visualization using grid map [17]; (d) Sizes of the wooden block</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>모래 세 episode 합산에서 IL+STOMP의 평균 굴착중량은 0.965kg으로 pure-STOMP 0.773kg보다 24.77%, pure-IL 0.932kg보다 3.25% 높았다. 계획성공률은 IL+STOMP와 pure-IL이 100%, pure-STOMP가 84.4%였다. pure-STOMP의 linear 초기 궤적이 terrain을 관입하지 못하면 STOMP가 volume cost를 줄일 탐색 공간을 얻지 못하는 실패가 발생했다.</p><p>IL+STOMP의 표준편차는 0.131kg으로 pure-IL 0.204kg보다 35.52% 낮고 pure-STOMP 0.144kg보다도 8.78% 낮았다. 목재 블록에서 specialized·generic actor의 평균중량은 0.22882kg·0.22754kg으로 baseline 0.21248kg보다 7.69%·7.09% 높았다. 두 actor는 baseline보다 최소중량과 성공률을 크게 개선했지만 최대중량은 약 18% 낮아 더 보수적인 궤적을 만들었다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>IL+STOMP 평균 굴착중량</td><td>0.965 kg</td><td>모래, 3 episode×15회</td><td>PDF p.6</td></tr><tr><td>pure-STOMP 대비 평균중량 개선</td><td>24.77%</td><td>0.965 kg 대 0.773 kg</td><td>PDF p.6</td></tr><tr><td>IL+STOMP 계획성공률</td><td>100%</td><td>pure-STOMP는 84.4%</td><td>PDF p.6</td></tr><tr><td>pure-IL 대비 표준편차 감소</td><td>35.52%</td><td>0.131 kg 대 0.204 kg</td><td>PDF p.6</td></tr><tr><td>목재 specialized actor 평균중량</td><td>0.22882 kg (+7.69%)</td><td>baseline 0.21248 kg</td><td>PDF p.6</td></tr><tr><td>목재 generic actor 평균중량</td><td>0.22754 kg (+7.09%)</td><td>baseline 0.21248 kg</td><td>PDF p.6</td></tr><tr><td>목재 specialized planning success</td><td>0.8444</td><td>baseline 0.5556 대비 +52.00%</td><td>PDF p.6</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>pure-STOMP의 linear 초기 궤적이 terrain을 관입하지 않으면 volume cost가 유효한 개선 방향을 만들지 못했다.</li><li>pure-IL 원시 출력에는 IK를 만족하지 않는 자세가 있어 실제 실행 전 linear interpolation이 필요했다.</li><li>제한된 시연 때문에 pure-IL의 굴착중량 분산이 컸고, actor가 모든 terrain state를 덮지 못했다.</li><li>목재 actor는 baseline보다 안정적·성공률이 높지만 최대 굴착중량은 약 18% 낮은 보수성을 보였다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p026-figure-p0005-5-o01-15a2b214">
+<img alt="원문 Figure 5, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/721781f10ca938f2f0d68c5f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.5</b> — Fig. 5: Trajectories generated by different methods under the same terrain state</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p026-figure-p0006-6-o01-60d1cd99">
+<img alt="원문 Figure 6, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/88392601daa568cf529244de.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.6</b> — Fig. 6: IL trajectory execution on the robot arm</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>actor는 128개 시연만으로 학습해 지형·재료 분포의 범위가 작다.</li><li>새 궤적 적합성 판정과 실행 평가는 사람이 수행하므로 완전 자율 데이터 루프가 아니다.</li><li>raw enclosed volume은 실제 자재-버킷 상호작용과 손실을 정확히 나타내지 못한다.</li><li>Franka·모래·목재 tray 결과라 실제 유압 굴착기의 힘·스케일·진동 일반화는 확인되지 않았다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>더 크고 다양한 demonstration dataset에서 IL+STOMP와 pure-IL을 다시 평가한다.</li><li>DAgger 정체를 줄이기 위해 few-shot·고급 IL·RL 기법을 적용한다.</li><li>실제 굴착기에서 시연 수집·정제, 비용함수, 실행 인터페이스를 설계한다.</li><li>실행 torque·force로 raw-volume 오차와 접촉 위험을 보정하는 학습 residual model을 결합한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>sectional-volume·재료 특징의 IL actor가 전문가형 초기 궤적을 만들고 STOMP가 기구학·경계·smoothness·체적을 보정한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>모래에서 pure-STOMP보다 평균중량 24.77% 향상, 계획성공률 100%, pure-IL보다 분산 35.52% 감소를 기록했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>128개 시연·사람 게이트·단순 volume model·Franka 실험에 의존해 실제 굴착기와 미지 재료 일반화가 남는다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#작업·궤적계획</span><span>#모방학습</span><span>#심층 신경망</span><span>#STOMP</span><span>#모델 기반 궤적 최적화</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 방법은 자율굴착에서 데이터와 모델의 역할을 분명히 나눈다. 사람 시연은 접촉을 수식화하기 어려운 궤적 형상을 제공하고, 모델 최적화는 IK·경계·부드러움처럼 명시 가능한 안전조건을 책임진다. 학습이 모든 것을 대체하지 않고 불확실한 부분만 제안하게 하는 구조는 데이터가 적고 사고비용이 큰 필드로봇에 적합하다.</p><p>실제 굴착기로 확장하려면 사람의 good/bad 판정을 actor uncertainty와 제약 검사로 일부 자동화하고, raw volume 대신 LiDAR height map·재료분류·유압압력·버킷속도에서 실제 충만율과 저항을 예측해야 한다. STOMP의 hard constraint는 유지하면서 학습 residual을 체적·힘 비용에만 사용하면 안전성과 적응성을 분리 검증할 수 있다.</p><ul><li>ensemble actor가 OOD·불확실성이 높을 때만 전문가를 요청하는 active DAgger로 확장할 수 있다.</li><li>재료별 actor와 generic actor의 차이는 few-shot 토질 적응 벤치마크에 적합하다.</li><li>유압압력·관절속도로 학습한 접촉 residual을 STOMP volume cost에 결합할 수 있다.</li><li>평가에는 개입률·IK/경계 위반·중량 분산·계획시간·적응 sample 수를 함께 포함해야 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p026-table-p0006-ii-o01-d33e23b3">
+<img alt="원문 Table II, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ba870e26b7a6466755698381.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.6</b> — TABLE II: Comparison of generic model and speciﬁed model of different materials</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p026-table-p0006-i-o01-7d64364b">
+<img alt="원문 Table I, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b2a2f5106080a50167fb8451.webp" tabindex="0"/>
+<figcaption><b>원문 Table I · PDF p.6</b> — TABLE I: Experiment performance of different methods</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4</li><li><b>실험</b>: p.4, p.5</li><li><b>결과</b>: p.5, p.6, p.7</li><li><b>한계</b>: p.7</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/195c610ecc8494c2d9249d55.webp" rel="noopener" target="_blank">모방학습-최적화 구조</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 핵심 분석 2019-2024.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2022 Imitation learning and model integrated excavator trajectory planning.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-025.html"><span class="lbl">← 이전 #25</span>기하 표현을 이용한 굴착 강화학습</a><a class="next" href="paper-027.html"><span class="lbl">다음 #27 →</span>TNS: 자율굴착기 지형 주행성 지도화 및 내비게이션 시스템</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

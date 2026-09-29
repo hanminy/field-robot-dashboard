@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#68 장비 상호작용 기반 토공 작업 인식 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · 서울대학교 · #068</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-field">서울대학교</span><span class="badge">2018</span><span class="badge">#068</span><span class="badge score">환경인식</span><span class="badge">논문</span></div>
+<h1>장비 상호작용 기반 토공 작업 인식</h1>
+<p class="title-en" lang="en">Interaction analysis for vision-based activity identification of earthmoving excavators and dump trucks</p>
+<p class="authors">Jinwoo Kim, Seokho Chi, Jongwon Seo · Automation in Construction</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/7f4762e988be9963.html">서울대 자율굴착 논문 카드 요약 2018-2025</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 굴착기와 덤프트럭의 정지·이동·굴착 동작만 개별 판정하는 데 그치지 않고, 두 장비의 동시 존재, 작업반경 내 근접성, 행동 조합과 시간 연속성을 지식 규칙으로 결합해 실제 토공 현장의 작업·이동·대기 상태를 연속 식별하고 협업 적재와 순서 대기까지 구분한 비전 기반 프레임워크다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>개별 장비 동작에서 협업 작업상태로</h3>
+<p>토공 생산성 분석에는 굴착기와 덤프트럭이 언제 작업하고, 이동하고, 대기했는지를 연속적으로 알아야 한다. 이 시간 기록으로 직접 작업률, 사이클 시간, 공회전 시간과 장비 배치 효율을 계산할 수 있지만, 사람이 장시간 영상을 판독하는 방식은 비용과 시간이 많이 들고 판정자 간 일관성도 낮다. RFID·GPS·UWB 같은 무선 센서는 위치와 운동을 제공하지만, 같은 위치에서 회전하는 굴착기나 적재를 기다리며 정지한 덤프트럭처럼 위치만으로 구별하기 어려운 상태가 존재한다.</p><p>기존 비전 연구도 주로 한 장비의 외형·궤적·개별 행동에 집중했다. 그러나 덤프트럭의 정지는 토사를 싣는 작업일 수도 있고 차례를 기다리는 대기일 수도 있다. 이를 구별하려면 굴착기와 트럭이 같은 화면에 있는지, 서로 굴착기 작업반경 안에 있는지, 굴착기가 굴착·회전·배출 중이고 트럭은 정지 중인지까지 함께 보아야 한다. 논문은 이 상호작용 문맥을 토공 활동 식별의 핵심 정보로 정의하고, 장비 추적부터 시간 후처리까지 하나의 규칙 기반 파이프라인으로 구성했다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p068-figure-p0002-1-o01-bfd25833">
+<img alt="원문 Figure 1, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e9356a7843e5bfb2bc11e00e.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.2</b> — Fig. 1. Examples of interactions between earthmoving equipment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0002-2-o01-52a807d0">
+<img alt="원문 Figure 2, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1d9f425e3c409706a8302c19.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.2</b> — Fig. 2. Earthmoving activities and actions of earthmoving equipment.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>단일 장비의 위치·외형·운동만 분석하면 정지한 덤프트럭의 적재 작업과 대기를 구별하기 어렵다.</li><li>장비 간 거리만 사용하는 상호작용 모델은 여러 트럭이 굴착기 주변에서 대기하는 그룹 상호작용을 충분히 설명하지 못한다.</li><li>무선 기반 방식은 같은 위치에서 서로 다른 행동을 수행하는 장비의 세부 작업상태를 직접 관측하기 어렵다.</li><li>프레임별 독립 판정은 순간 추적 오류와 가림 때문에 실제로 지속되는 작업상태를 짧게 끊어 놓는다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>굴착기·덤프트럭 상호작용을 공존, 근접성, 행동 일관성의 세 요소로 구조화했다.</li><li>TLD 장기 추적, 시공간 추론, 영상 차분, 지식 기반 상호작용 분석, 시간 후처리를 연결한 네 단계 프레임워크를 제안했다.</li><li>일대일 적재 관계뿐 아니라 여러 트럭 중 실제 적재 중인 트럭과 대기 트럭을 구별하는 그룹 상호작용 규칙을 구현했다.</li><li>5개 실제 토공 현장 11,513프레임을 사용해 상호작용 모듈의 정량적 효과와 실시간 처리 가능성을 검증했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>첫 단계는 확장 TLD를 이용한 다중 장비 추적이다. 사전 학습 검출기는 갑작스러운 자세·외형 변화를 프레임별로 다시 찾고, 순차 추적기는 인접 프레임의 운동과 표현 유사성을 사용해 검출 누락을 보완한다. 온라인 학습은 참양성 결과를 양성 표본으로, 오검출과 누락을 음성 표본으로 추가해 현장별 검출기를 갱신한다. 출력은 장비 ID, 종류와 2차원 위치 궤적이다.</p><p>둘째 단계는 개별 행동을 판정한다. 연속 바운딩박스 중심의 변화량을 박스 대각선 길이로 정규화해 이동 여부를 판단하고, 비이동 굴착기는 연속 영상의 픽셀 차이를 이용해 굴착·회전·배출과 완전 정지를 나눈다. 셋째 단계는 공존 여부, 굴착기와 트럭 중심 간 거리, 행동 조합을 순서대로 검사한다. 마지막으로 5초 구간 다수결을 적용해 작업 연속성과 맞지 않는 순간 오분류를 제거한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>장비 검출·장기 추적</h4><p>검출기와 순차 추적기를 기능적으로 통합한 TLD로 굴착기와 덤프트럭을 장시간 추적한다. 온라인 학습으로 현장에 새로 등장한 외형과 오검출 사례를 검출기 학습 표본에 반영한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>개별 행동 분류</h4><p>바운딩박스 중심 변화율을 이용해 이동과 비이동을 구분한다. 굴착기는 비이동 상태에서 영상 차분을 추가해 굴착·회전·배출과 정지를 분리하고, 덤프트럭은 이동·정지의 두 행동으로 처리한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>일대일 상호작용 판정</h4><p>굴착기와 트럭이 같은 프레임에 존재하고, 중심 거리가 작업반경 임계값보다 작으며, 굴착기는 굴착·회전·배출 중이고 트럭은 정지 중일 때 두 장비를 함께 작업 중으로 판정한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>그룹 상호작용 해석</h4><p>한 굴착기 주변에 여러 트럭이 있을 때 가장 가까운 정지 트럭만 적재 작업으로 연결한다. 나머지 정지 트럭은 같은 작업구역에 있어도 적재 순서를 기다리는 대기로 분류한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>시간 연속성 후처리</h4><p>각 프레임의 작업·이동·대기 결과를 5초 구간 다수결로 평활화해 짧은 가림, 추적 박스 흔들림과 순간 영상 차분 오류를 줄인다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>바운딩박스 정규화 중심 변화율</h4><code>r_i=\frac{\sqrt{(x_{i+1}-x_i)^2+(y_{i+1}-y_i)^2}}{L_i}</code><p>연속 프레임의 중심 이동을 현재 바운딩박스 대각선 길이로 나누어 카메라와 장비 사이 거리 변화에 따른 스케일 영향을 줄인다.</p></div><div class="eq"><h4>영상 차분 비율</h4><code>D_i=\frac{\sum_j\sum_k\left|p_{jk}^{i+1}-p_{jk}^{i}\right|}{A_i}</code><p>크기를 맞춘 연속 굴착기 영상에서 픽셀 절대차 합을 박스 면적으로 정규화해 형상 변화가 있는 굴착·회전·배출과 정지를 구분한다.</p></div><div class="eq"><h4>장비 간 영상 평면 거리</h4><code>d=\sqrt{(x_{exc}-x_{dump})^2+(y_{exc}-y_{dump})^2}</code><p>굴착기와 덤프트럭 중심 간 2차원 거리를 계산해 작업반경 안의 가장 가까운 트럭을 상호작용 후보로 선택한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p068-figure-p0004-3-o01-90650009">
+<img alt="원문 Figure 3, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ae2d5075bf8aedf7a94f843e.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.4</b> — Fig. 3. Research framework with interactive operations.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0005-5-o01-262eef1b">
+<img alt="원문 Figure 5, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/725f34f85670809eece46404.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.5</b> — Fig. 5. Methodology for action recognition of individual equipment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0006-7-o01-2a668e66">
+<img alt="원문 Figure 7, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0be590969c7ad286e16365aa.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.6</b> — Fig. 7 illustrates the process of activity recognition. In case of ‘moving’ and ‘stopping’ of an excavator, it is deﬁned as ‘traveling’ and ‘idling’ respectively (Fig. 7); it is because excavators' individual action varies according to each activity. However, for actions such as ‘scooping/rotating/dropping’, the interaction analysis enables an ac- tivity identiﬁcation system to decide whether the excavators are ‘working’ alone (e.g., soil preparation and excavation) or together (i.e., loading soil to dump trucks). When the excavators and the dump trucks are ‘working’ together, they should both be placed within the operating boundary of the excavators (i.e., arm's length). If there exists at least one dump truck within the same image frame, the distances between centroids of the excavator and all the dump truck are computed (Eq. (4)). Based on the distances, the nearest dump truck to the excavator is selected.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>행동과 활동을 분리하는 계층적 표현</h3><p>논문은 영상에서 직접 관측되는 행동과 생산성 분석에 필요한 활동을 구분한다. 굴착기의 행동은 이동, 정지, 굴착·회전·배출이고 활동은 작업, 이동, 대기다. 덤프트럭은 이동과 정지 행동만으로는 작업·대기를 나눌 수 없으므로 다른 장비와의 관계를 추가한다. 이 계층화 덕분에 동일한 정지 영상도 적재 중인지 대기 중인지 다르게 해석할 수 있다.</p><ul><li>굴착기는 이동이면 이동 활동, 정지이면 대기, 굴착·회전·배출이면 작업으로 연결한다.</li><li>덤프트럭의 이동은 토사 운반 작업으로 간주하지만 정지는 상호작용 분석을 거쳐 작업 또는 대기로 나눈다.</li><li>굴착기가 단독 굴착 중인지 트럭에 적재 중인지도 같은 규칙에서 구별할 수 있다.</li></ul></article><article class="tech-card"><h3>공존·근접·행동 일관성의 결합</h3><p>단순히 같은 화면에 있거나 가까운 장비를 모두 협업으로 보지 않는다. 실제 적재는 굴착기와 트럭이 공존하고, 굴착기 팔 길이에 해당하는 유효 거리 안에 있으며, 굴착기는 굴착·회전·배출을 수행하고 트럭은 정지하는 행동 일관성이 동시에 성립해야 한다. 세 조건의 결합은 멀리 떨어진 정지 트럭이나 작업을 멈춘 굴착기 주변의 트럭을 잘못 연결하는 사례를 줄인다.</p><ul><li>실험 영상에서 근접 임계값은 촬영 조건에 따라 150픽셀과 200픽셀로 최적화됐다.</li><li>굴착기 이동 임계값은 초당 2프레임 조건에서 프레임당 10%, 트럭은 20%로 설정됐다.</li><li>한 굴착기에 여러 트럭이 접근하면 최근접 트럭을 작업 대상으로 선정해 그룹 대기를 해석한다.</li></ul></article><article class="tech-card"><h3>현장 적응형 추적과 시간 평활화</h3><p>TLD의 검출·추적 상호 보완과 온라인 표본 갱신은 색상, 형상, 방향과 속도가 크게 변하는 건설장비를 고정 카메라에서 장시간 유지하기 위한 장치다. 여기에 5초 다수결을 적용해 실제 활동이 일정 시간 지속된다는 현장 지식을 반영한다. 즉 공간 문맥뿐 아니라 짧은 시간 문맥도 명시적으로 사용한다.</p><ul><li>검출기는 급격한 외형 변화를, 추적기는 점진적 변화를 주로 보완한다.</li><li>온라인 학습은 현장 영상에서 양성·음성 표본을 갱신해 사전 데이터 부족을 완화한다.</li><li>5초보다 긴 후처리 구간은 상태 전환을 늦게 반영해 오히려 성능이 낮아졌다.</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p068-figure-p0004-4-o01-509421e9">
+<img alt="원문 Figure 4, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/79cb217571025ef17b928fb9.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.4</b> — Fig. 4. Equipment tracking methodology.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0007-7-o02-d97520f1">
+<img alt="원문 Figure 7, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/14bc565513cdf5d03f15d2be.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.7</b> — Fig. 7. Interaction analysis methodology.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0007-8-o01-b4d825b9">
+<img alt="원문 Figure 8, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ae664ac9bf1d40753e7d02bf.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.7</b> — Fig. 8. Concept for post-processing.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>CCTV와 스마트폰으로 5개 실제 토공 현장을 촬영하고, 서로 다른 11개 카메라 위치를 사용했다.</li><li>카메라는 장비에서 10~30m 떨어진 위치, 높이 0~3m, 정면·후면·측면·대각 시점에 설치됐다.</li><li>총 11,513프레임, 약 150분의 작업 영상을 720×1280 또는 1080×1920 해상도로 수집했다.</li><li>Caterpillar, Doosan, Hyundai, Scania, Volvo 등 다양한 제조사의 굴착기와 덤프트럭이 포함됐다.</li><li>구현 환경은 Visual Studio 2012의 C++ 추적 모듈, MATLAB 2014b의 행동·상호작용·후처리 모듈, Intel i7-4790 3.60GHz와 32GB RAM의 Windows 7 PC였다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>상호작용 모듈을 포함한 전체 프레임워크와 모듈 3을 제거한 구성을 동일 데이터에서 비교했다.</li><li>후처리 포함·제거 조건을 비교해 5초 다수결의 기여를 측정했다.</li><li>장비 추적, 개별 행동 인식, 최종 활동 식별을 각각 정밀도와 재현율로 평가했다.</li><li>예측된 작업·이동·대기 시간과 사람이 확인한 실제 시간을 비교해 시간 추정 오차를 계산했다.</li></ul>
+<h3>비교 기준</h3><ul><li>상호작용 분석 없이 정지 트럭을 대기로 처리하는 구성</li><li>5초 다수결 후처리를 제거한 프레임별 독립 판정</li><li>개별 행동 인식과 TLD 추적 모듈의 독립 성능</li></ul>
+<h3>평가 지표</h3><ul><li>활동 식별 정밀도와 재현율</li><li>굴착기·덤프트럭별 작업·이동·대기 클래스 성능</li><li>장비 추적 및 개별 행동 인식 정밀도·재현율</li><li>실제 활동시간 대비 추정시간 오차율</li><li>프레임당 처리시간</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p068-figure-p0008-9-o01-be5cc738">
+<img alt="원문 Figure 9, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1b4e6920b663ba0b0af9417a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.8</b> — Fig. 9. Examples of the collected data from actual earthmoving sites.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>전체 프레임워크의 평균 정밀도는 91.27%, 재현율은 92.42%였다. 상호작용 분석을 제거하면 각각 75.68%와 74.72%로 하락해, 개별 행동보다 관계 문맥이 특히 덤프트럭 상태 해석에 중요함을 보였다. 상호작용이 없을 때 트럭 대기 상태의 정밀도는 38.91%까지 떨어지고 트럭 작업 재현율도 23.92%에 머물렀다. 반면 굴착기는 개별 행동만으로 활동을 비교적 직접 연결할 수 있어 상호작용 모듈 제거의 영향이 작았다.</p><p>프레임당 처리시간은 0.1~0.3초였고, 활동시간 평균 오차는 5.4%였다. 후처리는 정밀도 3.88%p, 재현율 4.15%p를 추가로 높였다. 정성적으로도 가까운 두 트럭 가운데 실제 적재 중인 한 대만 작업으로, 나머지는 대기로 판정했으며, 짧은 2초 가림은 시간 연속성으로 보완했다. 다만 5초보다 긴 가림과 잘못된 작업 대상 연결은 해결하지 못했다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>전체 활동 식별 정밀도</td><td>91.27%</td><td>상호작용 분석과 5초 후처리를 포함한 전체 프레임워크</td><td>PDF p.9</td></tr><tr><td>전체 활동 식별 재현율</td><td>92.42%</td><td>상호작용 분석과 5초 후처리를 포함한 전체 프레임워크</td><td>PDF p.9</td></tr><tr><td>상호작용 제거 시 정밀도</td><td>75.68%</td><td>정지 트럭의 적재·대기 문맥을 사용하지 않은 조건</td><td>PDF p.9</td></tr><tr><td>상호작용 제거 시 재현율</td><td>74.72%</td><td>전체 프레임워크보다 17.70%p 감소</td><td>PDF p.9</td></tr><tr><td>활동시간 추정 평균 오차</td><td>5.4%</td><td>실제 작업시간 대비 작업·이동·대기 시간 추정</td><td>PDF p.9</td></tr><tr><td>프레임당 처리시간</td><td>0.1~0.3초</td><td>지정 데스크톱 환경의 단일 프레임 분석</td><td>PDF p.9</td></tr><tr><td>후처리 성능 이득</td><td>정밀도 +3.88%p, 재현율 +4.15%p</td><td>5초 다수결 적용 전후 비교</td><td>PDF p.9</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>이미 적재를 마친 트럭이 작업반경 안에서 정지하고 다른 트럭을 위한 굴착이 진행되면, 세 상호작용 조건이 모두 성립해 잘못 작업으로 연결될 수 있다.</li><li>바운딩박스가 버킷·암·본체 전체를 덮지 못하면 영상 차분이 실제 굴착 형상 변화를 놓치고 굴착기를 정지로 오분류한다.</li><li>배경 물체가 바운딩박스 안에서 움직이면 굴착기 자체의 변화로 해석될 수 있다.</li><li>5초를 넘는 장기 가림에서는 후처리만으로 장비 활동을 연속 복원할 수 없다.</li><li>2차원 거리 임계값은 카메라 시점과 원근 변화에 민감하다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p068-figure-p0008-10-o01-95ffaf91">
+<img alt="원문 Figure 10, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c8948479644b5d1a478cef55.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.8</b> — Fig. 10 shows examples of the classiﬁed activity types for all tracked</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0009-11-o01-14f38034">
+<img alt="원문 Figure 11, PDF 9쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/cecf65caf48af1cc35806b24.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.9</b> — Fig. 11. Predictions with (left) and without (right) the interaction analysis for the same image frame.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0010-12-o01-8e3c5521">
+<img alt="원문 Figure 12, PDF 10쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/68ff9ebfa485659d76cb1030.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.10</b> — Fig. 12. Errors examples. (a) Errors of interaction analysis. (b) Eﬀects of bounding box.</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>고정 단안 카메라의 2차원 위치에 의존해 시점 변화와 화면 수직 방향 이동을 정확히 복원하지 못한다.</li><li>이동·근접·영상 차분 임계값을 실험 영상에 맞춰 수동 최적화했으므로 새 현장과 카메라에서 재조정이 필요하다.</li><li>장기 가림, 야간·저조도, 큰 조명 변화에 대한 검증이 없다.</li><li>상호작용 규칙은 적재시간이나 트럭 적재 완료 상태를 직접 추정하지 않아 잘못된 장비 연결이 발생할 수 있다.</li><li>CNN 기반 최신 검출·추적보다 TLD와 수작업 규칙에 의존하며, 광범위한 외형 변화의 일반화가 제한된다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>CNN 기반 추적기를 도입해 굴착기 전체 형상과 버킷 가림에 대한 추적 안정성을 높인다.</li><li>단안 2차원 중심 대신 3차원 전역 위치를 사용해 시점 변화에 강한 작업반경 판정을 구현한다.</li><li>GPS 등 무선 센서와 영상을 융합해 카메라 밖으로 나가는 트럭과 장기 가림 구간을 연결한다.</li><li>야간 조명과 저조도 환경에 맞춘 비전 모듈을 개발한다.</li><li>토질, 토량, 운전자 숙련도와 장비 제원을 활동 로그에 결합해 생산성과 장비 배치 의사결정까지 확장한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>TLD 추적과 영상 차분으로 개별 행동을 얻고, 공존·근접성·행동 일관성 및 5초 시간 연속성을 규칙으로 결합한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>실제 현장 11,513프레임에서 상호작용 분석이 평균 정밀도를 75.68%에서 91.27%, 재현율을 74.72%에서 92.42%로 높였다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>2차원 고정 시점과 수동 임계값, 장기 가림 및 적재 완료 상태 미추정 때문에 새로운 현장에 그대로 전이하기 어렵다.</p></div></div>
+<div class="kw"><span>#환경인식</span><span>#안전·HRI</span><span>#시스템통합·현장실증</span><span>#TLD 검출·추적</span><span>#영상 차분</span><span>#시공간 규칙</span><span>#지식 기반 상호작용 분석</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 자율작업 장비의 상태 추정을 개별 객체 분류가 아니라 다중 장비 관계 추론 문제로 다룬 초기 사례다. 자율 굴착 시스템에서도 굴착기 자체 관절 상태만으로 작업 단계를 판단하지 않고 트럭의 위치·대기열·행동을 함께 사용하면 적재 전환과 작업 완료를 더 안정적으로 판정할 수 있다.</p><p>현대 시스템에서는 TLD와 수작업 임계값을 3차원 검출·추적, 장비 V2X, 작업 그래프 모델로 대체할 수 있지만, 공존·근접·행동 일관성이라는 명시적 관계 구조는 안전 검증과 오류 설명에 여전히 유용하다.</p><ul><li>굴착기-트럭 협업 상태를 자율 작업계획기의 이산 상태 전이 조건으로 사용할 수 있다.</li><li>작업·대기 시간 로그는 장비 배차, 매칭 팩터와 생산성 최적화의 관측값이 된다.</li><li>카메라와 GNSS·V2X를 결합하면 장기 가림과 카메라 시야 밖 운반 구간을 보완할 수 있다.</li><li>규칙 기반 상호작용 결과를 학습 모델의 약한 라벨 또는 설명 가능한 안전 감시기로 활용할 수 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0006-6-o01-ed6f5063">
+<img alt="원문 Figure 6, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e04364626cc15ad695e40238.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.6</b> — Fig. 6. Image diﬀerencing processes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p068-figure-p0008-10-o02-f66e3067">
+<img alt="원문 Figure 10, PDF 8쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7a37c2e3b3c10ec1dfb545c6.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.8</b> — Fig. 10. Examples of experimental results. (a) Continuous classiﬁcation over time. (b) One-to-one interactions. (c) Group interactions.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p068-table-p0009-1-o01-f1ce45d6">
+<img alt="원문 Table 1, PDF 9쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/58d42ee1ff15daa4731e17f8.webp" tabindex="0"/>
+<figcaption><b>원문 Table 1 · PDF p.9</b> — Table 1 Experimental results for performance metrics.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p068-table-p0009-3-o01-f842f1d1">
+<img alt="원문 Table 3, PDF 9쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e9c60441a99555913cb1465a.webp" tabindex="0"/>
+<figcaption><b>원문 Table 3 · PDF p.9</b> — Table 3 Experimental results for individual action recognition.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p068-table-p0009-2-o01-cbfc0fc7">
+<img alt="원문 Table 2, PDF 9쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/91c82fa882c951aa37c71a01.webp" tabindex="0"/>
+<figcaption><b>원문 Table 2 · PDF p.9</b> — Table 2 Performance evaluation of each module.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.4, p.5, p.6, p.7</li><li><b>실험</b>: p.7, p.8</li><li><b>결과</b>: p.9, p.10, p.11</li><li><b>한계</b>: p.10, p.11</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/7f4762e988be9963.html" rel="noopener" target="_blank">서울대 자율굴착 논문 카드 요약 2018-2025.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">Interaction analysis for vision-based activity identification of earthmoving.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-067.html"><span class="lbl">← 이전 #67</span>강화학습을 이용한 다양한 환경에서의 절토 공정 계획</a><a class="next" href="paper-069.html"><span class="lbl">다음 #69 →</span>힘 기반 굴착 계획·제어</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

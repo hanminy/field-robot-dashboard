@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#45 자율 자유형 지형 조성 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #045</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2021</span><span class="badge">#045</span><span class="badge score">시스템통합·현장실증</span><span class="badge">논문 PDF</span></div>
+<h1>자율 자유형 지형 조성</h1>
+<p class="title-en" lang="en">Free-form autonomous formation in terrain with HEAP</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 17 million-point 드론 지도를 2.5D 설계로 바꾸고 material-neutral cut/fill과 HEAP의 elevation-error 기반 공격점·덤프점 선택을 실시간 연결해, 제작 중 유실 토량에 맞춰 ridgeline까지 수정하면서 S자 및 모서리 제방을 각각 0.056 m와 0.032 m 평균 surface error로 자율 시공한 cyber-physical earthmoving workflow다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>측량-설계-시공을 순환시켜 현장 토사로 자유곡면 제방 만들기</h3>
+<p>건설업의 생산성 정체와 인력 부족을 완화하는 것 외에도 earthmoving 자동화는 현장 흙을 그대로 쓰는 material-neutral construction과 사람이 다루기 어려운 자유곡면을 가능하게 한다. 논문은 road embankment, sound barrier, river profile, avalanche·landslide·debris-flow protection으로 확장 가능한 free-form embankment를 대상으로 한다. 기존의 survey→design→fabrication 일회성 순서를 바꾸어 실제 지형이 변할 때 설계가 다시 반응하는 순환 구조가 핵심이다.</p><p>기존 planner는 평평한 바닥·고정 dump·layer cutting에 치우쳤다. 3D embankment는 cut/fill 위치와 물량 균형, 유실 토사에 따른 설계 수정, 굴착기 시점의 가림까지 다뤄야 한다. 저자들은 LiDAR drone, Rhino·Docofossor 설계, HEAP의 굴착·덤프·주행을 ROS로 묶는다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p045-figure-p0003-1-o01-6d27fe64">
+<img alt="원문 Figure 1, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6077ca8960c96452d2d3f4ec.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.3</b> — Fig. 1 The autonomous walking excavator HEAP can excavate free- form shapes with high accuracy. The image shows the s-curved embankment’s progress with the finished surface in the foreground and the unfinished pile to excavate behind it</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0003-2-o01-c46572f9">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/07e3987a5e98af7f1a28b1a7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2 The robotic process starts with an initial drone survey. The map of the construction site is then used in a design environment to produce the desired shape of the embankment. This desired elevation is sent to HEAP, which will realize the plan through excavation and dumping cycles. Information is fed back, which results in a novel, adaptive process</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>기존 autonomous excavation planner는 mass loading, trenching, flat-bottom layer removal 중심이고 복잡한 3D embankment의 excavation·dump 양쪽을 계획하지 않았다.</li><li>기존 free-form trench 연구는 soil을 미리 정한 곳에 버려 material-neutral fill design을 만들지 못했다.</li><li>기존 설계·제작 도구는 분리되어 site change를 시공 중 설계에 되먹임하기 어렵고 축소 실험은 대형 자연 토사를 다루지 않았다.</li><li>굴착기 onboard sensor만으로는 제방 뒤쪽 등 occlusion이 생겨 전체 site progress와 design adaptation을 놓칠 수 있다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>DJI M210 RTK에 Ouster OS1·IMU·Jetson TX2를 통합한 mapping drone으로 construction site 전역 point cloud와 elevation map을 생성했다.</li><li>Rhino·Docofossor의 distance-function terrain model로 slope, swell factor, cut/fill balance를 반영한 parametric material-neutral design을 구현했다.</li><li>actual-desired elevation error와 progression plane으로 3D excavation point를 고르고, missing-volume·distance·height로 dump point를 찾는 iterative planner를 제안했다.</li><li>HEAP의 굴착·grading·주행을 설계와 연결하고 20 m S자 및 모서리 제방에서 시공 중 volume loss 대응과 정량 오차를 검증했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>workflow는 initial survey, design, fabrication 세 부분이다. drone이 RTK world frame의 3D point cloud를 수집하고 grid_map_pcl로 2.5D elevation을 만든다. Windows Rhino의 Docofossor가 distance function으로 swale·front/back face를 만들고 cut/fill, slope, swell을 맞춘다. desired elevation과 design line은 ROS bridge로 Linux HEAP에 전달되고, HEAP는 현재 elevation을 100 Hz control 내부에서 갱신해 design으로 되돌린다.</p><p>roof LiDAR와 bucket trace로 현재 지형을 갱신하고 elevation error의 largest blob에서 높이·progression score로 공격점을 고른다. negative error에서는 0.1 m³ 미만 blob을 제외하고 낮고 가까운 dump점을 택한다. reach 밖이면 offset path를 주행하며 SDF·SQP arm path와 후속 grading으로 오차를 줄인다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>RTK-LiDAR initial survey</h4><p>DJI M210 RTK의 IMU·GNSS·visual odometry·barometer state와 Ouster scan을 기록한다. lidar_align으로 매 recording의 sensor transform과 time offset을 추정하고 17 million-point cloud를 2.5D grid로 변환한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>parametric terrain design</h4><p>Rhino·Grasshopper의 Docofossor distance function이 input curve 주위 swale와 embankment를 만들고 sine amplitude·length로 3D width·height를 조정한다. slope, swell 1.05, cut/fill volume을 반영한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>현재 지형 갱신</h4><p>roof LiDAR와 bucket-edge trajectory를 융합해 falling soil·self-perception을 처리한 elevation map을 만든다. GNSS-RTK state estimation으로 drone map과 excavator를 같은 world frame에 둔다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>공격점 선택</h4><p>positive error threshold 뒤 가장 큰 blob만 남기고 terrain height와 3D progression plane score가 최대인 cell을 공격점으로 정한다. 큰 pile을 연속 처리해 불필요한 driving을 줄인다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>덤프점 선택</h4><p>negative error candidate 중 0.1 m³ 미만 blob을 제거하고 bucket과 가까우며 낮은 cell을 고른다. material-neutral design의 부족 토량을 채운 뒤 다시 excavation해 오차를 줄인다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>주행·설계 적응</h4><p>reach 밖은 pure pursuit로 이동하고, soil loss가 생기면 기능면을 유지한 채 ridgeline을 낮춰 volume을 재균형한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>고도 오차</h4><code>Z_e=Z_{act}-Z_{des}</code><p>현재와 목표 elevation의 cell-wise 차이로 positive는 cut candidate, negative는 fill candidate가 된다.</p></div><div class="eq"><h4>공격점 score</h4><code>\arg\max_{x_i,y_j} S_{lb}S^{+}[Z_{act}+\mu(\cos\beta\,x_i+\sin\beta\,y_j)]</code><p>threshold와 largest-blob mask 뒤 높은 pile과 진행 방향을 결합해 다음 excavation cell을 선택한다.</p></div><div class="eq"><h4>덤프점 score</h4><code>\arg\min_{x_i,y_j} S_{lv}S^{-}[Z_{act}+\mu d(x_i,y_j)]</code><p>작은 volume blob을 제거하고 낮으며 bucket에 가까운 missing-soil cell을 선택한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p045-figure-p0007-8-o01-4b8b4a48">
+<img alt="원문 Figure 8, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d91125ed33cef30795f46c2b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.7</b> — Fig. 8 HEAP, the autonomous walking excavator, is used to fabricate the embankment. The numbers 1–8 show a single dig cycle, 9 the finished part of the embankment with height lines for better visualization and 10 the unfinished part</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0007-9-o01-e7a76256">
+<img alt="원문 Figure 9, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8cf88763d9619b8a10fd19f2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.7</b> — Fig. 9 The driving path (dashed line) for a designed embankment is derived from the respective design line (dotted line) provided by the design environment. It is a constant offset line such that all points of the design are reachable from the driving path. The embankment height is encoded in grey colours (black: low, white: high)</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0008-11-o01-ebc075a3">
+<img alt="원문 Figure 11, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/753d192209e1c1adea1a18ec.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.8</b> — Fig. 11 The planner will choose the next excavation point to work on the biggest blob and neglect the smaller ones (marked blue) for now. This will increase efficiency as the iterative planner will jump less to different blobs. The scoring is computed from the progression line (blue lines) as well as the cell’s terrain height. The point with the largest score will be the next point of attack and is encircled in blue. The score is represented through grey values. Black areas do not have a positive excavation error beyond a threshold</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0009-12-o01-c7f5708c">
+<img alt="원문 Figure 12, PDF 9쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/96c3db61b492e1b1221b5d62.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.9</b> — Fig. 12 After thresholding the error map, error blobs with too small volumes are not considered as candidates for dumping (highlighted in blue). The dump point is then found through scoring with terrain height and distance to the bucket. Grey values represent the scoring, whereas black areas are not considered for dumping</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>survey와 fabrication을 공유 좌표에 두는 mapping stack</h3><p>DJI M210 RTK의 1.72 kg payload에 380 g·64-line Ouster OS1과 Jetson TX2를 탑재한다. lidar_align이 탈착 sensor의 extrinsic·time offset을 보정하고 17 million-point RTK cloud를 2.5D로 만든다.</p><ul><li>DJI M210 RTK 1.72 kg payload</li><li>Ouster OS1 64 line·380 g</li><li>Jetson TX2와 RTK/IMU/VO/barometer fusion</li><li>LiDAR point cloud에서 2.5D elevation 변환</li></ul></article><article class="tech-card"><h3>material-neutral parametric design</h3><p>Docofossor는 grid elevation을 distance로 삼아 curve·slope·sine parameter의 swale와 embankment를 만든다. cut/fill·swell을 묶어 S자 실험의 soil loss 때 기능면을 유지하고 ridgeline만 낮췄다.</p><ul><li>Rhino+Docofossor+COMPAS FAB</li><li>cut/fill balance와 1.05 swell factor</li><li>fabrication feedback에 따른 on-the-fly redesign</li></ul></article><article class="tech-card"><h3>largest-blob progression excavation planner</h3><p>OpenCV contour의 largest error blob에서 terrain height와 progression plane을 합쳐 공격점을 고른다. design line 직교 작업방향은 flat edge를 break line에 맞추며 offset driving path가 20 m 곡선의 reach를 확보한다.</p><ul><li>positive error threshold</li><li>largest connected blob selection</li><li>terrain height+progression plane score</li><li>design-line orthogonal working direction</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p045-figure-p0004-3-o01-033692fb">
+<img alt="원문 Figure 3, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/465d80bbb9d999dcc97b8d40.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.4</b> — Fig. 3 The sensor pack is mounted at the front of a DJI M210 RTK, where normally a large camera could be attached. The sensor pay- load includes a LiDAR (dark blue), RGB camera (black), multispec- tral camera (red) and IMU (behind the LiDAR) connected to a Jetson TX2 for data gathering and processing. The components are mounted on a stiff 3D-printed frame and powered through the drone with a converter leaving out a heavy additional battery</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0005-4-o01-29a02207">
+<img alt="원문 Figure 4, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f2ae5f4b9b78813ced2053f5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.5</b> — Fig. 4 The location where experiments are conducted is shown in the large 3D point cloud gathered by the drone and consisting of 17 mil- lion points. The test field in the white rectangle is converted into a 2.5D elevation map for use in the design environment</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0006-6-o01-de95670f">
+<img alt="원문 Figure 6, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/dc5e118927d7d04cbe4efd18.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.6</b> — Fig. 6 The robotic embankment design is created on the elevation map gathered with the mapping drone</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>첫 실험은 clay-rich field에서 slope 33.7°, displacement target 30 m³의 20 m S-shaped embankment와 swale를 만든다.</li><li>survey drone, Rhino-Docofossor design environment, WiFi/ROS network, HEAP 12 t walking excavator와 onboard Velodyne VLP-16·Robosense RS-Bpearl을 사용한다.</li><li>두 번째 실험은 Blender CAD로 만든 two-faced embankment with corner이며 loose truck-dumped soil에서 high-precision servo 대신 pilot-stage main valve와 빠른 grading을 사용한다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>drone initial map으로 material-balanced design을 만든 후 north concave에서 south tight convex 순으로 HEAP가 excavation·dump cycle을 반복한다.</li><li>제작 약 2/3 시점에 swale excavation 중 lost soil을 보상하기 위해 front function을 유지하고 ridgeline을 낮춰 cut/fill을 재균형한다.</li><li>완성 후 actual-desired surface의 normal-direction cell distance를 계산한다. 두 번째 제방은 plan을 바꿔 두 면을 만들고 인위적 파손 뒤 자율 복원한다.</li></ul>
+<h3>비교 기준</h3><ul><li>직접 알고리즘 baseline은 없다.</li><li>이전 free-form trench 결과 평균 0.027 m와 0.024 m가 단순 형상 정밀도 reference로 언급된다.</li><li>논문은 6 h/30 m³ 생산성이 human operator보다 낮다고 정성 비교한다.</li></ul>
+<h3>평가 지표</h3><ul><li>surface-normal cell 평균 오차</li><li>cut·fill volume과 operation time</li><li>설계 수정 전후 volume balance</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p045-figure-p0011-18-o01-063495fe">
+<img alt="원문 Figure 18, PDF 11쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/083048dd44aa80566afa5bf4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 18 · PDF p.11</b> — Fig. 18 The two-faced embankment with a corner is defined by a CAD model designed in Blender</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0012-19-o01-8133d2c6">
+<img alt="원문 Figure 19, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d3baa8aedb331585292c2523.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 19 · PDF p.12</b> — Fig. 19 The image shows the final state of the two-faced embankment experiment. An overall smooth surface finish with a clear and straight corner was achieved</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>S자 제방은 6 h machine operation 동안 30.60 m³를 cut하고 32.20 m³를 fill했다. clay-rich soil과 swale의 hard compacted soil·small stone 변화를 force digging이 처리했다. 북쪽 완만한 concave 부분의 평균 cell error는 0.038 m였고, flat bucket으로 tight convex를 만드는 남쪽까지 포함한 전체는 0.056 m였다. 이는 이전 단순 trench 0.027·0.024 m보다 어렵지만 20 m 자유곡면의 smooth finish와 curvature를 완성한 결과다.</p><p>bucket closing 때 soil이 기계 아래로 밀려 fill이 부족해지자 공정 약 2/3에 swale와 front slope를 유지하고 ridgeline을 낮췄다. 설계 feedback이 실제 material uncertainty를 흡수한 사례다.</p><p>두 면·모서리 제방은 평균 error 0.032 m를 달성하고 smooth surface와 clear straight corner를 보였다. 사람이 완성 구조를 무너뜨린 뒤 planner가 다시 missing/excess soil을 찾아 복구할 수 있었다. 반면 conclusion은 20 m·약 30 m³를 6 h에 처리한 productivity가 사람보다 훨씬 낮다고 명시하며, 정밀도와 설계 자유도를 얻었지만 현장 경제성은 아직 확보되지 않았음을 인정한다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>S자 제방 공정</td><td>6 h, cut 30.60 m³, fill 32.20 m³</td><td>20 m long, design displacement 30 m³, swell factor 1.05</td><td>PDF p.10</td></tr><tr><td>S자 concave 구간 평균 오차</td><td>0.038 m</td><td>북쪽 완만한 곡률 구간의 cell normal-direction error</td><td>PDF p.10</td></tr><tr><td>S자 전체 평균 오차</td><td>0.056 m</td><td>tight convex south section 포함</td><td>PDF p.10</td></tr><tr><td>two-faced corner 제방 평균 오차</td><td>0.032 m</td><td>loose dumped soil, 두 CAD plan 순차 실행</td><td>PDF p.11</td></tr><tr><td>drone map 규모</td><td>17 million points</td><td>초기 construction site 3D point cloud</td><td>PDF p.5</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>soil이 기계 쪽으로 밀려 fill volume이 부족해졌다.</li><li>tight convex는 flat edge reach가 어려워 전체 오차를 0.056 m로 높였다.</li><li>굴착기 가림을 초기 수동 drone survey가 시공 중 보완하지 못했다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p045-figure-p0011-16-o01-2ab8bf6c">
+<img alt="원문 Figure 16, PDF 11쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c6979be1ecea38da21a69f00.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 16 · PDF p.11</b> — Fig. 16 The error map of the s-curve embankment shows missing soil (negative error) with yellow colours, excess soil (positive error) with dark blue colour and close to zero error with light blue</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0011-17-o01-bf5d37d8">
+<img alt="원문 Figure 17, PDF 11쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/aebeb1e6148f2e0baa3fe049.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 17 · PDF p.11</b> — Fig. 17 The swale, to catch water runoff, and the front face are func- tional parts that should not be changed. The embankment volume can still be adapted to compensate an offset in cut and fill volumes by drop- ping the ridgeline along the front face. This will remove a large volume (black and white stripes) at the backside of the embankment. This is illustrated through a section cut at the point with the biggest correction</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0012-20-o01-2be2f04f">
+<img alt="원문 Figure 20, PDF 12쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7df0bbcd80db705b667ed37b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 20 · PDF p.12</b> — Fig. 20 The top view error map shows missing soil with yellow col- ours and excessive soil with dark blue colours. Light blue colours are errors around zero. The average error is 0.032 m</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>20 m S자 제방에 6 h가 걸려 인간 earthmoving operator의 생산성보다 현저히 낮다.</li><li>단일 HEAP와 두 prototype geometry, 제한된 clay-rich·loose soil에서만 검증되어 대규모 site와 다양한 material의 일반성이 없다.</li><li>planner는 greedy이고 drone은 초기 수동·offline survey에 그치며 2.5D는 다층 토질을 표현하지 못한다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>excavation·dump cycle speed, grading speed, driving schedule을 최적화해 사람과 경쟁 가능한 throughput으로 높인다.</li><li>fabrication 중 drone을 자동 재배치해 가림을 보완하고 soil composition을 design feedback에 넣는다.</li><li>multi-machine material flow와 multi-cycle chassis·surface convergence를 공동 계획한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>RTK-LiDAR survey, material-balanced parametric terrain design, HEAP의 error-map 기반 excavation·dump를 폐루프로 연결한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>20 m S자 제방을 평균 0.056 m, two-faced corner를 0.032 m error로 완성하고 공정 중 soil loss에 맞춰 설계도 수정했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>약 30 m³에 6 h로 생산성이 낮고 단일 장비·2.5D·greedy planning 및 초기 drone survey에 머문다.</p></div></div>
+<div class="kw"><span>#시스템통합·현장실증</span><span>#작업·궤적계획</span><span>#측위·매핑</span><span>#드론 측량</span><span>#재료중립 설계</span><span>#고도 오차 폐루프</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>자율굴착을 current terrain을 desired geometry로 바꾸는 반복 feedback으로 정의한다. 같은 elevation error로 공격·덤프·grading을 연결하고, material loss에는 기능면을 유지한 설계 수정으로 대응한다.</p><ul><li>actual-desired elevation error를 excavation·dump·grading의 공통 task state로 사용하면 여러 토공 형상을 같은 planner로 다룰 수 있다.</li><li>largest-blob와 progression plane은 잔오차를 쫓는 장비 이동을 줄이는 간단한 online regularization으로 활용 가능하다.</li><li>cut/fill-balanced design과 dump planner를 결합하면 truck 반출입을 줄이고 현장 토사 재사용률을 높일 수 있다.</li><li>soil loss 때 기능 geometry는 고정하고 비기능 geometry를 수정하는 design-level recovery를 적용할 수 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0005-5-o01-2818d8ac">
+<img alt="원문 Figure 5, PDF 5쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/de2f9ed0b1c6b9aa9a6e27e1.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.5</b> — Fig. 5 2D illustration of the distance functions operating on the found geometry of the terrain</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0006-7-o01-22c8b17f">
+<img alt="원문 Figure 7, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/86a12ed37036329ae58afae2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.6</b> — Fig. 7 Illustration of the earth-movement in cut (red) and fill (blue). The computational design model automatically adapts to balance material volume with a 1.05 swell factor to the found geometry of the terrain</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0008-10-o01-bf73e732">
+<img alt="원문 Figure 10, PDF 8쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/aacd78d5fb74014d53762d53.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.8</b> — Fig. 10 In order to achieve a clear break line between the swale and front face, the bucket has to pass over it with a parallel bucket edge meaning that the working direction of the bucket is orthogonal to the design line</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0010-13a-o01-f501733c">
+<img alt="원문 Figure 13A, PDF 10쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9e0c6e00c088e48d3f6754a5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 13A · PDF p.10</b> — Fig. 13 A top view of the finished embankment prototype shows the curved design and the smooth surface finish</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0010-14-o01-5e5ef21c">
+<img alt="원문 Figure 14, PDF 10쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8c944641103284c41d56ab73.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 14 · PDF p.10</b> — Fig. 14 An elevation map of the s-curved embankment is created from the onboard LiDAR’s after the experiment was successfully fin- ished. The colours represent the terrain height</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p045-figure-p0011-15a-o01-9c48ea16">
+<img alt="원문 Figure 15A, PDF 11쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/21b19c0e37b8d0ed5c95816c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 15A · PDF p.11</b> — Fig. 15 A time-lapse with six images over the entire fabrication process shows the progress of the s-curved embankment</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.3, p.4, p.5, p.6, p.7, p.8, p.9</li><li><b>실험</b>: p.9, p.10, p.11</li><li><b>결과</b>: p.10, p.11, p.12</li><li><b>한계</b>: p.10, p.12</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2021 Free-form autonomous formation in terrain with HEAP.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-044.html"><span class="lbl">← 이전 #44</span>범용 유압 굴착기 팔 RL</a><a class="next" href="paper-046.html"><span class="lbl">다음 #46 →</span>석재 파지·재정렬 계획</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

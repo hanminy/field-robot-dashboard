@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#59 굴착기 동작계획을 위한 Compact Reachability Map — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #059</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2019</span><span class="badge">#059</span><span class="badge score">작업·궤적계획</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>굴착기 동작계획을 위한 Compact Reachability Map</h1>
+<p class="title-en" lang="en">Compact Reachability Map for Excavator Motion Planning</p>
+<p class="authors">Yajue Yang, Liangjun Zhang, Xinjing Cheng, Jia Pan, Ruigang Yang</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html">Baidu 자율굴착 논문 핵심 분석 2019-2024</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — Compact R-map은 각 굴착평면 격자에 역기구학으로 얻은 버킷 헤딩 구간과 이동방향별 최대 직선거리를 저장한다. 현재 height map과 접근점으로 침투·드래그·회전·인양의 full-bucket 경로를 빠르게 조립해 후속 동역학 최적화에 기구학적 초기해를 제공한다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>고차원 굴착 궤적 탐색을 2D 도달성 조회 문제로 압축</h3>
+<p>굴착 한 사이클은 침투, 드래그, 회전, 인양으로 구성되며 버킷 경로가 지형 변형과 굴착량을 직접 결정한다. 그러나 동일한 full-bucket 목표에도 깊은 침투 뒤 즉시 회전하거나 얕게 들어가 길게 끄는 등 많은 후보가 있다. 접근점, 각 단계의 6차원 이동방향과 길이, 인양 시작점, 전 경로의 헤딩열을 모두 탐색하면 차원이 매우 커진다. 유압 비선형과 토양력 때문에 실제 제어도 어렵지만, 대부분의 제어기는 먼저 실행 가능한 위치 또는 힘 궤적을 요구한다. 논문은 이 초기 궤적을 온라인에서 빠르게 찾기 위해 버킷의 전역 기구학 가능성을 사전 계산한다.</p><p>핵심 관찰은 붐·암·버킷의 기본 굴착운동이 하나의 excavation plane에 놓인다는 점이다. 저자들은 3D workspace 전체를 저장하지 않고 이 평면을 2D 격자로 이산화한다. 각 격자에는 가능한 버킷 헤딩 구간과 그 헤딩을 유지하며 특정 방향으로 직선 이동할 수 있는 최대 길이를 저장한다. 차체 cabin 회전이나 경사면의 base 자세는 좌표계 강체변환으로 다룬다. 온라인 계획기는 현재 height map과 접근점을 받아 사전 계산된 표를 조회하고 네 굴착 단계를 조립하므로, 고차원 역기구학 탐색을 짧은 검색과 보간 문제로 바꾼다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p059-figure-p0001-1-o01-1dcf8c3f">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2e17886dd7daae47c12fe2b7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1: A typical excavation motion which consists of four phases, different types of motion are colorized by different colors (best view in color).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p059-figure-p0002-2-o01-9f6754e8">
+<img alt="원문 Figure 2, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7c5348e754f28f176f8811a5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.2</b> — Fig. 2: R-map with transformations. The red O −xyz is the world frame. The green O −x′y′z is ﬁxed to the excavator chassis. The blue O−x′′y′′z is ﬁxed to the excavation plane which is depicted with the blue dashed parallelogram. It rotates around z axis by β. O −x′′z is the 2D coordinate frame of the R-map.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>제어·힘제어 방법도 실행할 guidance bucket trajectory가 먼저 필요하다.</li><li>접근각·높이·거리만 최적화하면 실행 가능 궤적공간의 일부만 탐색한다.</li><li>일반 3D reachability map은 굴착의 평면 구조를 활용하지 않아 크다.</li><li>자세 도달성만으로는 같은 헤딩의 직선 이동 가능거리를 알 수 없다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>2D 위치별 도달 헤딩을 저장하는 compact R-map을 제안했다.</li><li>헤딩구간 집합연산으로 방향별 최대 직선 이동길이를 사전 등록했다.</li><li>R-map 조회로 네 굴착 단계를 조립해 AGX에서 평균 50 ms 계획을 시연했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>R-map 생성은 굴착기 CAD 링크 치수와 관절한계를 입력으로 한다. 굴착평면을 작은 격자로 나누고, 각 격자의 내접원 위에 버킷 원점을 균등 배치하면서 헤딩이 격자 중심을 향하는 pose를 만든다. 각 pose에 역기구학을 적용해 해가 있으면 해당 격자를 reachable로 표시한다. 한 격자에서 가능한 헤딩은 하나의 각도구간 또는 self-collision과 기구학 한계로 분리된 여러 구간의 합 [θ]로 저장된다.</p><p>직선 이동 능력은 translation direction α마다 계산한다. 시작 격자에서 α 방향의 다음 격자로 이동하며, 지금까지 지난 모든 격자의 reachable heading interval 교집합을 갱신한다. 교집합이 비거나 맵 경계를 넘으면 탐색을 멈춘다. 연속 교집합들의 차집합은 특정 헤딩이 어디까지 유지될 수 있는지를 나타내므로, 시작격자에서 그 지점까지 거리를 최대 이동길이로 저장한다. 결과적으로 각 격자는 CT_i={(α_j,L_j)} 형태의 translation capability table을 가진다.</p><p>온라인 계획은 접근점 P_a와 현재·목표 height map을 받아 penetration, dragging, rotation, lifting을 순서대로 구성한다. 침투방향은 지표 법선과 정렬되고 버킷 면이 토양을 누르지 않도록 고른다. 예상 swept soil volume으로 침투와 드래그 길이를 정하고, 드래그는 각 격자의 [θ] 안에서 헤딩 변화가 작고 단조롭도록 보간한다. 회전·인양은 토사가 쏟아지지 않도록 수직 부근의 방향을 고르고, 버킷 외접 삼각형과 지면의 최소간격으로 회전 시작 높이를 정한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>굴착평면 좌표화</h4><p>붐·암·버킷의 2D 평면을 정의하고 cabin 회전과 base 경사는 좌표계 강체변환으로 분리한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>pose 샘플링</h4><p>평면 격자의 내접원 표본에서 중심을 향하는 버킷 heading pose를 생성한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>IK 도달성</h4><p>IK와 self-collision·관절한계를 검사해 reachable heading을 하나 이상의 구간 [θ]로 저장한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>직선 탐색</h4><p>방향 α로 격자를 진행하며 [θ] 교집합이 비거나 경계에 닿을 때까지 경로를 추적한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>거리 추출</h4><p>연속 교집합의 차집합으로 heading별 최대거리 L을 구해 CT_i에 등록한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>침투 선택</h4><p>지표 법선과 맞고 α_p≥θ_p인 후보를 고른 뒤 예상 굴착량으로 침투·드래그 길이를 정한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>드래그 보간</h4><p>격자 도달구간 안에서 인접 heading 변화 제곱합을 최소화하며 단조 회전하게 한다.</p></div><div class="pipeline-card"><span class="step-num">8</span><h4>회전·인양</h4><p>heading을 수직 부근으로 제한하고 버킷-지면 간격을 확보한 시작점에서 경로를 보간한다.</p></div><div class="pipeline-card"><span class="step-num">9</span><h4>지형 갱신</h4><p>AGX 실행 뒤 갱신된 2.5D height map을 다음 굴착 입력으로 사용한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>격자별 도달 헤딩 R-map</h4><code>RM=\{G_i\}=\{(P_i,[\theta]_i)\}</code><p>격자 중심 P_i마다 IK가 가능한 버킷 heading의 하나 또는 여러 각도구간 [θ]_i를 저장한다. 원문 PDF 3쪽.</p></div><div class="eq"><h4>방향별 translation capability</h4><code>CT_i=\{(\alpha_j,L_j)\}</code><p>격자 i에서 샘플 이동방향 α_j와 reachable heading별 최대 직선 이동길이 집합 L_j를 등록한다. 원문 PDF 3쪽 Algorithm 1~2 설명.</p></div><div class="eq"><h4>드래그 헤딩 보간</h4><code>\min \sum_i\|\theta_{i+1}-\theta_i\|^2</code><p>R-map의 도달구간 안에서 인접 heading 변화가 작고 매끄러운 dragging 경로를 찾는 목적함수다. 원문 PDF 4쪽 식 (1).</p></div><div class="eq"><h4>드래그 단조·기울기·도달 제약</h4><code>0&lt;\theta_{i+1}-\theta_i&lt;k,\quad \theta_{i,min}\le\theta_i\le\theta_{i,max}</code><p>헤딩이 한 방향으로 부드럽게 회전하고 각 격자의 reachable interval을 벗어나지 않게 한다. 원문 PDF 4쪽 식 (2)~(4).</p></div><div class="eq"><h4>회전 지면간격</h4><code>l\sin\theta+z&gt;\epsilon</code><p>버킷을 감싸는 삼각형의 bottom edge가 회전 중 지면을 누르지 않도록 회전 시작점 높이를 제한한다. 원문 PDF 5쪽.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p059-figure-p0003-3-o01-9724924c">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/16341fbc07e64ab61923da1a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3: Reachability calculation of a grid. Blue arrows denote bucket heading directions. The green arrow is the average reachable heading direction. The yellow sector represent reachable directions. [θ] is the interval of heading angles.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p059-figure-p0004-5-o01-a112e311">
+<img alt="원문 Figure 5, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0243f67e443bc83c76db2fc8.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.4</b> — Fig. 5: Translation exploration from grid (3.25, 0.35). Blue arrows are translation directions with α shown at the end of each translation path. Red sectors stand for intersection intervals of reachable heading directions.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p059-figure-p0004-6-o01-be4e221f">
+<img alt="원문 Figure 6, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/245d396bdd4b769b0042495c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.4</b> — Fig. 6: Translation lengths of the bucket with all [θ] at grid (3.25, 0.35). The gray sectors represents [θ] at the starting grid. Lengths are annotated on the left of each subplot.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p059-figure-p0005-7-o01-b0600c02">
+<img alt="원문 Figure 7, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/bf5d8c1fea0aa393294c8df5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.5</b> — Fig. 7: An example rotation which presses the bucket into the soil.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>3D의 2D 압축</h3><p>굴착평면만 저장하고 cabin·base 자세는 좌표변환으로 처리해 위치와 heading interval의 작은 map을 만든다.</p><ul><li>세 좌표계</li><li>2D 위치+heading</li><li>모델별 1회 계산</li></ul></article><article class="tech-card"><h3>구간 자세 도달성</h3><p>격자마다 IK 가능한 heading 전체를 분리구간까지 보존해 침투용·인양용 영역을 구분한다.</p><ul><li>불연속 구간 허용</li><li>blue 침투영역</li><li>red 인양영역</li></ul></article><article class="tech-card"><h3>직선이동 능력</h3><p>경로상 [θ] 교집합과 차집합으로 heading별 최대거리를 추출해 드래그 primitive를 즉시 조회한다.</p><ul><li>α별 grid tracing</li><li>빈 교집합에서 중단</li><li>CT_i 등록</li></ul></article><article class="tech-card"><h3>단계별 경로 조립</h3><p>침투의 법선, 드래그의 굴착량·smoothness, 인양의 토사유실·간격 제약을 R-map 위에서 연결한다.</p><ul><li>길이 공동 결정</li><li>heading 보간</li><li>회전 clearance</li></ul></article><article class="tech-card"><h3>height map 반복</h3><p>한 번 굴착 뒤 바뀐 2.5D 지형을 다시 입력하되 사전 R-map은 반복 재사용한다.</p><ul><li>map 고정</li><li>terrain 갱신</li><li>연속굴착 시연</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p059-figure-p0003-4-o01-c26ba236">
+<img alt="원문 Figure 4, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ff1a009947f62c2de9774335.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.3</b> — Fig. 4: Overview of the R-map. X axis is the direction along which excavation tracks move forward. Z is the direction perpendicular to the terrain ground. All colored grids are reachable. Different colors means that the grids are suitable for different motions. Blue grids suit penetration; Red grids suit lifting; Yellow grids are transmission region.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p059-figure-p0005-8-o01-39c40bdc">
+<img alt="원문 Figure 8, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9fede0589aa4291d946d8af4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.5</b> — Fig. 8: Overlaying the planned trajectory with the R-map. The green arrow at each cell indicates the heading direction of the bucket, which lies within the blue reachable range. The red and yellow ﬁve-pointed star represent the position of the start and end points, respectively.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>boom 2.00 m, stick 1.05 m, bucket 0.60 m, base height 0.35 m의 굴착기 CAD 모델을 사용했다.</li><li>R-map 격자는 0.1 m×0.1 m, translation direction의 회전 해상도는 0.1π로 설정했다.</li><li>상용 AGX Dynamics가 굴착기 동역학, 2.5D height map 지형과 tool-soil interaction을 시뮬레이션했다.</li><li>초기 height map과 사용자가 지정한 목표 굴착 형상으로 최종 height map을 만들고, 매 굴착 후 simulator 지형을 갱신했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>모델별 R-map을 오프라인 생성하고 위치별 reachable heading, translation path와 최대길이, 침투·인양 기능영역을 시각화했다.</li><li>한 접근점과 목표 굴착량에서 침투·드래그·회전·인양의 bucket pose를 검색하고 각 heading이 R-map 허용구간 안에 있는지 확인했다.</li><li>AGX에서 두 번 연속 굴착하며 네 단계를 실행하고 각 사이클 뒤 새 height map으로 다시 계획했다.</li><li>사용자가 폭·높이·깊이를 지정한 직사각 trench를 반복 굴착해 최종 지형이 목표 height map에 가까워지는지 시연했다.</li></ul>
+<h3>비교 기준</h3><ul><li>별도 외부 motion planner와 정량 비교는 없다.</li><li>R-map이 지정한 reachable heading range와 실제 계획 bucket heading의 포함관계를 내부 실행가능성 기준으로 확인했다.</li></ul>
+<h3>평가 지표</h3><ul><li>R-map 오프라인 생성시간</li><li>단일 굴착 온라인 계획시간</li><li>계획 heading의 reachable interval 만족 여부</li><li>버킷 적재와 목표 height map 형상 접근</li><li>연속 굴착 실행 가능성</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p059-figure-p0006-9-o01-46d74f37">
+<img alt="원문 Figure 9, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7e0e4e7ed36d4e635e403412.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.6</b> — Fig. 9: Simulation results of two consecutive excavation. Top-down is the ﬁrst and second excavation.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>0.1 m 격자와 0.1π 방향 해상도의 R-map은 표준 컴퓨터에서 평균 7.0분에 생성되었다. 장비 기구학마다 한 번 수행하는 offline 비용이다. 위치에 따라 reachable heading이 위로 회전했고, downward heading이 가능한 blue 영역은 침투에, 거의 모두 위를 향하는 red 영역은 인양에 적합했다.</p><p>계획된 bucket heading은 각 격자의 reachable range 안에 있었고 단일 굴착 계획은 평균 50 ms였다. AGX의 두 연속 굴착은 네 단계를 수행했으며 논문은 각 진행에서 최대 bucket load를 달성했다고 기술한다. 직사각 trench도 목표 height map에 가까워졌지만 적재량·형상오차·반복 수·실패율 수치는 없다.</p><p>강점은 짧은 조회시간과 명시적 기구학 가능성이다. 그러나 토크·토양 저항·유압 추종은 정량 비교하지 않았으므로 50 ms는 기구학 경로 검색시간이지 완전 동역학 계획시간이 아니다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>R-map 격자 해상도</td><td>0.1 m × 0.1 m</td><td>2D excavation plane discretization</td><td>PDF p.5</td></tr><tr><td>translation direction 해상도</td><td>0.1π rad</td><td>방향별 직선이동 능력 계산</td><td>PDF p.5</td></tr><tr><td>R-map 생성시간</td><td>평균 7.0 min</td><td>표준 컴퓨터, 주어진 굴착기 모델에 대해 offline 1회</td><td>PDF p.5</td></tr><tr><td>단일 굴착 계획시간</td><td>평균 50 ms</td><td>사전 계산 R-map을 조회한 online full-bucket planning</td><td>PDF p.6</td></tr><tr><td>boom 길이</td><td>2.00 m</td><td>실험 굴착기 CAD 모델</td><td>PDF p.5</td></tr><tr><td>stick 길이</td><td>1.05 m</td><td>실험 굴착기 CAD 모델</td><td>PDF p.5</td></tr><tr><td>bucket 길이</td><td>0.60 m</td><td>실험 굴착기 CAD 모델</td><td>PDF p.5</td></tr><tr><td>base 높이</td><td>0.35 m</td><td>실험 굴착기 CAD 모델</td><td>PDF p.5</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>R-map상 가능한 경로도 토크 한계나 토양 저항 때문에 실제 장비에서 실행 불가능할 수 있으나 현재 planner는 이를 검사하지 않는다.</li><li>계획은 2D excavation plane과 2.5D height map을 전제로 하므로 측방 버킷 운동이나 복잡한 3D 지형 변형을 직접 표현하지 않는다.</li><li>AGX에서 full bucket과 목표 trench 접근을 시연했지만 적재량·형상오차·실패율이 수치로 보고되지 않아 성능 범위를 정량화하기 어렵다.</li><li>실제 센서로 height map을 만들고 갱신하는 과정과 유압굴착기의 추종오차는 검증하지 않았다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>주로 기구학 제약만 고려하고 actuator torque limit, 토양 저항과 유압 동역학을 계획에 포함하지 않는다.</li><li>검증이 AGX Dynamics 시뮬레이션에 머물고 실제 굴착기 하드웨어 결과가 없다.</li><li>굴착을 단일 2D 평면으로 제한해 측방 운동과 복합 3D 작업을 표현하지 못한다.</li><li>초기·갱신 height map이 주어진다고 가정하며 센서오차·가려짐·지형추정 지연을 다루지 않는다.</li><li>외부 planner baseline, 반복 수, 계획 실패율, bucket load와 목표지형 오차의 정량값이 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>R-map의 기능영역을 상위 task planning과 optimal base placement에 사용해 차체 이동을 줄인다.</li><li>reachability에 actuator torque limit과 동역학 제약을 결합해 미지 지형 적응제어까지 확장한다.</li><li>실제 굴착기에서 센서 기반 height map, 유압 추종, 토양 변화와 연속 굴착을 검증한다.</li><li>토크·유압압력·실행 성공 데이터를 이용해 격자별 기구학 도달성을 실제 실행 가능도로 온라인 보정한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>2D 격자마다 IK 가능한 버킷 헤딩과 방향별 최대 직선거리를 사전 계산하고, height map에서 침투·드래그·회전·인양 경로를 조회·보간한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>0.1 m 격자 R-map은 평균 7분에 offline 생성되고, AGX에서 기구학적으로 가능한 단일 full-bucket 궤적을 평균 50 ms에 계획했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>토크·토양력·유압 동역학, 센서 기반 지형추정과 실차 검증이 없고 2D 평면·시뮬레이션에 한정된다.</p></div></div>
+<div class="kw"><span>#작업·궤적계획</span><span>#시스템통합·현장실증</span><span>#Compact R-map</span><span>#역기구학</span><span>#격자 기반 도달가능성 사전계산</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>Compact R-map은 자율굴착기의 빠른 feasibility layer로 유용하다. 상위 계획기가 고른 공격점과 목표 체적을 받으면 50 ms 수준에서 기구학적으로 가능한 네 단계 경로를 제공해, 후속 토크 최적화나 MPC의 초기해로 넘길 수 있다. 장비마다 한 번 계산한 map을 반복 사용하는 구조는 실시간성이 중요한 현장 시스템에 맞는다.</p><p>다만 현장 실행가능성은 관절각만으로 결정되지 않는다. 격자·헤딩·이동거리마다 실제 유압압력, 토크 한계, 토질, slip과 추종성공을 축적해 R-map을 동역학적 cost map으로 확장해야 한다. 또한 전체 토공에서는 base placement와 굴착 순서를 함께 골라 차체 이동과 잔여 토량을 최소화해야 한다.</p><ul><li>상위 task planner의 공격점을 R-map으로 즉시 거부·수정해 실행불가능 목표를 하위 제어기로 보내지 않을 수 있다.</li><li>50 ms 기구학 경로를 최소토크 궤적 최적화의 warm-start로 사용하면 비선형 solver의 탐색부담을 줄일 수 있다.</li><li>침투·인양 기능영역은 굴착기 base와 덤프트럭 배치를 정하는 작업공간 휴리스틱이 된다.</li><li>온라인 관절압력·토크·실패 로그로 CT_i를 보정하면 토질과 장비상태를 반영한 적응형 R-map으로 발전할 수 있다.</li><li>센서 기반 height map의 불확실도를 격자 도달성에 전파해 보수적 회피와 재관측 조건을 정의해야 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4, p.5</li><li><b>실험</b>: p.5, p.6</li><li><b>결과</b>: p.5, p.6</li><li><b>한계</b>: p.6</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/098042c83fa8b9d899e4376b.webp" rel="noopener" target="_blank">대표그림</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 핵심 분석 2019-2024.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2019 Compact reachability map for excavator motion planning.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-058.html"><span class="lbl">← 이전 #58</span>자동화 굴착기를 위한 숙련자 굴착력 패턴 기반 굴착 작업 궤적 생성</a><a class="next" href="paper-060.html"><span class="lbl">다음 #60 →</span>자율 자유형 트렌칭</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

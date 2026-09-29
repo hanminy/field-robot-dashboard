@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#7 ExT 다중작업 굴착 사전학습 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #007</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2025</span><span class="badge">#007</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF</span></div>
+<h1>ExT 다중작업 굴착 사전학습</h1>
+<p class="title-en" lang="en">ExT: Towards scalable autonomous excavation</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 서로 다른 출처의 RL expert·script·사람 시연을 공통 토큰 인터페이스로 모아 25M-parameter GPT 정책을 사전학습하고 소량 SFT·RLFT로 새 조건에 적응시켜, Menzi Muck M545에서 장애물 복구를 포함한 6회 완전자율 굴착 cycle을 평균 36초에 수행했다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>단일 굴착 동작을 넘어 완전한 작업 cycle로</h3>
+<p>굴착 로봇 연구는 digging, dumping, arm repositioning, collision recovery를 각각 다른 제어기나 규칙으로 만드는 경우가 많다. 그러나 실제 cycle에서는 작업 사이를 부드럽게 전환하고 예기치 않은 매설 장애물에 반응해야 한다. 각 task마다 별도 observation과 action 표현을 쓰면 데이터를 공유하기 어렵고 새로운 작업을 추가할 때 전체 stack을 다시 설계해야 한다.</p><p>또 다른 병목은 데이터다. 토양 굴착 expert는 대규모 병렬 시뮬레이션 RL로 만들 수 있지만, 복구 동작은 실패 상황을 정확히 모델링하기 어려워 사람 시연이 더 효율적이다. 덤프와 빈 arm 이동은 정교한 RL보다 script가 충분하다. ExT는 서로 다른 방식으로 얻은 데이터를 한 sequence model에 합치면 task 간 공통 기구학과 유압 반응을 재사용할 수 있다는 가설을 검증한다.</p><p>Transformer는 긴 observation-action history와 task token을 조건으로 다음 행동을 예측한다. 사전학습 뒤 소량의 새 task demonstration으로 supervised fine-tuning하고, 지형·토양·버킷 변화에는 KL-regularized RL fine-tuning을 적용한다. 목표는 하나의 거대한 end-to-end 작업기가 아니라, 공통 정책 내부의 여러 skill을 finite-state supervisor가 안전하게 호출하는 완전 작업 workflow다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p007-figure-p0001-1-o01-efd598d8">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2db7b2bd9833b5f65e0aa287.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1: The ExT framework enables the collection of demonstrations from different experts (human teleoperation, RL experts, scripted controllers), pretraining, followed by rapid adaptation via SFT for demonstration-only tasks or RLFT for reward-based tasks.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p007-figure-p0003-2-o01-c6597bed">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f58e6d489d89ecce4afa000d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2: Task Visualizations. Dig: (a) initial and (b) final state, with soil profile (green), max digging depth (red), and pull-up line (brown) visualized. Abort Digging &amp; Reset: (c) normal digging, (d) collision with obstacle (white), (e) recovery, and (f) retraction. Dump: (g) initial pose with full shovel and (h) move to target and open shovel, with shovel trajectory visualized. Move Arm: move open shovel from (i) initial pose to (j) target pose.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>task별 독립 정책은 데이터와 표현을 공유하지 못해 새로운 skill마다 대규모 학습을 반복한다.</li><li>순수 scripted pipeline은 토양과 장애물 변화에 대한 피드백 적응이 약하고 수동 전환 규칙이 늘어난다.</li><li>단일-task RL은 digging 성공률이 높아도 dump·reposition·abort를 연결한 실제 cycle을 보장하지 않는다.</li><li>새 환경에서 전체 모델을 재학습하면 기존 task 성능을 잊는 catastrophic forgetting이 발생할 수 있다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>dig, abort/reset, dump, move-arm의 이질적 데이터를 공통 sequence로 결합하는 Excavator Transformer(ExT)를 제시한다.</li><li>25M GPT형 causal Transformer가 LSTM과 task별 정책보다 정밀 다중작업과 perturbation 대응에서 유리함을 보인다.</li><li>1,000개 시연의 few-shot SFT와 60만 interaction RLFT로 새 task·분포 변화에 적응하면서 기존 skill을 유지한다.</li><li>12 t급 Menzi Muck M545에서 장애물 복구를 포함한 완전자율 6-cycle workflow를 zero-shot 배치한다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>모든 task는 관절 상태, 목표, 지형 관련 값과 과거 action을 공통 형식으로 token화하고 task identifier를 함께 넣는다. causal Transformer는 최근 25 step history에서 다음 연속 제어 명령을 회귀한다.</p><p>데이터는 task 특성에 맞게 수집된다. Dig는 RL expert의 성공 trajectory, dump와 move-arm은 script, abort/reset은 사람이 teleoperate한 시연이다. 먼저 behavior cloning으로 합치고, 새 task는 SFT, domain shift는 pretrained policy 주변을 유지하는 RLFT로 적응한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>이질적 expert 데이터 생성</h4><p>Dig RL expert는 약 98% 성공률에 도달한 뒤 성공 trajectory 15만 개를 제공한다. Dump와 move-arm은 각 15만 개 scripted episode를 RTX 3090에서 2시간 이내 생성하고, abort/reset은 2,000개 사람 teleoperation trajectory를 약 3시간 수집한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>공통 observation-action token화</h4><p>현재 robot state와 task target을 선형 embedding하고 task token, 과거 action을 같은 sequence에 배치한다. context length 25의 causal mask로 미래 정보 누출 없이 다음 action을 예측한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>다중작업 behavior cloning</h4><p>6-layer, 6-head, hidden size 640의 약 25M parameter GPT policy를 L1 action imitation loss로 학습한다. task별 dataset을 섞되 task token으로 원하는 skill을 구분한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>SFT와 KL-regularized RLFT</h4><p>새 move-arm task는 1,000개 demonstration으로 supervised fine-tuning한다. terrain, soil, bucket OOD 변화는 1,000 parallel environment에서 6 step씩 100 iteration, 총 60만 interaction으로 RL fine-tuning하며 pretrained policy와의 KL 항을 둬 기존 task 망각을 억제한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>유한상태 작업 조정</h4><p>실기에서는 finite-state machine이 dig, dump, move, abort/reset task token을 전환한다. 매설 rock 때문에 arm이 stall하면 proprioception으로 이를 판정하고 abort와 recovery skill을 호출한 뒤 cycle로 복귀한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>행동 모방 손실</h4><code>J_{BC}(\theta)=\mathbb{E}_{(s,a)\sim D}|\pi_\theta(s)-a|</code><p>서로 다른 expert가 만든 연속 action을 Transformer가 원문의 L1 behavior-cloning loss로 모방한다.</p></div><div class="eq"><h4>KL-정규화 PPO 목적</h4><code>L_{PPO}(\theta)=\mathbb{E}_t[L_t^{CLIP}(\theta)-c_1L_t^{VF}(\theta)+c_2S[\pi_\theta](s_t)]-\beta KL(\pi_\theta\|\pi_0)</code><p>PPO의 clipped objective, value loss, entropy에 frozen pretrained policy π0와의 KL 벌점을 더하며, 원문은 c2=0.0005와 β=0.02를 사용한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p007-figure-p0007-5-o01-e4d515e7">
+<img alt="원문 Figure 5, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/91dc07a1d1fb67d217f04a33.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.7</b> — Fig. 5: The Finite State Machine used to coordinate task switching during deployment of GPT-4-Tasks policy for a complete excavation workflow.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>Task-conditioned causal Transformer</h3><p>6-layer·6-head·hidden 640·context 25의 약 25M GPT 정책이 task token에 따라 digging부터 centimeter급 move까지 행동을 낸다.</p><p>Attention은 최근 state-action history에서 유압 지연과 작업 단계 정보를 선택하며, 5-layer LSTM보다 다중작업 정밀도와 perturbation 대응이 좋았다.</p><ul><li>하나의 25M 정책에 4개 skill 통합</li><li>task token으로 행동 모드 조건화</li><li>25-step history로 지연과 진행 문맥 활용</li></ul></article><article class="tech-card"><h3>데이터 출처를 task 난이도에 맞춘 혼합 학습</h3><p>토양 상호작용이 복잡한 dig는 RL expert, 기하학적으로 명확한 dump·move는 script, 드문 abort/reset은 사람 teleoperation으로 만든다.</p><p>서로 다른 최적 데이터원을 공통 token 형식으로 합쳐 실제 시간과 시뮬레이션 비용을 필요한 곳에 집중한다.</p><ul><li>RL·script·human demonstration 통합</li><li>성공 trajectory 중심 dig dataset</li><li>고비용 실제 시간을 시뮬레이션 병렬화로 대체</li></ul></article><article class="tech-card"><h3>few-shot 적응과 망각 억제 RLFT</h3><p>사전학습 representation은 새 move-arm task를 1,000개 시연으로 학습한다. OOD RLFT는 KL 항으로 pretrained policy 이탈을 제한해 기존 skill 망각을 줄인다.</p><ul><li>1,000 demonstration SFT</li><li>60만 interaction RLFT</li><li>KL regularization으로 기존 skill 보존</li></ul></article><article class="tech-card"><h3>Skill policy와 finite-state 안전 조정</h3><p>하나의 network가 action을 내지만 task 전환은 검증 가능한 finite-state machine이 관리한다. 실기 stall에서는 abort/reset을 호출해 안전하게 후퇴하고 작업에 복귀한다.</p><ul><li>task 전환 조건의 명시성</li><li>매설 장애물 stall 감지</li><li>abort 후 recovery와 작업 재개</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p007-figure-p0007-7-o01-01906548">
+<img alt="원문 Figure 7, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/48fc2dbdc9a5ac673fe8b7a7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.7</b> — Fig. 7: RLFT adaptation performance across three distribution shifts. Pretrained GPT policy adapts efficiently with minimum compute (100 iterations, 1k environments) while maintaining high success on original conditions. The MLP-PPO policy requires significantly more data (300 iterations, 64k environments) to match adaptation performance.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p007-figure-p0008-8-o01-5fdc382a">
+<img alt="원문 Figure 8, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/de4e9e469c43a23c31dfdb2d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.8</b> — Fig. 8: The effect of KL regularization on pretrained task performance retention: move arm end-effector position error after RLFT, with and without KL regularization.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>시뮬레이션은 4개 task와 지연·joint velocity noise perturbation, terrain·soil·bucket OOD 변화를 포함한다. 제어 지연은 최대 0.75 s, 속도 noise 평균 진폭은 약 0.2 rad/s로 샘플링한다. GPT를 LSTM, MLP expert, task 구성별 모델과 비교한다.</li><li>실기 장비는 Menzi Muck M545 약 12 t급 굴착기다. FSM이 ExT task를 연결해 3개 dig point와 90° dump를 포함하는 완전 작업 cycle 6회를 수행하며, 별도 매설 rock 장면에서 collision abort/recovery를 시험한다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>기본 multi-task 정책은 dig 15만, dump 15만, move 15만, abort/reset 2,000 trajectory로 behavior cloning한다. Dig RL expert 성공률은 98%이며 성공 trajectory만 dataset에 저장한다.</li><li>SFT는 pretrained dig+move 모델에 move-arm 시연 1,000개를 추가하고 scratch 1,000개 및 scratch full 15만 개와 비교한다. RLFT는 각 OOD에서 1,000 environment×6 step×100 iteration으로 60만 interaction을 사용하고 5개 random seed로 평가한다.</li><li>실기 6 cycle에서 bucket volume, cycle time, dig와 dump endpoint error를 측정한다. 각 task는 FSM 조건으로 전환되며 사람이 조종 중 개입하지 않는 zero-shot deployment다.</li></ul>
+<h3>비교 기준</h3><ul><li>5-layer LSTM hidden 1,024: 비슷한 sequence 입력을 처리하는 recurrent behavior-cloning 비교군이다.</li><li>Task-specific MLP/PPO expert: 개별 task 대규모 RL 성능과 통합 GPT를 비교한다.</li><li>Scratch SFT 1,000 및 scratch full 150,000 demonstrations: pretraining transfer의 데이터 효율을 평가한다.</li><li>RLFT without KL: 새 OOD 적응 중 기존 move-arm skill 망각을 측정한다.</li></ul>
+<h3>평가 지표</h3><ul><li>Dig·abort/recovery 성공률, dump와 move endpoint 오차</li><li>지연·속도 noise perturbation 전후 정밀도</li><li>SFT demonstration 수 대비 성공률과 오차</li><li>OOD RLFT 성공률 및 pretrained task 유지 오차</li><li>실기 bucket volume, cycle time, dig·dump 최종 위치 오차</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p007-figure-p0006-3-o01-d6c9260c">
+<img alt="원문 Figure 3, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7ec681685019fbcfd1f37387.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.6</b> — Fig. 3: Complete autonomous excavation workflow using the pretrained GPT-4-Tasks policy on Menzi Muck M545: (a)-(d) real-world execution sequence with transitions between digging, dumping, and arm moving, (e) visualization of the end-effector trajectory throughout the six dig-dump-move cycles.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p007-figure-p0007-6-o01-e22b9dbb">
+<img alt="원문 Figure 6, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/60ae9f617aa6f83703dcb498.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.7</b> — Fig. 6: Change in soil terrain (max digging depth profile in red) from RBF- sampled terrain (left) to stair-shaped terrain (right).</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>시뮬레이션 GPT-4-Tasks는 dig 98.8%, abort 99.0%, recovery 99.5% 성공률을 기록했다. Dump 오차는 1.6±0.9 cm에서 perturbation 시 5.5±3.4 cm, move는 0.8±0.4 cm에서 5.3±2.5 cm로 증가했다.</p><p>실기 dump/move 오차는 3.6±2.5/2.2±1.0 cm였다. 6회 완전 cycle은 평균 0.96 m³를 36 s에 처리했고 dig/dump 오차는 10.7±3/6.5±2.9 cm였다. 매설 rock stall 뒤 abort/recovery도 작동했다.</p><p>새 move task 1,000-shot SFT에서 pretrained 모델은 96%, 4.3±3.0 cm였고 scratch는 12%, 45.7±30.3 cm였다. Scratch full 15만 개는 100%, 2.4±0.9 cm여서 pretraining의 데이터 효율을 확인했다.</p><p>RLFT 성공률은 terrain 96.7%, soil 95.1%, bucket 93.4%였다. KL 제거 시 기존 move 오차가 11.7/6.9/7.5 cm로, KL 사용 3.3/2.2/2.6 cm보다 커져 망각 억제 효과가 확인됐다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>GPT 다중작업 성공률</td><td>dig 98.8%, abort 99.0%, recovery 99.5%</td><td>시뮬레이션 기본 조건</td><td>PDF p.6</td></tr><tr><td>실기 정밀 오차</td><td>dump 3.6±2.5 cm, move 2.2±1.0 cm</td><td>M545 zero-shot 배치</td><td>PDF p.6</td></tr><tr><td>완전자율 cycle 생산성</td><td>0.96 m³, 36 s</td><td>6 cycle 평균 bucket volume과 cycle time</td><td>PDF p.5</td></tr><tr><td>실기 dig·dump 오차</td><td>10.7±3 cm, 6.5±2.9 cm</td><td>3개 dig point와 90° dump cycle</td><td>PDF p.5</td></tr><tr><td>1,000-shot SFT</td><td>96%, 4.3±3.0 cm</td><td>pretrained 모델의 새 move-arm task</td><td>PDF p.7</td></tr><tr><td>1,000-shot scratch</td><td>12%, 45.7±30.3 cm</td><td>동일 move-arm demonstration budget</td><td>PDF p.7</td></tr><tr><td>OOD RLFT 성공률</td><td>terrain 96.7%, soil 95.1%, bucket 93.4%</td><td>각 60만 interaction fine-tuning</td><td>PDF p.7</td></tr><tr><td>KL 제거 시 기존 move 오차</td><td>11.7 / 6.9 / 7.5 cm</td><td>terrain / soil / bucket; KL 사용은 3.3 / 2.2 / 2.6 cm</td><td>PDF p.8</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>최대 0.75 s 지연과 속도 noise에서 dump와 move 오차가 각각 5 cm 이상으로 증가한다.</li><li>Scratch 모델은 1,000개 시연만으로 새 move task를 거의 배우지 못해 pretraining 의존성이 크다.</li><li>KL regularization을 제거한 RLFT는 새 OOD에는 적응해도 기존 정밀 move skill을 크게 잊는다.</li><li>실기 obstacle recovery는 proprioceptive stall 기반이므로 장애물 위치·형상을 인식하거나 사전 우회하지는 못한다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>task 전환은 학습 정책 밖 finite-state machine과 수동 설계 조건에 의존해 완전한 end-to-end 의사결정은 아니다.</li><li>관측은 주로 proprioception과 제한된 지형 표현이며 LiDAR·vision 기반 객체·토양 인식이 통합되지 않았다.</li><li>실기 평가는 6 cycle과 한 장비에 집중되어 장기 운전, 다양한 현장·부착물의 통계적 일반화는 확인되지 않았다.</li><li>시뮬레이션 토양과 충돌 모델의 단순화 때문에 RLFT OOD 성공률이 실제 다양한 지반을 대표한다고 단정할 수 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>더 큰 Transformer와 더 많은 task·장비 데이터를 사전학습해 범용 excavation foundation policy로 확장한다.</li><li>LiDAR와 vision을 공통 token으로 통합해 장애물 위치, 토양 상태, bucket fill을 직접 인식한다.</li><li>Material Point Method 등 고충실도 토양 시뮬레이션으로 soil dynamics와 sim-to-real 범위를 넓힌다.</li><li>FSM 의존성을 줄이면서도 safety invariant를 유지하는 학습 기반 task planning과 전환 정책을 연구한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>RL·script·사람 시연을 task token 기반 GPT에 behavior-cloning하고, 소량 SFT와 KL-정규화 RLFT로 새 skill·조건에 적응한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>12 t M545에서 0.96 m³ 평균 적재량, 36초 cycle과 장애물 복구를 포함한 6회 완전자율 workflow를 실행했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>실기 표본이 작고 FSM·제한된 perception·단순 토양 시뮬레이션에 의존해 현장 범용성은 추가 검증이 필요하다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#시스템통합·현장실증</span><span>#Transformer 사전학습</span><span>#다중 전문가 시연</span><span>#SFT</span><span>#RLFT</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>ExT는 개별 논문의 digging policy, grading controller, boulder recovery를 공통 skill vocabulary로 묶을 수 있는 상위 정책 틀이다. 특히 데이터 생성 방법을 통일하지 않고 task 특성에 맞게 고른 뒤 interface만 통일한다는 점이 실제 연구 자산 통합에 유용하다.</p><p>저수준에는 hydraulic-aware MPC나 온라인 model-based tracking을 두고 ExT가 reference와 task mode를 생성하는 계층 구조가 현실적이다. Holistic Fusion의 전역·지역 상태와 센서리스 힘 추정을 token에 추가하면 이동, 접촉, 적재량을 아우르는 작업 전환 근거가 강화된다.</p><ul><li>Boulder excavation의 rock 접근·회수 정책을 새 task token과 demonstration으로 추가해 obstacle-specific skill로 확장할 수 있다.</li><li>고정밀 grading MPC를 deterministic expert로 사용해 ExT에 grading trajectory를 distill할 수 있다.</li><li>압력 기반 외력·페이로드 추정을 observation에 넣으면 stall, bucket fill, soil resistance에 따른 전환을 개선할 수 있다.</li><li>점프 없는 odometry와 LiDAR token을 결합하면 굴착기 base 이동과 작업영역 재배치를 동일 sequence model에서 다룰 수 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p007-table-p0003-i-o01-1d013c6d">
+<img alt="원문 Table I, PDF 3쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/122ac46d3995e0235597a425.webp" tabindex="0"/>
+<figcaption><b>원문 Table I · PDF p.3</b> — TABLE I: Shared state-action interface for all tasks</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p007-table-p0006-ii-o01-0c427e61">
+<img alt="원문 Table II, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ffaac87afa95a0929a996575.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.6</b> — TABLE II: Results of Simulated Experiments Across Four Tasks Using Pretrained GPT and RNN Policies</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p007-table-p0006-iii-o01-599161b4">
+<img alt="원문 Table III, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/663e025b9cccca3fd7280a39.webp" tabindex="0"/>
+<figcaption><b>원문 Table III · PDF p.6</b> — TABLE III: On-Machine Results for Dump and Move Arm</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p007-table-p0007-iv-o01-3ed9ebe5">
+<img alt="원문 Table IV, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/99098d424343cc5cca9ced17.webp" tabindex="0"/>
+<figcaption><b>원문 Table IV · PDF p.7</b> — TABLE IV: SFT results: The pretrained model (trained on dig and move arm demos) acquires the Dump task using 150x less data than a single- task model trained from scratch, achieving comparable performance while preserving high accuracy on the original pretraining tasks.†</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p007-table-p0007-v-o01-ccf8da7f">
+<img alt="원문 Table V, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5174f0508f26e4c08c4a98cd.webp" tabindex="0"/>
+<figcaption><b>원문 Table V · PDF p.7</b> — TABLE V: Parameter ranges used for dig demonstration collection, along with the out-of-distribution values to be adapted by the policy with RLFT.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p007-table-p0008-vi-o01-c1ea3152">
+<img alt="원문 Table VI, PDF 8쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/cf41e178162a5c9288326610.webp" tabindex="0"/>
+<figcaption><b>원문 Table VI · PDF p.8</b> — TABLE VI: Training Configuration for RLFT</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4, p.5</li><li><b>실험</b>: p.4, p.5, p.6, p.7</li><li><b>결과</b>: p.5, p.6, p.7, p.8</li><li><b>한계</b>: p.8</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2025 ExT - Towards scalable autonomous excavation.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-006.html"><span class="lbl">← 이전 #6</span>온라인 모델기반 RL 제어</a><a class="next" href="paper-008.html"><span class="lbl">다음 #8 →</span>핵심기술 기반 토공 장비 자동화의 발전과 과제</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

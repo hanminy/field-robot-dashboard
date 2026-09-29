@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#13 ETHcavation 동적 현장지도·주행 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #013</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2024</span><span class="badge">#013</span><span class="badge score">환경인식</span><span class="badge">논문 PDF</span></div>
+<h1>ETHcavation 동적 현장지도·주행</h1>
+<p class="title-en" lang="en">ETHcavation: Mapping and navigation for autonomous excavators in dynamic construction environments</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li><li><a href="../notes/b856eea1a9027744.html">ETH 자율굴착 최신 연구 동향 2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — ETHcavation은 카메라 panoptic 분할, LiDAR 군집화와 상수속도 Kalman 추적, 정적·동적 의미지도, 1 Hz RRT*를 한 파이프라인으로 묶어 사람·차량·협소 장애물이 공존하는 건설현장에서 12톤급 굴착기의 경로를 갱신하고 충돌 임박 시 정지·우회하는 통합 시스템이다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>동적 건설현장에서 의미 이해와 주행 계획을 하나의 폐루프로 연결</h3>
+<p>건설현장은 포장도로와 달리 흙·자갈·잔해·가설울타리·작업차량·사람이 함께 존재하고, 지형과 객체 배치도 공정에 따라 계속 바뀐다. 굴착기는 차체가 크고 사각지대가 넓어 단순 점유지도만으로는 통과 가능한 흙더미와 반드시 피해야 하는 사람을 구분하기 어렵다. 논문은 이 문제를 ‘장면을 픽셀 수준으로 의미 있게 분할하는 일’, ‘그 의미를 3차원 점군과 시간축에서 유지하는 일’, ‘의미와 운동 상태를 실제 경로 비용으로 바꾸는 일’의 연쇄로 정의한다. 따라서 인식 점수만 높이는 데 그치지 않고, 지도 갱신과 충돌 회피가 실제 굴착기에서 계속 돌아가야 한다는 시스템 관점을 취한다.</p><p>기존 자율 굴착 연구는 주로 작업영역이 통제된 정적 환경을 가정하거나, 장애물을 기하학적 점유물로만 취급했다. 반면 일반 도로용 데이터와 네트워크는 건설장비, 버킷, 펜스, 비정형 흙 표면 같은 현장 범주를 충분히 학습하지 못한다. ETHcavation은 502장의 현장 영상을 직접 주석하고 COCO 데이터와 혼합해 이러한 도메인 간극을 줄인다. 이어 카메라 결과를 LiDAR에 투영하고, 정적층과 동적층을 분리한 의미 GridMap을 구성하며, 사람이 움직일 때 미래 위치까지 고려하는 온라인 RRT*로 연결한다. 이 때문에 논문의 핵심 성과는 새 데이터셋 자체보다 ‘현장 특화 인식이 실제 주행 의사결정까지 흘러가는 완결된 경로’에 있다.</p><p>대상 플랫폼은 ETH의 M545 보행식 굴착기이며, 센서는 수직 장착 4K Ximea xiX PCIe 카메라와 Ouster OS0 LiDAR이다. 상태 추정은 Graph-MSF가 IMU·GNSS·LiDAR 정보를 융합한다. 제안 시스템은 통제된 시험장뿐 아니라 스위스 Avully의 Rescue Troop Training Center에서도 사람의 횡단, 좁은 펜스와 기둥, 버킷, 도로 추종을 포함한 주행을 검증한다. 즉 데이터셋 평가, 실시간 계산 성능, 현장 경로 재계획을 같은 논문 안에서 다룬다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p013-figure-p0001-1-o01-c76cc328">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8bff908492b0d355d061ee8e.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Figure 1: Autonomous navigation with the M545 exca- vator. The top image illustrates the model’s 2D panoptic segmentation prediction, while the bottom image depicts the panoptic map and the planned path of the navigation planner in black.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p013-figure-p0003-2-o01-8d524ba3">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/033c1ac40c4fb1c13c691f77.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Figure 2: Overview of the integrated camera and LiDAR data processing and semantic mapping pipeline for au- tonomous navigation in unstructured environments.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>COCO 같은 범용 데이터만 사용하면 건설현장 고유 범주와 외관을 충분히 표현하지 못하며, 소규모 현장 데이터만 사용하면 일반 물체에 과적합된다.</li><li>프레임별 panoptic 분할만으로는 동일 객체의 시간적 정체성과 속도를 알 수 없어 사람·차량의 미래 위치를 경로계획에 반영하기 어렵다.</li><li>단일 점유층 지도는 한 번 관측된 동적 객체의 흔적을 남기거나, 새 동적 관측이 기존 정적 의미와 충돌할 때 우선순위를 명확히 처리하지 못한다.</li><li>기하학적 최단경로만 최적화하면 통과 가능하지만 위험도가 다른 의미 범주를 구분하지 못하고, 재계획 시간이 길면 움직이는 사람에 대응할 수 없다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>건설현장 영상 502장과 능동적으로 선택한 현장 범주를 제공하고, COCO와 현장 데이터의 혼합 비율 및 backbone 미세조정 효과를 정량 비교한다.</li><li>panoptic mask를 LiDAR 점에 투영한 뒤 지면 제거·DBSCAN·다수결·Kalman 추적을 수행하여 정적 객체와 동적 객체의 3차원 표현을 온라인으로 분리한다.</li><li>정적 유지층과 매 주기 교체되는 동적층을 합성한 의미 GridMap을 만들고, 의미 비용과 이동거리 비용을 결합한 RRT*를 1 Hz로 실행한다.</li><li>실제 굴착기와 현장급 GPU에서 전체 파이프라인을 구동하고, 사람 횡단과 협소 장애물에서 정지·우회·경로 교체가 작동함을 보인다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>입력은 동기화된 4K RGB 영상, OS0 LiDAR 점군, Graph-MSF가 추정한 굴착기 자세다. 먼저 DETR 또는 Mask2Former가 영상의 thing/stuff 범주를 panoptic mask로 만든다. LiDAR 점을 카메라 영상으로 투영해 의미 라벨을 붙이고, 시야 밖 점은 unknown으로 둔다. 지면점을 제거한 뒤 DBSCAN으로 물체 후보를 군집화하고, 군집 내부 라벨의 다수결 임계값을 통과한 범주를 그 객체의 의미로 채택한다.</p><p>객체 추적기는 3차원 bounding box의 위치와 속도를 상수속도 Kalman 모델로 갱신한다. 추적 결과는 정적 점군과 동적 점군으로 나뉘며, GridMap에는 누적 보존되는 정적층과 현재 주기의 관측으로 교체되는 동적층을 별도로 쓴다. 병합할 때 동적층이 정적층을 덮어써 사람이 이전 위치에 남거나 새 위치가 정적 장애물 뒤에 묻히는 문제를 줄인다. 각 의미 범주에 수작업 비용을 배정하고 사전 geofence와 합쳐 semantic occupancy/cost map을 만든다.</p><p>OMPL의 RRT*는 지도 위에서 차체의 충돌 없는 경로를 찾으며 거리와 의미 비용을 함께 최소화한다. 계획기는 1 Hz로 호출되고 한 주기의 최대 탐색시간은 0.95초다. 동적 객체에는 추적 속도에 따른 미래 위치를 예측해 비용을 배치하며, 새 경로의 비용이 기존 경로보다 낮을 때만 전환해 불필요한 경로 진동을 막는다. 경로 3 m 이내에 충돌 위험이 들어오면 해당 비용을 무한대로 올리고 장비를 정지시킨 뒤 다음 인식·계획 주기에서 회복한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>현장 특화 panoptic 학습</h4><p>COCO 1290장과 건설현장 학습 영상 427장을 조합하고, 별도의 현장 검증 75장을 둔다. DETR는 backbone 동결 여부를 비교하며 최대 200 epoch의 3단계 학습을 수행한다. Mask2Former는 Swin Tiny·Big·Large backbone을 비교하고, 전체 현장 데이터의 20~100%만 사용할 때 성능 변화도 측정한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>영상-점군 의미 융합</h4><p>보정된 카메라-LiDAR 외부파라미터로 점을 영상 mask에 투영한다. 지면을 제거한 뒤 DBSCAN 군집마다 픽셀/점 라벨을 다수결하고, 확신이 낮으면 unknown을 유지한다. 이 과정은 영상의 조밀한 의미와 LiDAR의 거리·형상을 결합한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>동적 객체 추적과 이중 지도</h4><p>3차원 bounding box를 Kalman filter로 연계하여 위치와 속도를 얻고, 움직임 여부에 따라 정적·동적 점군으로 분리한다. 정적층은 과거 관측을 누적하지만 동적층은 매 주기 새 관측으로 대체한다. 병합 시 동적 의미를 우선하여 이동체의 최신 상태가 계획기에 전달된다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>의미 비용 기반 온라인 재계획</h4><p>범주별 비용, 점유, geofence를 합친 지도에서 RRT*를 실행한다. 경로 길이와 semantic integral을 가중 합산하고, 사람·차량의 상수속도 예측 위치를 장애 비용으로 반영한다. 더 좋은 경로만 채택하며 임박 충돌 시 즉시 정지한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>식 (1) 총 경로 비용</h4><code>C_{total}=\lambda_1 C_{length}+\lambda_2 C_{semantic},\quad \lambda_1=1,\;\lambda_2=0.1</code><p>RRT* 후보의 기하학적 길이와 경로가 통과하는 의미 비용을 결합한다. 실험에서는 길이에 1, 의미 비용에 0.1을 주어 우회 길이와 현장 범주 위험도를 함께 절충한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p013-figure-p0005-4-o01-4c70c5d9">
+<img alt="원문 Figure 4, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/269344df0ee0d5b03187d84a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.5</b> — Figure 4: Segmentation of point cloud data into dynamic (red) and static (blue) elements, highlighting dynamic object tracking (e.g., people, unidentified objects) as bounding boxes.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>소량 현장 데이터에 맞춘 panoptic 미세조정</h3><p>건설현장 라벨만 고집하지 않고 COCO와 혼합해 일반화 성능을 보존한다. DETR의 ResNet-50 backbone을 동결했을 때보다 전체를 미세조정했을 때 PQ와 RQ가 상승했고, Mask2Former Swin Tiny는 더 큰 backbone과 동급 PQ를 유지하면서 처리속도가 높았다. 데이터 비율 실험은 20%에서도 일정 수준을 내지만, 전체 502장 규모로 갈수록 특히 recognition quality가 계속 개선됨을 보여준다.</p><ul><li>현장 학습 427장, 현장 검증 75장, COCO 1290장을 사용한다.</li><li>학습 라벨 목록은 34개 범주로 정제되며 논문 기여 설명의 능동 선택 범주 수는 35개로 보고된다.</li><li>권장 혼합은 COCO:현장 데이터 3:1로, 현장 과적합과 일반 범주 망각 사이를 절충한다.</li></ul></article><article class="tech-card"><h3>시간 일관성을 갖는 panoptic 3D 지도</h3><p>프레임 mask를 그대로 점유격자에 쌓지 않고, 의미가 붙은 점군을 객체 단위로 군집화하고 추적한다. 상수속도 Kalman filter는 현재 위치뿐 아니라 다음 계획 주기의 예상 위치를 제공한다. 정적/동적 GridMap을 분리함으로써 건물·펜스는 보존하고 사람·차량은 최신 관측으로 교체하는 서로 다른 시간상수를 구현한다.</p><ul><li>카메라 시야 밖 LiDAR 점은 임의의 의미를 추정하지 않고 unknown으로 둔다.</li><li>동적층이 정적층을 덮어써 이동체의 최신 관측을 우선한다.</li><li>Graph-MSF 자세 추정으로 여러 시점의 점군을 공통 지도 좌표계에 정렬한다.</li></ul></article><article class="tech-card"><h3>의미와 동역학을 반영한 굴착기 RRT*</h3><p>계획기는 단순 충돌 여부 이외에 의미 범주별 연속 비용을 적분한다. 사람처럼 반드시 멀리해야 하는 객체와 주행 가능한 노면의 차이를 한 지도에서 표현하고, 추적 속도로 움직임을 외삽한다. 0.95초 계산 예산 안에 새 후보를 만들고 비용이 개선될 때만 교체하는 정책은 1 Hz 지각 주기에서 경로가 요동하는 것을 줄인다.</p><ul><li>RRT* 구현은 OMPL을 사용한다.</li><li>경로 3 m 이내 충돌은 무한 비용과 정지 명령을 유발한다.</li><li>사전 geofence를 의미 비용지도와 합쳐 인식되지 않은 금지영역도 유지한다.</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p013-figure-p0004-3-o01-7dc55aa5">
+<img alt="원문 Figure 3, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/493a3e9e3f05100375d7c38f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.4</b> — Figure 3: Exemplary samples from the generated and hand-labeled dataset. The 502 images published in this work are recorded in various environments, including real-world construction sites, road navigation, and natural environments.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p013-figure-p0006-5-o01-2d402ca2">
+<img alt="원문 Figure 5, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f2807cb16dc6966e4afd24d6.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.6</b> — Figure 5: Two exemplary segmentation masks produced by Mask2Former.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p013-figure-p0006-6-o01-c6bd909f">
+<img alt="원문 Figure 6, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/20010003f9e492c6654b14c3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.6</b> — Figure 6: Problematic segmentation due to confidence threshold: Mask2Former’s inability to decisively segment ambiguous scenes such as dirt tracks and potentially misclassified debris.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>플랫폼은 ETH의 M545 보행식 굴착기이며 수직 장착 4K Ximea xiX PCIe 카메라, Ouster OS0 LiDAR, IMU/GNSS를 사용한다.</li><li>학습·벤치마크는 RTX 3090에서 수행하고, 실차 온라인 추론은 RTX 3080 Ti에서 구동한다. Big/Large backbone 속도 측정은 batch size 1이다.</li><li>주행 평가는 통제 시험장과 스위스 Avully Rescue Troop Training Center의 실제 건설형 환경에서 수행한다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>DETR backbone 동결/전체 미세조정, Mask2Former backbone 크기, 현장 데이터 사용률 20·40·60·80·100%, COCO 혼합 여부를 각각 비교한다.</li><li>동적 현장 시험에는 좁은 펜스·기둥·버킷, 도로 추종, 사람의 경로 횡단, 비상정지와 재계획 상황을 포함한다.</li><li>계획은 1 Hz, 회당 최대 0.95초로 반복하며 새 경로 비용이 낮을 때만 실행 경로를 교체한다.</li></ul>
+<h3>비교 기준</h3><ul><li>backbone을 동결한 DETR와 전체 미세조정 DETR</li><li>Mask2Former Swin Tiny, Big, Large</li><li>현장 데이터 단독 학습과 COCO+현장 혼합 학습</li><li>현장 데이터 사용률 20%부터 100%까지의 ablation</li></ul>
+<h3>평가 지표</h3><ul><li>Panoptic Quality(PQ), Segmentation Quality(SQ), Recognition Quality(RQ)</li><li>초당 처리 영상 수와 backbone 파라미터 수</li><li>현장 주행 중 오분류, 경로 생성 신뢰성, 충돌 임박 정지와 재계획의 정성적 성공 여부</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p013-figure-p0008-7-o01-3415c6ac">
+<img alt="원문 Figure 7, PDF 8쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/735958fc5d34ce2968ec22ed.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.8</b> — Figure 7: Two consecutive snapshots from an ”adversarial test” of the navigation system conducted in Avully, where humans attempt to obstruct the robot by crossing its planned paths. The first column shows the system’s semantic mapping and object tracking, with different colors for the semantic classes (untraversable areas elevated). The planned path is illustrated in black. The third column offers a segmented, first-person view. The online RRT* planner dynamically generates alternative routes.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>현장 panoptic 성능에서는 backbone 전체 미세조정의 효과가 명확하다. DETR는 backbone 동결 시 PQ 0.35, SQ 0.61, RQ 0.44였으나 전체 미세조정 후 0.41, 0.62, 0.52로 개선됐다. Mask2Former Swin Tiny는 PQ 0.68, SQ 0.79, RQ 0.81을 8 images/s로 달성해, Big의 PQ 0.63·3 images/s와 Large의 PQ 0.68·1 image/s보다 실시간 탑재 관점에서 유리했다. 파라미터도 Tiny 29M으로 Big 88M, Large 200M보다 작다.</p><p>데이터 양 실험에서 Tiny의 PQ는 현장 데이터 20%일 때 0.53에서 40% 0.57, 60% 0.59, 80% 0.62, 100% 0.68로 증가했다. RQ도 0.63에서 0.81로 커져 추가 현장 주석이 주로 객체 인식 안정성을 개선했음을 시사한다. 현장 데이터만 학습한 모델은 현장 검증 PQ 0.41을 유지하지만 COCO 검증 PQ가 0.06으로 붕괴했고, 혼합 학습은 COCO 검증 PQ를 0.26으로 회복하면서 현장 PQ 0.41을 보존했다.</p><p>실차 시험에서는 사람과 협소 장애물이 등장해도 계획기가 계속 유효한 경로를 생성했으며, 논문은 critical misclassification이 없고 planner가 항상 신뢰성 있게 동작했다고 보고한다. 간헐적 인식 실패는 다음 프레임 재평가로 회복됐다. 사람이 진행 경로를 가로지르는 대립적 시나리오에서도 3 m 안전 규칙으로 정지하고, 이동체의 새 위치가 지도에 반영되면 우회 또는 재개하는 흐름을 보였다. 다만 이 현장 결과는 충돌률이나 완주율의 표 형식 통계보다 대표 시퀀스와 운영 관찰 중심이다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>DETR PQ 개선</td><td>0.35 → 0.41</td><td>ResNet-50 backbone 동결 대비 전체 미세조정</td><td>PDF p.6</td></tr><tr><td>Mask2Former Swin Tiny panoptic 성능</td><td>PQ 0.68, SQ 0.79, RQ 0.81</td><td>건설현장 검증 세트</td><td>PDF p.6</td></tr><tr><td>Swin Tiny 처리속도</td><td>8 images/s</td><td>RTX 3090, Big 3 images/s 및 Large 1 image/s와 비교</td><td>PDF p.6</td></tr><tr><td>현장 데이터 증가 효과</td><td>PQ 0.53 → 0.68, RQ 0.63 → 0.81</td><td>Mask2Former Tiny에서 현장 데이터 20% 대비 100%</td><td>PDF p.7</td></tr><tr><td>현장 전용 모델의 COCO 일반화</td><td>COCO 검증 PQ 0.06</td><td>COCO+현장 혼합 학습에서는 COCO PQ 0.26, 현장 PQ 0.41</td><td>PDF p.7</td></tr><tr><td>온라인 계획 주기</td><td>1 Hz, 회당 최대 0.95 s</td><td>의미 비용 RRT* 재계획 설정</td><td>PDF p.5</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>흙, 자갈, 포장면 사이의 시각적 경계가 모호해 범주 확신이 낮아질 수 있다.</li><li>고정된 closed-set 범주 밖의 새 장비나 현장 물체는 의미적으로 올바르게 분류하지 못한다.</li><li>간헐적 프레임 오분류는 발생했으며 다음 관측에서 회복했지만, 장기 폐색이나 지속 오분류에 대한 통계는 제시되지 않는다.</li><li>2.5D GridMap은 돌출·상하 구조와 복잡한 3차원 장애물 형상을 완전하게 보존하지 못한다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>502장은 현장 전용 panoptic 데이터로 의미가 있지만 계절·조명·날씨·다른 국가 장비까지 포괄하기에는 작고, 평가도 같은 계열 현장에 집중된다.</li><li>범주별 비용이 수작업으로 정해져 실제 위험도, 분류 불확실성, 장비 동역학에 따라 자동 보정되지 않는다.</li><li>Kalman 추적의 상수속도 가정은 급정지·급회전하는 사람과 차량을 충분히 예측하지 못할 수 있다.</li><li>지도와 계획이 2.5D이며, 현장 실험 결과가 완주율·최소거리·정지 지연 같은 반복 통계보다 정성적 보고에 의존한다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>open-vocabulary 또는 foundation-model 기반 분할을 도입해 사전에 정의하지 않은 장비·도구·잔해를 표현한다.</li><li>신경망 기반 3차원 점군 검출·추적을 결합해 영상 시야 밖 객체와 폐색 상황의 지속성을 높인다.</li><li>완전한 3D semantic map과 굴착기 형상·가동부 swept volume을 이용해 돌출물과 상부 장애물까지 계획한다.</li><li>범주 확률과 추적 공분산을 경로 비용에 직접 넣고 다양한 날씨·공정 단계에서 반복적인 안전 통계를 수집한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>현장 panoptic 미세조정 → LiDAR 의미 투영·군집화 → Kalman 동적 추적 → 정적/동적 이중 GridMap → 의미 비용 RRT*를 연결한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>Swin Tiny가 PQ 0.68을 8 images/s로 달성했고, 실제 굴착기가 사람 횡단과 협소 장애물에서 1 Hz로 정지·우회·재계획했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>고정 범주, 수작업 의미 비용, 상수속도 추적, 2.5D 지도와 정성 중심 현장평가가 일반화와 안전보증의 한계다.</p></div></div>
+<div class="kw"><span>#환경인식</span><span>#측위·매핑</span><span>#작업·궤적계획</span><span>#Mask2Former panoptic segmentation</span><span>#LiDAR 투영</span><span>#Kalman 객체추적</span><span>#online RRT*</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 굴착 동작 자체보다 현장 이동과 안전 주변인식을 담당하는 상위 계층으로 연결 가치가 크다. 버킷 채움 RL이나 대규모 pit 계획기가 생성한 다음 작업 자세로 이동할 때, ETHcavation의 동적 의미지도는 사람·차량·가설물 때문에 계획을 보류하거나 우회하는 안전 게이트가 될 수 있다. 반대로 작업계획기의 geofence, dump zone, excavation zone 의미를 같은 GridMap 비용층으로 가져오면 ‘주행 가능한가’와 ‘공정상 들어가도 되는가’를 함께 판단할 수 있다.</p><p>다음 단계는 panoptic score를 단순 범주 라벨이 아니라 확률분포로 유지하고, 추적 공분산 및 제동거리와 결합하는 것이다. 그렇게 하면 사람 라벨이 일시적으로 사라졌을 때도 보수적 비용을 유지하고, 버킷·붐의 swept volume과 작업자 동선을 포함한 시공 안전계획으로 확장할 수 있다.</p><ul><li>Towards Autonomous Excavation Planning의 전역 작업 자세 사이를 이동하는 주행 계층에 동적 사람·차량 비용을 제공할 수 있다.</li><li>RL bucket-filling의 작업영역 앞에 의미 기반 안전 감시기를 두어 사람이 접근하면 정책 실행을 중지하고 재개 조건을 관리할 수 있다.</li><li>dry-stone construction의 석재 inventory와 장비·작업자 위치를 동일한 semantic map에 표현하면 파지·운반·배치 충돌을 공동 관리할 수 있다.</li><li>open-vocabulary 3D 인식과 불확실성 비용을 결합하면 고정 34개 라벨 및 2.5D 표현의 한계를 직접 보완한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p013-table-p0006-1-o01-ecaa15e6">
+<img alt="원문 Table 1, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d2aacd1b366dd459f01f4549.webp" tabindex="0"/>
+<figcaption><b>원문 Table 1 · PDF p.6</b> — Table 1: Evaluation of the two DETR training methods.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p013-table-p0006-2-o01-5dc3d502">
+<img alt="원문 Table 2, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/60e6c35a8afe231759883cad.webp" tabindex="0"/>
+<figcaption><b>원문 Table 2 · PDF p.6</b> — Table 2: Evaluation results of DETR and Mask2Former (M2F) on the ”construction site” validation set.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p013-table-p0007-3-o01-ebe2bee2">
+<img alt="원문 Table 3, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0be84ec23a8590e2fb0a48e0.webp" tabindex="0"/>
+<figcaption><b>원문 Table 3 · PDF p.7</b> — Table 3: DETR performance on construction site and COCO-only validation sets, with different training sets.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p013-table-p0007-4-o01-99fca873">
+<img alt="원문 Table 4, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/969944a88f9fa2fcc8aa8c9c.webp" tabindex="0"/>
+<figcaption><b>원문 Table 4 · PDF p.7</b> — Table 4: Performance of the Mask2Former Swin-Tiny model on panoptic segmentation for different ”construc- tion site” dataset fractions.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.4, p.5</li><li><b>실험</b>: p.5, p.6, p.7, p.8</li><li><b>결과</b>: p.6, p.7, p.8</li><li><b>한계</b>: p.7, p.8, p.9</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><a href="../notes/b856eea1a9027744.html" rel="noopener" target="_blank">ETH 자율굴착 최신 연구 동향 2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2024 ETHcavation - Mapping and navigation for autonomous excavators in dynamic construction environments.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-012.html"><span class="lbl">← 이전 #12</span>ExACT: 행동 청킹 Transformer 기반 종단간 자율굴착기 시스템</a><a class="next" href="paper-014.html"><span class="lbl">다음 #14 →</span>유압장비 적응형 제어</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

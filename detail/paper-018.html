@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#18 오프라인 강화학습을 이용한 강체 굴착 학습 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #018</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2023</span><span class="badge">#018</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>오프라인 강화학습을 이용한 강체 굴착 학습</h1>
+<p class="title-en" lang="en">Learning Excavation of Rigid Objects with Offline Reinforcement Learning</p>
+<p class="authors">Shiyu Jin, Zhixian Ye, Liangjun Zhang · arXiv:2303.16427</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/0c19cac129eeec53.html">Baidu 자율굴착 최신 연구 동향 2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 강체 사이에 버킷이 걸리는 문제를 수평 쓸기, pitch 회전, 수직 관입 프리미티브로 분해하고 오프라인 RL이 sub-optimal 시연의 좋은 구간을 재조합한다. 일반 정책은 여섯 재료에 적용되고 소량 온라인 미세조정으로 개선되지만, 시각 없이 전체 굴착주기가 아닌 penetration만 다룬다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>비정형 강체 접촉에서 걸림 없이 버킷을 관입하기</h3>
+<p>모래 같은 입상재와 달리 파쇄암·돌·목재 조각은 크고 비변형인 다점 접촉을 만들어, 잘못 관입하면 접촉력이 급증하고 버킷이 멈춘다. 해석적 접촉모델은 재료 형상과 배열이 바뀔 때 오차가 커지고 실제 로봇 온라인 강화학습도 손상 위험과 시간 비용이 크다.</p><p>논문은 penetration, dragging, closing, lifting 중 걸림이 집중되는 penetration만 분리한다. 숙련자 직관을 sweep, rotate, penetrate 세 프리미티브로 만들고, 원격조작·규칙정책의 정적 데이터에서 IQL이 sub-optimal 궤적의 좋은 구간을 이어 더 빠르고 낮은 힘의 관입을 찾도록 한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p018-figure-p0001-1-o01-10c450bd">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e1f94d7dbf2817fd5bf62338.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1. Excavation of rigid objects. A robotic manipulator attempts to penetrate the end-effector bucket into the fragmented rocks without causing jamming.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p018-figure-p0003-2-o01-1836f60f">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4d6cf1e11ee7bf2d9220ee68.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Fig. 2. 4 phases in the excavation process: penetration, dragging, closing, and lifting. The black arrows represent the bucket movement in each phase. In this work, we only focus on the penetration phase, where the jamming problem often happens. The brown line shows the terrain surface.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p018-figure-p0003-3-o01-ad27ec39">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5a03498dc77bbc1c50966430.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3. Vertically downward bucket movements will result in large contact forces and jamming. The bucket cannot penetrate into the terrain. An optimal strategy should sweep the surface of the terrain for downstream penetration.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>토양 해석모델과 domain randomization은 균질 토양에는 적용되지만 불규칙 강체 접촉을 일반화하기 어렵다.</li><li>고정 수직관입이나 소수 이산 primitive는 과도한 힘을 만들고 재료별 속도·한계를 세밀하게 조절하지 못한다.</li><li>온라인 RL은 접촉이 많은 실제 굴착에서 위험한 시행착오와 대량 로봇 상호작용을 요구한다.</li><li>행동복제는 수집 정책의 sub-optimal 행동을 그대로 모사해 시연보다 나은 궤적을 만들기 어렵다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>불규칙 강체 굴착의 jamming을 주된 문제로 정식화하고 sand, pea pebbles, marble chips, red mulch, wood blocks, fragmented rocks까지 폭넓은 재료를 실물 평가했다.</li><li>수평 sweep, pitch rotate, 수직 penetrate를 연속 속도·힘/토크·변위 한계를 가진 세 프리미티브로 설계했다.</li><li>현재 관입 궤적과 시연 궤적을 두 LSTM encoder로 압축하고 IQL이 sub-optimal 시연에서 관입 정책을 학습하도록 했다.</li><li>재료별 정책, 모든 학습재료를 묶은 일반 정책, 미학습 파쇄암의 소량 온라인 미세조정을 실제 7축 로봇팔에서 비교했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>실험은 끝단에 맞춤형 버킷을 장착한 7-DoF Franka 로봇팔이 평평하게 정리된 강체 재료 트레이에 목표 깊이까지 관입하는 문제다. 상태는 초기 대비 버킷의 x·z 위치와 pitch, 해당 속도, 힘·모멘트로 구성되고, 힘이 큰 경우 Franka 안전제어기가 멈춘 것을 걸림으로 본다. teeth가 표면 아래 d_target에 도달하면 penetration을 종료하며 이후 dragging·closing·lifting은 사전 정의 궤적으로 실행할 수 있다고 가정한다.</p><p>정책은 관측 s=(x, ẋ, F_ext, z_t, z_demo)에서 여덟 개의 연속 프리미티브 파라미터를 출력한다. z_t는 현재 궤적의 진행과 순간 지형배열을, z_demo는 시연 궤적에서 재료 유형과 그 재료를 다루는 정보를 압축한다. IQL은 정적 데이터 분포 밖 행동의 Q값을 직접 질의하지 않는 expectile regression을 이용해 sub-optimal 시연을 재조합하며, 새 재료에서는 소량 규칙 시연으로 z_demo를 얻고 제한된 온라인 상호작용으로 추가 학습한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>안전한 오프라인 데이터 수집</h4><p>다섯 학습재료마다 규칙정책 100개와 원격조작 20개 궤적을 수집한다. 각 궤적은 약 75개 전이를 포함한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>세 연속 프리미티브 실행</h4><p>sweep은 조각을 밀고 rotate는 표면을 느슨하게 하며 penetrate는 수직 진입한다. 힘·토크 한계에서 방향전환 또는 상승한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>현재 궤적 LSTM 표현</h4><p>q_phi1은 상대 자세·속도·외력의 현재 시계열을 인코딩해 관입 진행과 접촉배열을 표현한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>시연 궤적 LSTM 표현</h4><p>q_phi2는 시연 전체를 인코딩해 재료 유형과 필요한 장기 접촉 정보를 제공한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>IQL 오프라인 정책학습</h4><p>깊이오차와 접촉력을 벌점으로 두고 데이터 지지집합 안의 높은 Q 행동을 이어 빠르고 낮은 힘의 정책을 만든다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>일반 정책과 온라인 적응</h4><p>다섯 데이터셋을 합쳐 일반 정책을 학습하고, 파쇄암은 규칙 시연 10개와 새 궤적 20개로 미세조정한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>고주파 임피던스 실행</h4><p>정책은 10 Hz로 primitive를 고르고 임피던스 제어기는 1,000 Hz로 버킷 속도를 추종한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>오프라인 RL 데이터셋</h4><code>\\mathcal{D}=\\{(s_t^i,a_t^i,s_{t+1}^i,r_t^i)\\}</code><p>환경과 추가 상호작용하지 않고 원격조작·규칙정책에서 미리 수집한 전이만으로 정책을 학습하는 문제 정의다.</p></div><div class="eq"><h4>관입 정책 관측·행동</h4><code>s=(x,\\dot{x},F^{ext},z_t,z_{demo}),\\quad a=(v_x,F_x^{lim},d_x^{lim},\\omega_{pitch},M_{pitch}^{lim},\\alpha_{pitch}^{lim},v_z,F_z^{lim})</code><p>현재 버킷 상태·접촉과 두 LSTM 잠재표현에서 세 프리미티브의 연속 속도 및 종료 한계를 출력한다.</p></div><div class="eq"><h4>관입 보상</h4><code>r=-w_1\\lVert d_{target}-d\\rVert_2^2-w_2\\lVert F^{ext}\\rVert_2^2</code><p>목표 관입깊이에 빠르게 도달하면서 외력을 작게 유지하도록 하는 논문 식 (1)이다. 실험은 d_target=0.05m, w1=400, w2=0.0004를 사용한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p018-figure-p0004-4-o01-07925f00">
+<img alt="원문 Figure 4, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c38e2c16d1524223dbe650d7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.4</b> — Fig. 4. 3 manipulation primitives: sweep, rotate, and penetration. In sweep, the robot generates horizontal bucket motion in the x axis; in rotate, the robot generates rotational bucket motion in the pitch axis; in penetrate, the robot generates vertical bucket motion in z axis. sweep and rotate manipulate the surface of the terrain to facilitate the penetration, and penetrate selects proper vertical velocity to penetrate the terrain. The red arrows represent the desired bucket movement in each primitive.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p018-figure-p0004-5-o01-fc778b06">
+<img alt="원문 Figure 5, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5f50fd5fdb9b0c4d6c676ca8.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.4</b> — Fig. 5. The proposed framework to learn excavation policy using ofﬂine RL followed by online ﬁne-tuning.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>Sweep·rotate·penetrate 연속 프리미티브</h3><p>버킷을 곧바로 누르지 않고 sweep으로 이빨 앞 조각을 밀고 rotate로 접촉구조를 느슨하게 한 뒤 penetrate한다. 연속 속도·힘·변위 한계 덕분에 고정 이산행동보다 재료 배열에 세밀하게 적응한다.</p><ul><li>sweep: v_x, F_x^lim, d_x^lim</li><li>rotate: omega_pitch, M_pitch^lim, alpha_pitch^lim</li><li>penetrate: v_z, F_z^lim</li><li>힘·토크·변위 한계가 방향전환과 primitive 전환을 결정</li></ul></article><article class="tech-card"><h3>이중 LSTM 기반 지형·진행 표현</h3><p>현재 encoder는 자세·속도·외력 이력으로 진행도와 로컬 배열을, demonstration encoder는 재료 고유 접촉특성을 압축한다. 일반 정책에서 z_demo는 명시적 재료 라벨 없이 재료를 구별하는 역할을 한다.</p><ul><li>각 시점 입력은 상대 자세 3차원·속도 3차원·외력 3차원</li><li>z_t는 현재 trajectory c_1:t에서 추정</li><li>z_demo는 demonstration trajectory 전체에서 추정</li><li>새 재료는 소수 규칙 시연으로 z_demo를 다시 계산</li></ul></article><article class="tech-card"><h3>IQL의 sub-trajectory stitching</h3><p>행동복제와 달리 IQL은 expectile regression으로 데이터 지지집합 안의 높은 가치 행동을 선택해 서로 다른 시연의 좋은 구간을 잇는다. 위험한 실차 탐색을 줄이면서 시연보다 나은 관입을 찾는 접근이다.</p><ul><li>정적 데이터만으로 초기 정책학습</li><li>행동복제 대비 모든 5개 학습재료에서 높은 평균 reward</li><li>2-layer ReLU MLP, hidden 256</li><li>Adam 학습률 3×10^-4</li></ul></article><article class="tech-card"><h3>일반 정책과 제한된 온라인 적응</h3><p>다섯 데이터셋을 합친 일반 정책은 서로 다른 접촉특성을 다룬다. 미학습 파쇄암에서도 규칙 시연 10개로 z_demo를 얻고 온라인 궤적 20개만 추가해 적응한다.</p><ul><li>학습재료 5종과 미학습 파쇄암 1종</li><li>일반 정책은 결합 데이터셋 D_all 사용</li><li>분포 이동을 줄이기 위해 새 z_demo는 학습정책이 아닌 규칙정책으로 수집</li><li>20개 온라인 궤적은 약 1,500회 상호작용</li></ul></article></div>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>맞춤형 버킷을 장착한 7-DoF Franka 로봇팔과 강체 재료 트레이를 사용했다. 굴착기 4자유도를 흉내 내기 위해 shoulder panning·lifting, elbow lifting, wrist lifting만 움직이고 나머지 3축은 고정했다.</li><li>학습재료는 sand, pea pebbles, marble chips, red mulch, wood blocks의 5종이고, fragmented rocks는 미학습 OOD 재료다.</li><li>관절토크와 Jacobian으로 버킷–지형 접촉력을 계산하며 실제 teeth 힘 대신 7번째 링크 끝점 힘으로 근사했다.</li><li>정책 10 Hz, 임피던스 제어 1,000 Hz로 실행하고 재료는 매 궤적 뒤 평평하게 수동 재설정했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>재료마다 규칙정책 100개와 원격조작 20개 궤적을 수집하고 각 궤적의 초기 접촉점을 표면 10cm×15cm 영역에서 균등 샘플링했다.</li><li>고정 수직하강, 행동복제, 재료별 offline RL, 재료별 fine-tuned RL, 결합 데이터 일반 정책과 일반 정책 미세조정을 비교했다.</li><li>재료별 정책은 각 조건에서 10회 실행해 trajectory reward의 평균과 표준편차를 기록했다.</li><li>새 파쇄암은 규칙정책 10개 궤적으로 z_demo를 만들고 20개 궤적을 온라인 수집해 일반 정책을 미세조정했다.</li><li>한 궤적 최대 접촉력을 임의 threshold로 다시 해석해 장비 힘 한계가 달라질 때 jamming-free rate가 어떻게 바뀌는지 분석했다.</li></ul>
+<h3>비교 기준</h3><ul><li>Vertically Downward: 표면 재배열 없이 버킷을 수직으로 내리는 고정 궤적</li><li>Behavioral Cloning: 동일 오프라인 데이터와 LSTM encoder를 쓰는 2층 MLP 모방정책</li><li>Demonstrations: 원격조작·규칙정책 궤적의 평균 reward, 관입시간, 접촉력</li><li>Offline RL pi_j: 각 재료 데이터셋만으로 학습한 IQL 정책</li><li>Fine-tuned pi_j 및 general policy: 소량 온라인 데이터와 전체 재료 결합의 효과 비교</li></ul>
+<h3>평가 지표</h3><ul><li>trajectory reward 평균±표준편차</li><li>평균 penetration duration</li><li>궤적 평균 contact force</li><li>최대 허용 접촉력별 jamming-free rate</li><li>새 재료 fine-tuning 전후 reward</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p018-figure-p0005-6-o01-c1810a79">
+<img alt="원문 Figure 6, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/37048a8c6cdb5ce72ddb437c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.5</b> — Fig. 6. Excavation penetration of 6 different terrains. (a) Sand; (b) Pea Pebbles; (c) Marble Chips; (d) Red Mulch; (e) Wood Blocks; (f) Fragmented Rocks.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>고정 수직하강은 본문에서 6개 재료 중 5개가 큰 접촉력으로 걸렸다고 설명하지만 표 II에는 여섯 재료 모두 Jamming으로 표기되어 내부 불일치가 있다. 반면 재료별 offline RL은 다섯 학습재료에서 행동복제보다 reward가 높았고 실험 중 jamming을 일으키지 않았다. 그림 7의 관입시간과 평균 접촉력도 대체로 시연보다 짧고 낮아, IQL이 sub-optimal 시연을 그대로 복제하지 않고 더 효율적인 궤적을 구성했음을 뒷받침한다.</p><p>재료별 온라인 미세조정은 sand, pea pebbles, marble chips에서는 reward를 더 높였지만 red mulch와 wood blocks에서는 offline 정책보다 낮아졌다. 저자들은 가벼운 wood blocks에서 접촉력 항의 영향이 작아져 속도와 힘 사이 trade-off가 달라진 것으로 해석한다. red mulch는 길고 얇은 한 조각이 bucket teeth에 끼어 큰 접촉력을 만든 outlier가 있었다.</p><p>다섯 재료를 합친 일반 정책은 여섯 재료 모두에 적용됐고, 미학습 파쇄암에서도 -40.17±11.17의 reward로 걸림 없이 동작했다고 보고한다. 20개 온라인 궤적 후 파쇄암 reward는 -37.05±10.81로 개선됐다. 최대 허용 접촉력이 낮아지는 더 약한 장비를 가정한 분석에서도 offline RL이 시연보다 높은 jamming-free rate를 유지했지만, 정확한 비율 수치는 도표로만 제시된다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>학습재료별 데이터</td><td>규칙정책 100개+원격조작 20개 궤적</td><td>5개 학습재료 각각; 궤적당 약 75 transitions</td><td>PDF p.5</td></tr><tr><td>정책·제어 주파수</td><td>10 Hz / 1,000 Hz</td><td>프리미티브 선택 / 임피던스 추종</td><td>PDF p.5</td></tr><tr><td>목표 관입깊이</td><td>0.05m</td><td>보상과 성공 조건에 사용한 d_target</td><td>PDF p.6</td></tr><tr><td>온라인 미세조정</td><td>20 trajectories, 약 1,500 interactions</td><td>z_demo용 10개 시연 이후 추가 수집</td><td>PDF p.6</td></tr><tr><td>sand reward</td><td>BC -48.90±11.06, offline RL -39.23±9.30, fine-tuned -26.76±4.60</td><td>재료별 정책 10회 시험</td><td>PDF p.7</td></tr><tr><td>red mulch reward</td><td>BC -30.20±9.96, offline RL -26.84±6.54, fine-tuned -27.03±3.96</td><td>미세조정이 소폭 악화된 사례</td><td>PDF p.7</td></tr><tr><td>파쇄암 일반정책 reward</td><td>-40.17±11.17</td><td>미학습 OOD 재료</td><td>PDF p.7</td></tr><tr><td>파쇄암 미세조정 reward</td><td>-37.05±10.81</td><td>소량 온라인 적응 후</td><td>PDF p.7</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>고정 수직관입은 큰 접촉력과 걸림을 유발하며 본문 5/6과 표의 6/6 표기가 서로 일치하지 않는다.</li><li>red mulch 한 조각이 bucket teeth에 끼어 큰 접촉력을 만든 outlier가 발생했다.</li><li>wood blocks와 red mulch에서는 온라인 fine-tuning이 offline 정책 reward를 개선하지 못했다.</li><li>시각이 없어 큰 돌 사이의 빈틈을 관입 전에 직접 관측하지 못하고 접촉 이후 시계열에 의존한다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p018-figure-p0006-7-o01-be1b87b5">
+<img alt="원문 Figure 7, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/810b5cea8fc1405beee9cd33.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.6</b> — Fig. 7. Average penetration duration and contact force for the demonstra- tions and the RL policies.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p018-figure-p0007-8-o01-9984d117">
+<img alt="원문 Figure 8, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/48e22347f84815a27eaf4739.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.7</b> — Fig. 8. Jamming-Free Rate VS Maximum Contact Force Allowed</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>카메라나 깊이센서 없이 자세·속도·접촉력만 사용하므로 강체 사이의 틈과 위험 형상을 접촉 전에 식별할 수 없다.</li><li>실제 유압굴착기가 아니라 7축 Franka 로봇팔과 소형 재료 트레이에서만 검증했다.</li><li>전체 굴착주기 중 penetration만 학습하고 dragging, closing, lifting은 성공적으로 계획 가능하다고 가정한다.</li><li>접촉력은 bucket teeth에서 직접 측정하지 않고 7번째 링크 끝점 힘으로 근사한다.</li><li>재료별 실험 횟수가 10회이고 파쇄암도 단일 구성군이어서 현장 파쇄암의 규모·분포 일반화를 확정하기 어렵다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>RGB-D 또는 3D 지각으로 큰 강체 사이의 틈과 접근방향을 관입 전에 찾아 정책 관측에 결합한다.</li><li>penetration뿐 아니라 dragging·closing·lifting과 덤핑까지 대응 시연을 수집해 전체 굴착 정책으로 확장한다.</li><li>유압 압력·버킷 force sensor와 실제 굴착기 동역학을 사용해 대형 장비에서 안전한 힘 한계와 정책 주파수를 재설계한다.</li><li>다양한 크기·형상·혼합비의 파쇄암에서 장기 반복하고 장비별 허용힘에 따른 jamming-free 성공률을 정량화한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>Sweep·rotate·penetrate의 연속 힘·속도 한계를 LSTM 접촉표현과 IQL로 학습해 sub-optimal 시연 구간을 재조합한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>재료별 offline RL은 다섯 학습재료에서 행동복제를 능가했고, 일반 정책은 미학습 파쇄암에 적용되어 소량 미세조정 뒤 reward가 개선됐다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>시각 없는 7축 로봇팔 penetration만 검증했으므로 실제 유압굴착기의 전체 작업주기와 현장 강체 규모에 대한 증거는 없다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#제어·MPC</span><span>#작업·궤적계획</span><span>#오프라인 강화학습</span><span>#IQL</span><span>#LSTM 지형표현</span><span>#임피던스 제어</span><span>#동작 프리미티브</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 굴착계획이 지형기하만으로 끝나지 않고 접촉 이력과 힘 피드백으로 실행 중 바뀌어야 함을 보여 준다. sweep와 rotate로 접촉구조를 바꾼 뒤 penetrate하는 계층은 파쇄암에서 단순 위치 궤적보다 현실적이다.</p><p>실차에는 상위 RGB-D 틈새·공격점 인식과 하위 유압 압력 residual 제어 사이에 이 정책을 둘 수 있다. 프리미티브 한계는 장비 힘·버킷 형상에 맞게 다시 정하고 관입 뒤 적재 가능성도 평가해야 한다.</p><ul><li>접촉 이력 LSTM은 토질·강체 배열을 명시적 물성모델 없이 암묵적으로 표현한다.</li><li>IQL은 실차 온라인 탐색을 줄이고 여러 sub-optimal 시연의 유효 구간을 결합한다.</li><li>연속 힘·토크 한계는 장비 보호와 정책 유연성을 동시에 제공하지만 장비별 재보정이 필요하다.</li><li>전체 자율굴착에는 시각 공격점 선택, 관입 이후 버킷 폐쇄·인양, 적재량 평가가 추가돼야 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p018-table-p0006-i-o01-43166709">
+<img alt="원문 Table I, PDF 6쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/562fdcb5a78d2008eabc5e9b.webp" tabindex="0"/>
+<figcaption><b>원문 Table I · PDF p.6</b> — TABLE I. Parameters range of the manipulation primitives.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p018-table-p0007-ii-o01-5d693604">
+<img alt="원문 Table II, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c3f12861c94a598180b1e26a.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.7</b> — TABLE II. Real-world experiments results of different penetration policies πj(a|s) learned on their own datasets Dj.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p018-table-p0007-iii-o01-463ce08c">
+<img alt="원문 Table III, PDF 7쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6777e184bda30ebf4ffff16a.webp" tabindex="0"/>
+<figcaption><b>원문 Table III · PDF p.7</b> — TABLE III. Real-world experiments results of one general policy ¯π(a|s) learned on the entire dataset Dall.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.3, p.4, p.5</li><li><b>실험</b>: p.5, p.6</li><li><b>결과</b>: p.6, p.7</li><li><b>한계</b>: p.7, p.8</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/f2028adb4949215cf366057f.webp" rel="noopener" target="_blank">오프라인 RL 구조</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/0c19cac129eeec53.html" rel="noopener" target="_blank">Baidu 자율굴착 최신 연구 동향 2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2023 Learning excavation of rigid objects with offline reinforcement learning.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-017.html"><span class="lbl">← 이전 #17</span>건설 자동화를 위한 자율굴착기 시스템</a><a class="next" href="paper-019.html"><span class="lbl">다음 #19 →</span>TNES: 작업장 자율굴착기의 지형 주행성 지도·내비게이션·굴착 시스템</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2025 Towards Fully Integrated Autonomous Excavation-서울대_요약</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2025 Towards Fully Integrated Autonomous Excavation-서울대_요약</h1><h1 id="towards-fully-integrated-autonomous-excavation-">Towards Fully Integrated Autonomous Excavation - 요약</h1>
+<hr/>
+<h2 id="_1">한줄 요약</h2>
+<p>30톤 실제 굴착기에서 <strong>지형 인식 → 굴착 경로 생성 → MPC 제어 → 정밀 지형 검사</strong>를 모두 온보드 센서만으로 수행하는 <strong>완전 통합 자율 굴착 시스템(AES)</strong> 을 제안하고, 45° 경사면 절토에서 cm 수준 정밀도를 달성했다.</p>
+<hr/>
+<h2 id="1">1. 연구 배경 및 동기</h2>
+<h3 id="_2">문제</h3>
+<ul>
+<li>건설 현장의 <strong>노동력 부족</strong>, 인건비 상승, 안전 위험</li>
+<li>대규모 절토 및 표면 그레이딩은 <strong>반복적이고 정밀한</strong> 작업 → 자동화에 적합</li>
+<li>기존 작업 방식: 숙련 기사가 굴착 + 별도 측량팀이 검사 → <strong>비효율적</strong></li>
+</ul>
+<h3 id="_3">기존 연구의 한계</h3>
+<table>
+<thead>
+<tr>
+<th>한계</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>절토+검사 미통합</td>
+<td>Zhang et al., Jelavic et al. 등은 절토만 수행, 사후 검사 미포함</td>
+</tr>
+<tr>
+<td>센서 FOV 제한</td>
+<td>캐빈 상단에만 라이다 배치 → 경사면 절토 시 ROI 미커버</td>
+</tr>
+<tr>
+<td>물리적 제약 무시</td>
+<td>기존 연구의 다수가 파워/유량 제약을 위반하거나 부분적으로만 고려</td>
+</tr>
+<tr>
+<td>실기 검증 부재</td>
+<td>물리적 제약을 고려한 연구도 시뮬레이션에서만 검증</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">본 연구의 기여</h3>
+<ol>
+<li><strong>센서 구성</strong>: 어떤 경사에서도 ROI를 커버하는 듀얼 라이다 + 스테레오 카메라 배치</li>
+<li><strong>지형 추정</strong>: 칼만 필터형 MAP 추정으로 실시간 2.5D 높이맵 업데이트</li>
+<li><strong>모션 생성</strong>: 기하학적 + 물리적 제약을 모두 만족하는 2단계 모션 플래닝</li>
+<li><strong>정밀 검사</strong>: 2-Step Bundle Adjustment로 서브 cm 정밀도의 온보드 지형 검사</li>
+</ol>
+<hr/>
+<h2 id="2">2. 시스템 구성</h2>
+<p>400
+<em>30톤 현대 HX300AL 자율 굴착기 외관 및 센서 배치 구성</em></p>
+<h3 id="_5">전체 아키텍처</h3>
+<p>700
+<em>전체 시스템 아키텍처: 센서 입력 → 지형 추정 → 모션 생성 → MPC 제어 → 검사 파이프라인</em></p>
+<pre><code class="language-mermaid">graph TD
+    L1[캐빈 라이다] --&gt; LE[실시간 지형 추정]
+    L2[붐 라이다] --&gt; LE
+    JA[관절 각도 센서] --&gt; LE
+    LE --&gt;|2.5D 높이맵| PG[굴착 경로 생성]
+    PG --&gt;|기하학적 경로| MPC[MPC 경로 추적]
+    PS[압력 센서] --&gt; MPC
+    MPC --&gt;|실린더 제어| EXC[유압 굴착기]
+    EXC --&gt;|반복 사이클| LE
+    SC[스테레오 카메라] --&gt; INS[정밀 지형 검사]
+    L1 --&gt; INS
+    L2 --&gt; INS
+</code></pre>
+<h3 id="21">2.1 센서 구성</h3>
+<p>700
+<em>듀얼 라이다(캐빈+붐)와 스테레오 카메라 배치, 각 센서의 FOV 커버리지</em></p>
+<table>
+<thead>
+<tr>
+<th>센서</th>
+<th>위치</th>
+<th>역할</th>
+<th>정밀도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>캐빈 라이다</td>
+<td>캐빈 측면 (기울임)</td>
+<td>원거리 일관 관측, 붐 움직임 무관</td>
+<td>~3cm</td>
+</tr>
+<tr>
+<td>붐 라이다</td>
+<td>붐 하단 (회전축 평행)</td>
+<td>경사면 밀집 스캔, 붐과 함께 이동</td>
+<td>~3cm</td>
+</tr>
+<tr>
+<td>스테레오 카메라</td>
+<td>붐 하단 (라이다 옆)</td>
+<td>정밀 검사용 고해상도 이미지</td>
+<td>&lt;1cm (BA 후)</td>
+</tr>
+<tr>
+<td>IMU</td>
+<td>각 관절</td>
+<td>팔 자세 측정</td>
+<td>0.1°</td>
+</tr>
+<tr>
+<td>로터리 엔코더</td>
+<td>스윙축</td>
+<td>캐빈 회전각</td>
+<td>2°</td>
+</tr>
+<tr>
+<td>압력 센서</td>
+<td>유압 실린더 내부</td>
+<td>MPC 파워 제약 계산</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 아이디어:</strong> 붐 하단에 라이다를 장착하여 붐 회전축과 평행하게 배치 → 붐이 어떤 각도에 있든 경사면을 밀집 스캔 가능. 기존 연구(캐빈 상단만 배치)의 경사면 FOV 한계를 해결. 드론 같은 외부 장비 불필요.</p>
+<h3 id="22-4">2.2 센서 캘리브레이션 (4단계)</h3>
+<pre><code class="language-mermaid">graph LR
+    A[C2C&lt;br&gt;카메라↔카메라] --&gt; B[L2C&lt;br&gt;라이다↔카메라]
+    B --&gt; C[L2L&lt;br&gt;라이다↔라이다]
+    C --&gt; D[S2V&lt;br&gt;센서↔굴착기]
+    style A fill:#dbeafe
+    style B fill:#fef3c7
+    style C fill:#ede9fe
+    style D fill:#d1fae5
+</code></pre>
+<ol>
+<li><strong>C2C</strong> (Camera-to-Camera): 스테레오 카메라 내부 파라미터 - Zhang 방법 [17]</li>
+<li><strong>L2C</strong> (Lidar-to-Camera): 라이다-카메라 외부 파라미터 - 자동 타겟 검출 + 리프로젝션 에러 최소화 [18]</li>
+<li><strong>L2L</strong> (Lidar-to-Lidar): 두 라이다 간 외부 파라미터 - 동시 체커보드 관측 [18]</li>
+<li><strong>S2V</strong> (Sensors-to-Vehicle): 전체 센서 → 굴착기 좌표계 정렬 - 관절 각도 센서와 결합</li>
+</ol>
+<ul>
+<li>체커보드 하나만 필요, 1~2명 작업자로 완료 가능</li>
+<li>모든 센서 FOV가 ROI 근처 지면에서 겹침 → 사다리 등 추가 장비 불필요</li>
+</ul>
+<hr/>
+<h2 id="3">3. 실시간 지형 추정</h2>
+<p>700
+<em>실시간 지형 추정: 라이다 포인트 클라우드 필터링 → 2.5D 높이맵 생성·업데이트 과정</em></p>
+<h3 id="31-25d">3.1 2.5D 높이맵</h3>
+<p>작업 영역을 <strong>40cm × 40cm 격자</strong>로 분할하고, 각 셀 $c$에 높이의 <strong>기대값</strong> $\hat{x}_c$과 <strong>분산</strong> $\hat{\sigma}_c^2$을 관리한다. 전체 3D가 아닌 2.5D를 쓰는 이유는, 건설 지형은 각 수평 위치에 높이가 하나이므로 셀당 스칼라 높이면 충분하기 때문이다.</p>
+<h3 id="32">3.2 포인트 클라우드 필터링</h3>
+<p>굴착 중 버킷, 팔, 떨어지는 흙이 라이다에 잡히는 문제를 <strong>기구학 기반 필터링</strong>으로 해결한다.</p>
+<pre><code class="language-mermaid">graph TD
+    P[라이다 점] --&gt; Q{굴착기 부품&lt;br&gt;바운딩 박스 안?}
+    Q --&gt;|Yes| R[제거]
+    Q --&gt;|No| S[지면 점으로 사용]
+    style R fill:#fee2e2
+    style S fill:#d1fae5
+</code></pre>
+<pre><code class="language-python"># 포인트 클라우드 필터링 의사코드
+for point in lidar_points:
+    reject = False
+    for part in [boom, stick, bucket]:
+        bbox = compute_3D_bbox(part, current_joint_angles)
+        if point_in_bbox(point, bbox):
+            reject = True
+            break
+    if not reject:
+        assign_to_cell(point, heightmap)
+</code></pre>
+<h3 id="33-map">3.3 칼만 필터형 MAP 추정</h3>
+<p><strong>지형 동역학 모델 (식 1):</strong></p>
+<p>지형의 높이가 시간에 따라 변할 수 있다고 가정하는 확률적 동역학 모델:</p>
+<p>$$x_{k+1}^c = \begin{cases} x_{\text{bucket}}^c + u_k^c &amp; \text{(버킷이 지면 아래로 통과한 경우)} \ x_k^c + w_k^c &amp; \text{(그 외)} \end{cases}$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_k^c$</td>
+<td>시각 $t_k$에서 셀 $c$의 높이</td>
+</tr>
+<tr>
+<td>$x_{\text{bucket}}^c$</td>
+<td>버킷 팁이 지나간 높이 (굴착 시 지형이 깎임)</td>
+</tr>
+<tr>
+<td>$u_k^c$</td>
+<td>굴착 후 노이즈 ~ $\mathcal{N}(0, Q_u)$</td>
+</tr>
+<tr>
+<td>$w_k^c$</td>
+<td>자연 변화 노이즈 ~ $\mathcal{N}(0, Q_w)$ (미세 산사태 등)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>직관:</strong> $Q_u$, $Q_w$가 작으면 "지형이 잘 안 변한다"고 가정 → 이전 추정값을 더 신뢰. $Q_u$, $Q_w$가 크면 지형 변화가 잦다고 가정 → 최신 센서 측정값에 더 의존.</p>
+</blockquote>
+<p><strong>측정 모델 (식 2):</strong></p>
+<p>$$y \sim \mathcal{N}!\left(x_k^c, \; v + C \cdot d^2\right)$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$y$</td>
+<td>라이다 높이 측정값</td>
+</tr>
+<tr>
+<td>$x_k^c$</td>
+<td>셀 $c$의 실제 높이 (추정 대상)</td>
+</tr>
+<tr>
+<td>$v \geq 0$</td>
+<td>라이다 거리 측정 분산 (센서 스펙에서 제공)</td>
+</tr>
+<tr>
+<td>$C \geq 0$</td>
+<td>지형 최대 기울기 관련 파라미터</td>
+</tr>
+<tr>
+<td>$d$</td>
+<td>라이다 점에서 셀 중심까지의 수평 거리</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>직관:</strong> 셀 중심에서 멀리 떨어진 점일수록 해당 셀의 높이를 대표하기 어렵다 ($C \cdot d^2$ 항). 경사면에서는 40cm만 벗어나도 높이가 크게 달라질 수 있기 때문.</p>
+</blockquote>
+<p><strong>MAP 추정 과정:</strong></p>
+<p>각 셀에 높이의 <strong>기대값</strong>과 <strong>추정 분산</strong>을 함께 관리한다 (초기값: 분산 무한대, 기대값 0). 매 업데이트마다, 이전 시점 $t_k$의 추정값과 $t_k \sim t_{k+1}$ 사이에 들어온 라이다 점들을 결합하여 <strong>MAP(최대 사후 확률) 추정</strong>을 수행한다. 이렇게 구한 MAP 평균 $\hat{x}<em>{k+1}^c$이 시각 $t</em>{k+1}$에서의 지형 정보로 사용되어 충돌 회피 및 굴착 경로 생성에 활용된다.</p>
+<blockquote>
+<p><strong>📐 보충 수식</strong> (논문에 명시되지 않은 유도 수식)</p>
+<p>위 동역학(식 1) + 측정(식 2) 모델에 표준 칼만 필터 프레임워크를 적용하면, MAP 업데이트는 다음과 같이 유도된다:</p>
+<p>$$\hat{x}_{k+1}^c = \frac{\frac{1}{\hat{\sigma}_k^2} \cdot \hat{x}_k + \sum_i w_i \cdot y_i}{\frac{1}{\hat{\sigma}_k^2} + \sum_i w_i}, \quad w_i = \frac{1}{v + C \cdot d_i^2}$$</p>
+<p>이전 추정값과 새 측정값의 <strong>신뢰도(분산의 역수) 가중 평균</strong>으로, 셀 중심에 가까운 점($d_i$↓)일수록 가중치 $w_i$가 크다.</p>
+<p><em>출처: 식 (1), (2)에 표준 칼만 필터 MAP 업데이트 규칙을 적용하여 유도</em></p>
+</blockquote>
+<pre><code class="language-python"># 칼만 필터형 MAP 업데이트 의사코드
+for cell in heightmap:
+    # 예측 단계: 동역학 모델 (식 1) 적용
+    if bucket_swept_cell(cell, t_k, t_k1):
+        x_pred = bucket_tip_height(cell)
+        var_pred = Q_u
+    else:
+        x_pred = cell.height      # 이전 추정값 유지
+        var_pred = cell.variance + Q_w  # 불확실성 증가
+
+    # 업데이트 단계: 새 라이다 측정값들로 MAP 추정
+    for p in filtered_points_in_cell(cell):
+        d = horizontal_distance(p, cell.center)
+        R = v + C * d * d          # 측정 분산 (식 2)
+        K = var_pred / (var_pred + R)  # 칼만 게인
+        x_pred = x_pred + K * (p.z - x_pred)
+        var_pred = (1 - K) * var_pred
+
+    cell.height, cell.variance = x_pred, var_pred
+</code></pre>
+<h3 id="34">3.4 성능 &amp; 로버스트니스</h3>
+<ul>
+<li>두 라이다 10Hz 입력 → 높이맵 <strong>5Hz</strong> 업데이트</li>
+<li>굴착/덤핑 중에도 안정적으로 지형 변화 추적</li>
+<li>파라미터(셀 크기, $Q_u$, $Q_w$, $C$, $\delta t$)에 크게 민감하지 않음 → "합리적 범위"이면 OK</li>
+</ul>
+<hr/>
+<h2 id="4">4. 굴착 모션 생성</h2>
+<h3 id="41-2">4.1 2단계 구조</h3>
+<p>기하학적 제약(위치 관련)과 물리적 제약(속도/힘 관련)을 <strong>분리</strong>하여 효율적으로 해결한다.</p>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>목적</th>
+<th>방법</th>
+<th>제약 유형</th>
+<th>시간</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>경로 생성 (Path)</td>
+<td>기하학적 제약 만족</td>
+<td>DFS + A*</td>
+<td>충돌 회피, 버킷 자세 등</td>
+<td>~0.3s</td>
+</tr>
+<tr>
+<td>경로 추적 (Trajectory)</td>
+<td>물리적 제약 만족</td>
+<td>MPC</td>
+<td>파워, 유량, 변위 한계</td>
+<td>&lt;0.08s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-5">4.2 5단계 굴착 사이클</h3>
+<p>400
+<em>5단계 굴착 사이클: 공격점 이동 → 굴착 → 들어올리기 → 덤핑 이동 → 덤핑</em></p>
+<pre><code class="language-mermaid">graph LR
+    P1[Phase 1&lt;br&gt;이동→공격점] --&gt; P2[Phase 2&lt;br&gt;굴착]
+    P2 --&gt; P3[Phase 3&lt;br&gt;들어올리기]
+    P3 --&gt; P4[Phase 4&lt;br&gt;덤핑 이동]
+    P4 --&gt; P5[Phase 5&lt;br&gt;덤핑]
+    P5 --&gt;|반복| P1
+    style P1 fill:#fef3c7
+    style P2 fill:#fee2e2
+    style P3 fill:#ede9fe
+    style P4 fill:#dbeafe
+    style P5 fill:#d1fae5
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>동작</th>
+<th>핵심 제약</th>
+<th>알고리즘</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>초기 → 공격점 이동</td>
+<td>충돌 회피</td>
+<td>A* (4D: 스윙+3실린더)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>굴착 수행</strong></td>
+<td>스윙 고정, 과굴착 방지, 용량 제한</td>
+<td><strong>DFS</strong> (3D: 3실린더)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>버킷 들어올리기</td>
+<td>충돌 회피</td>
+<td>A* (4D)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>덤핑 위치로 이동</td>
+<td>흙 유출 방지 (버킷 방향 제약)</td>
+<td>A* (4D)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>덤핑</td>
+<td>-</td>
+<td>A* (4D)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43">4.3 두 가지 굴착 프로파일</h3>
+<pre><code class="language-mermaid">graph TD
+    START[굴착 시작] --&gt; ND[Normal Digging&lt;br&gt;최대 부피 굴착]
+    ND --&gt; CHECK{높이 오차 ≤ 50cm?}
+    CHECK --&gt;|No| ND
+    CHECK --&gt;|Yes| TG[Tip Grading&lt;br&gt;정밀 표면 마감]
+    TG --&gt; DONE[완료]
+    style ND fill:#fee2e2
+    style TG fill:#d1fae5
+</code></pre>
+<p>400
+<em>일반 굴착(위)과 팁 그레이딩(아래) 경로 프로파일 비교: 최대 부피 굴착 vs 정밀 표면 마감</em></p>
+<h4 id="normal-digging">일반 굴착 (Normal Digging)</h4>
+<ul>
+<li><strong>목표</strong>: 매 사이클에서 버킷 용량(1m³)에 근접한 최대 부피 굴착</li>
+<li><strong>방법</strong>: 3D 격자(붐/스틱/버킷 실린더 길이)에서 <strong>DFS(깊이 우선 탐색)</strong></li>
+<li><strong>공격점(Point of Attack)</strong>: 현재 지형과 팁 그레이딩 임계값의 교점 중 캐빈에서 가장 먼 점</li>
+<li><strong>우선순위 휴리스틱</strong>: 예상 굴착 부피↑ + 예상 파워 소비↓ (하드웨어 특화)</li>
+<li><strong>실행 가능성 체크</strong>: 버킷 용량 초과 여부, 절삭각(팁 경로와 버킷 각도), 팔 관통 여부</li>
+</ul>
+<pre><code class="language-python"># DFS 기반 일반 굴착 경로 탐색 의사코드
+def find_digging_path(landscape, target):
+    root = find_point_of_attack(landscape, target)  # 가장 먼 교점
+    stack = [root]
+    while stack:
+        node = stack.pop()  # DFS: 후입선출
+        if is_feasible(node):  # 용량, 절삭각, 관통 체크
+            if excavated_volume(node) &gt;= target_volume:
+                return path_to(node)
+        children = expand(node)  # 실린더 길이 한 스텝 변경
+        children.sort(key=lambda n: heuristic(n))  # 부피↑ + 파워↓
+        stack.extend(children)
+</code></pre>
+<p>400
+<em>팁 그레이딩 동작 상세: 목표 지형을 따라 버킷 팁으로 표면을 정밀하게 다듬는 과정</em></p>
+<h4 id="tip-grading">팁 그레이딩 (Tip Grading)</h4>
+<ul>
+<li><strong>목표</strong>: 목표 지형을 따라 표면 정밀 다듬기</li>
+<li><strong>방법</strong>: 목표 지형의 가장 먼 도달 가능 점에서 시작 → 일정 절삭각 유지하며 캐빈 방향으로 당김</li>
+<li><strong>전환 조건</strong>: 높이 오차 ≤ 50cm</li>
+<li>팁 그레이딩 후에도 오차가 크면 재굴착+재그레이딩 반복</li>
+</ul>
+<h3 id="44-a-phase-1-3-4-5">4.4 A* 경로 계획 (Phase 1, 3, 4, 5)</h3>
+<ul>
+<li><strong>탐색 공간</strong>: 4D 격자 (스윙 각도 + 3 실린더)</li>
+<li><strong>목적함수</strong>: 각 실린더의 유입/유출 유량 합 최소화 → 에너지 효율</li>
+<li><strong>Phase 4 추가 제약</strong>: 버킷 개구부가 아래를 향하는 configuration → 장애물 취급 (흙 유출 방지)</li>
+</ul>
+<hr/>
+<h2 id="5-mpc">5. MPC 기반 경로 추적</h2>
+<h3 id="51-mpc">5.1 왜 MPC가 필요한가</h3>
+<p>경로(Path)에는 <strong>시간 정보가 없다</strong>. "어디를 지나가라"만 있고 "얼마나 빨리"가 없다. MPC는 시간을 배분하면서 동시에 <strong>물리적 제약을 실시간으로 만족</strong>시킨다.</p>
+<pre><code class="language-mermaid">graph LR
+    REF[참조 경로&lt;br&gt;q_r] --&gt; MPC[MPC 최적화&lt;br&gt;&lt;0.08s]
+    STATE[현재 상태&lt;br&gt;q_0] --&gt; MPC
+    PRESS[유압 압력&lt;br&gt;f_p] --&gt; MPC
+    MPC --&gt; U[최적 제어 입력&lt;br&gt;u*]
+    U --&gt; EXC[굴착기]
+    EXC --&gt;|피드백| STATE
+    style MPC fill:#ede9fe
+</code></pre>
+<h3 id="52-3">5.2 동역학 모델 (식 3)</h3>
+<p>1차 이산 시간 기구학 모델:
+$$q_{k+1} = f_d(q_k, u_k)$$</p>
+<table>
+<thead>
+<tr>
+<th>변수</th>
+<th>차원</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$q$</td>
+<td>$\mathbb{R}^4$</td>
+<td>configuration: 스윙 각도 + 3개 실린더 길이</td>
+</tr>
+<tr>
+<td>$u$</td>
+<td>$\mathbb{R}^4$</td>
+<td>제어 입력: 스윙 속도 + 3개 실린더 신축 속도</td>
+</tr>
+<tr>
+<td>$f_d$</td>
+<td>-</td>
+<td>이산 시간 상태 전이 함수</td>
+</tr>
+</tbody>
+</table>
+<p>기구학 관계: $\dot{q} = J(q) \cdot u$, 여기서 $J(q)$는 자코비안 행렬.</p>
+<blockquote>
+<p><strong>설계 선택:</strong> 고차 유압 동역학 모델(압력, 관성 포함)은 유온(oil temperature)/마찰 불확실성이 크고 비선형성이 강해 실시간 MPC 적용이 어렵다. 대신 1차 기구학 모델 + 충분한 성능의 저수준 제어기 조합이 실용적이며, 실험으로 유효성을 검증했다.</p>
+</blockquote>
+<h3 id="53-4">5.3 물리적 제약 (식 4)</h3>
+<p>$$c(q_k, u_k, f_p) \leq 0$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$f_p$</td>
+<td>유압 실린더 내부 압력 측정값 (파워 제약 계산에 사용)</td>
+</tr>
+<tr>
+<td>$c(\cdot)$</td>
+<td>물리적 제약 함수 (3가지 제약을 벡터로 결합)</td>
+</tr>
+</tbody>
+</table>
+<p>논문에서 고려하는 3가지 물리적 제약:
+1. <strong>파워 한계</strong> (Power limit)
+2. <strong>실린더 변위 한계</strong> (Cylinder displacement limit)
+3. <strong>펌프 유량 한계</strong> (Pump flow rate limit)</p>
+<blockquote>
+<p><strong>📐 보충 수식</strong> (논문 [15]에 상세 정의, 본 논문에서는 $c(\cdot) \leq 0$으로만 기술)</p>
+<table>
+<thead>
+<tr>
+<th>제약</th>
+<th>수식</th>
+<th>물리적 의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>파워 한계</td>
+<td>$\sum_i p_i \cdot \dot{l}<em>i \leq P</em>{max}$</td>
+<td>유압 펌프 최대 출력</td>
+</tr>
+<tr>
+<td>실린더 변위</td>
+<td>$l_{min} \leq l_i \leq l_{max}$</td>
+<td>각 실린더 스트로크 범위</td>
+</tr>
+<tr>
+<td>펌프 유량</td>
+<td>$\sum_i A_i \cdot</td>
+<td>\dot{l}_i</td>
+</tr>
+</tbody>
+</table>
+<p><em>출처: 저자 이전 연구 [15]에서 상세 정의</em></p>
+</blockquote>
+<h3 id="54-mpc-5">5.4 MPC 최적화 문제 (식 5)</h3>
+<p>$$\min_{q_{(\cdot)}, \, u_{(\cdot)}} J(q_r, u; \, q_{(\cdot)})$$</p>
+<p><strong>제약 조건:</strong>
+| 제약 | 수식 | 의미 |
+|------|------|------|
+| 동역학 (식 3) | $q_{k+1} = f_d(q_k, u_k)$ | 물리 법칙 |
+| 초기 상태 | $q_0 = q(t)$ | 현재 위치 |
+| 물리적 제약 (식 4) | $c(q_k, u_k, f_p) \leq 0$ | 파워, 유량, 변위 한계 |</p>
+<p>비용함수 $J$는 상태 오차 $q - q_r$과 제어 입력 $u$에 대한 <strong>이차 형식(quadratic)</strong>이며, Augmented Lagrangian 방법 기반 제약 iLQR [20]로 실시간 풀이한다.</p>
+<blockquote>
+<p><strong>📐 보충 수식</strong> (논문에서 "quadratic with respect to $q - q_r$ and $u$"로만 기술)</p>
+<p>$$J = \sum_{k=0}^{N-1} \left[ (q_k - q_{r,k})^\top Q \, (q_k - q_{r,k}) + u_k^\top R \, u_k \right]$$</p>
+<ul>
+<li><strong>Q 행렬</strong>: 참조 경로 $q_r$로부터의 편차 벌점 → 추적 정밀도 결정</li>
+<li><strong>R 행렬</strong>: 과도한 제어 입력 억제 → 부드러운 동작 보장</li>
+<li><strong>$f_p$</strong>: 유압 압력 측정값. 예측 구간 동안 <strong>상수로 가정</strong>하고 빠른 업데이트율(&lt;0.08s)로 보상</li>
+</ul>
+<p><em>출처: 표준 이차 비용함수(LQR) 형태로 유도</em></p>
+</blockquote>
+<h3 id="55">5.5 시간 배분</h3>
+<ul>
+<li>경로 세그먼트별 이동 시간 = 각 실린더의 기준 신축 속도를 초과하지 않는 <strong>최대 시간</strong>(느리게 갈수록 안전)</li>
+<li>MPC가 이 기준 시간을 따르되, 물리적 제약에 의해 실시간 조절</li>
+</ul>
+<hr/>
+<h2 id="6">6. 정밀 지형 검사</h2>
+<p>500
+<em>멀티뷰 스테레오 검사: 60° 스윙 촬영 → 특징점 추적 → 2-Step BA로 서브 cm 정밀도 3D 복원</em></p>
+<h3 id="61-2-step-bundle-adjustment">6.1 방법: 멀티뷰 스테레오 + 2-Step Bundle Adjustment</h3>
+<h3 id="62">6.2 프로세스</h3>
+<pre><code class="language-mermaid">graph TD
+    A[60° 스윙 촬영&lt;br&gt;~60초] --&gt; B[Affine KLT&lt;br&gt;특징점 추적]
+    B --&gt; C[Step 1: 소수 점 + 전체 포즈&lt;br&gt;동시 최적화]
+    C --&gt; D[Step 2: 포즈 고정&lt;br&gt;전체 점 최적화]
+    D --&gt; E[정밀 3D 점군&lt;br&gt;&lt; 1cm 정밀도]
+    style C fill:#fef3c7
+    style D fill:#d1fae5
+    style E fill:#dbeafe
+</code></pre>
+<ol>
+<li><strong>촬영</strong>: 붐 고정 + 60° 스윙 → 연속 스테레오 이미지 촬영 (~60초)</li>
+<li><strong>특징점 추적</strong>: Constrained Affine KLT — 일반 KLT는 수직 관측을 가정하나, 굴착기 카메라는 비스듬히 보므로 아핀 변환으로 패치 변형을 모델링</li>
+<li><strong>3D 복원</strong>: 2-Step Bundle Adjustment</li>
+</ol>
+<h3 id="63-2-step-ba">6.3 2-Step BA (핵심 혁신)</h3>
+<p><strong>문제:</strong> Full BA는 모든 카메라 포즈(6DoF × N장)와 모든 3D 점(3 × M개)을 동시 최적화. M이 수백만이면 <strong>포즈-점 커플링 항</strong>으로 계산 폭발.</p>
+<p><strong>핵심 통찰:</strong> 카메라 포즈를 정확히 결정하는 데 수백만 점은 필요 없다. 수천 개면 충분하다.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>최적화 대상</th>
+<th>점 개수</th>
+<th>포즈</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>포즈 + 점 동시</td>
+<td>~수천 (FAST score 상위)</td>
+<td>자유</td>
+<td>포즈 결정에 충분</td>
+</tr>
+<tr>
+<td>2</td>
+<td>점만</td>
+<td>수백만 전체</td>
+<td><strong>고정</strong></td>
+<td>커플링 없음 → 빠름</td>
+</tr>
+</tbody>
+</table>
+<p>정밀도 손실은 Full BA 대비 <strong>무시할 수 있는 수준</strong>이며, 계산 속도는 <strong>수십 배 향상</strong>.</p>
+<h3 id="64">6.4 라이다 사전 정보 활용</h3>
+<p>라이다 높이맵 → 특징점 3D 위치 <strong>초기값</strong> 제공 → BA 수렴 속도·안정성 향상. 라이다(대략적, 빠름) + 카메라(정밀, 느림)의 <strong>센서 퓨전</strong> 효과.</p>
+<h3 id="65">6.5 성능 비교</h3>
+<p>700
+<em>검사 정밀도 비교: 라이다 단독, 단일뷰 스테레오, 제안 방법(2-Step BA)의 3D 복원 결과</em></p>
+<p>500
+<em>검사 방법별 정밀도 및 소요 시간 비교 (Trimble Total Station 대비)</em></p>
+<p>500
+<em>2-Step BA vs Full BA 계산 시간 및 정밀도 비교</em></p>
+<table>
+<thead>
+<tr>
+<th>방법</th>
+<th>정밀도</th>
+<th>시간 (35m²)</th>
+<th>속도 (s/m²)</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trimble Total Station</td>
+<td>~mm</td>
+<td>1,192초</td>
+<td>34.2</td>
+<td>별도 장비+인력</td>
+</tr>
+<tr>
+<td>3D 라이다 단독</td>
+<td>~3cm</td>
+<td>수 초</td>
+<td>&lt;0.1</td>
+<td>정밀도 부족</td>
+</tr>
+<tr>
+<td>단일뷰 스테레오</td>
+<td>~2cm</td>
+<td>수 초</td>
+<td>&lt;0.1</td>
+<td>시야각 제한</td>
+</tr>
+<tr>
+<td><strong>제안 방법 (2-Step BA)</strong></td>
+<td><strong>&lt;1cm</strong></td>
+<td><strong>25.8초</strong></td>
+<td><strong>0.74</strong></td>
+<td><strong>온보드 자동</strong></td>
+</tr>
+</tbody>
+</table>
+<p>→ Trimble 대비 <strong>~46배 빠르면서</strong> 유사한 정밀도</p>
+<hr/>
+<h2 id="7">7. 실험 결과</h2>
+<p>700
+<em>45° 경사면 실제 자율 굴착 실험: 절토 전후 지형 변화 및 목표 대비 오차</em></p>
+<h3 id="_6">실험 설정</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>장비</td>
+<td>Hyundai HX300AL (30톤), 버킷 1m³, 강철 이빨 10cm</td>
+</tr>
+<tr>
+<td>작업</td>
+<td>45° 상향 경사면 절토, 폭 3.5m × 높이 1.5m</td>
+</tr>
+<tr>
+<td>방법</td>
+<td>3개소에서 수평 이동하며 반복 굴착</td>
+</tr>
+<tr>
+<td>제어 주파수</td>
+<td>100Hz (전자유압 밸브)</td>
+</tr>
+<tr>
+<td>온보드 컴퓨터</td>
+<td>쿼드코어 1.8GHz, 8GB RAM (GPU 없음)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">주요 결과</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>결과</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>절토 평균 오차</td>
+<td>7.4cm (σ = 5.3cm)</td>
+<td>전문 기사 수준</td>
+</tr>
+<tr>
+<td>검사 정밀도</td>
+<td>&lt;1cm</td>
+<td>건설 검수 기준 충족</td>
+</tr>
+<tr>
+<td>검사 소요 시간</td>
+<td>85.8초 (촬영 60 + 계산 25.8)</td>
+<td>Trimble 대비 46배 빠름</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">계산 시간</h3>
+<table>
+<thead>
+<tr>
+<th>모듈</th>
+<th>시간</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>지형 추정</td>
+<td>실시간 (5Hz)</td>
+<td>라이다 10Hz 입력</td>
+</tr>
+<tr>
+<td>경로 생성</td>
+<td>~0.3초</td>
+<td>덤핑-복귀 시간 내 완료 → 무중단 굴착</td>
+</tr>
+<tr>
+<td>MPC</td>
+<td>&lt;0.08초</td>
+<td>실시간 물리적 제약 대응</td>
+</tr>
+<tr>
+<td>검사 알고리즘</td>
+<td>25.8초 (0.74 s/m²)</td>
+<td>Trimble 대비 46배 빠름</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mpc">MPC 제약 만족</h3>
+<ul>
+<li>제안 MPC: 파워 제약을 <strong>항상 만족</strong> → 안정적 굴착, 버킷 팁 흔들림 없음</li>
+<li>제약 없는 베이스라인: 파워 제약 <strong>빈번히 위반</strong> → 장비 위험, 불안정 굴착</li>
+</ul>
+<hr/>
+<h2 id="8">8. 한계 및 향후 연구</h2>
+<h3 id="_9">현재 한계</h3>
+<ul>
+<li>카메라 기반 검사 → <strong>야간/악천후 불가</strong></li>
+<li>미감지 지하 장애물(암반) 대응 미흡</li>
+<li>단일 굴착기, 단일 작업만 검증</li>
+<li>크롤러 이동 계획 미포함</li>
+</ul>
+<h3 id="_10">향후 연구 방향</h3>
+<pre><code class="language-mermaid">graph TD
+    subgraph 한계
+        L1[야간/악천후]
+        L2[지하 장애물]
+        L3[단일 굴착기]
+        L4[크롤러 이동 없음]
+    end
+    subgraph 향후
+        F1[백업 센서&lt;br&gt;열화상 등]
+        F2[유압 압력 기반&lt;br&gt;지하 3D 맵]
+        F3[다중 굴착기&lt;br&gt;협업]
+        F4[상위 태스크&lt;br&gt;플래닝]
+    end
+    L1 --&gt; F1
+    L2 --&gt; F2
+    L3 --&gt; F3
+    L4 --&gt; F4
+</code></pre>
+<hr/>
+<h2 id="_11">한마디로 정리</h2>
+<ul>
+<li><strong>핵심 방법은?</strong> — 칼만 필터형 2.5D 높이맵 + DFS/A* 경로 생성 + MPC 물리 제약 추적 + 2-Step BA 검사를 온보드 통합 구현</li>
+<li><strong>핵심 결과는?</strong> — 30톤 실기로 45° 경사면 7.4cm 정밀도 자율 절토, 서브 cm 온보드 검사 달성</li>
+<li><strong>한계는?</strong> — 야간/악천후 미대응, 지하 장애물 미감지, 단일 작업·단일 굴착기만 검증</li>
+</ul>
+<hr/>
+<h2 id="_12">핵심 키워드</h2>
+<p><code>자율 굴착</code> <code>AES</code> <code>MPC</code> <code>번들 조정</code> <code>2.5D 높이맵</code> <code>칼만 필터</code> <code>DFS</code> <code>A*</code> <code>KLT</code> <code>멀티뷰 스테레오</code> <code>유압 굴착기</code> <code>온보드 센서</code> <code>지형 검사</code></p>
+<hr/>
+<h2 id="_13">나의 의견</h2>
+<blockquote>
+<p><em>이 논문을 읽고 느낀 점, 우리 연구와의 연관성, 활용 가능성 등을 자유롭게 기록</em></p>
+</blockquote>
+<ul>
+<li>우리도 MAP 기반 2.5D 지형맵 활용해서 구현해보기</li>
+<li>C2C, L2C 등 센서 캘리브레이션도 구현해보기</li>
+<li>절토 평균 오차가 7.4cm 이면 충분한 정확도는 아닌듯</li>
+</ul></main><script src="../assets/live.js"></script></body></html>

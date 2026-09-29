@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#57 자율 로봇 산업용 굴착기를 위한 숙련자 모사 굴착 궤적 계획 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · 서울대학교 · #057</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-field">서울대학교</span><span class="badge">2020</span><span class="badge">#057</span><span class="badge score">작업·궤적계획</span><span class="badge">논문</span></div>
+<h1>자율 로봇 산업용 굴착기를 위한 숙련자 모사 굴착 궤적 계획</h1>
+<p class="title-en" lang="en">Expert-Emulating Excavation Trajectory Planning for Autonomous Robotic Industrial Excavator</p>
+<p class="authors">Bukun Son, ChangU Kim, Changmuk Kim, Dongjun Lee · 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bbbae40c04f1b5a7.html">2020 Expert-emulating excavation trajectory planning for autonomous robotic industrial excavator - 서울대(이동준)</a></li><li><a href="../notes/266ff19167ce109d.html">(한민확인) 2020 Expert-emulating excavation trajectory planning for autonomous robotic industrial excavator - 서울대(이동준)_요약</a></li><li><a href="../notes/7f4762e988be9963.html">서울대 자율굴착 논문 카드 요약 2018-2025</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 소량의 숙련자 시연을 DMP의 목표 수렴 구조 안에 인코딩하고 MLP가 지형별 shaping force를 복원하도록 한 뒤, 모멘텀 기반 굴착력 추정이 전문가 임계 패턴을 초과할 때 지면 법선 방향 coupling term을 실시간 주입해 산업용 38톤 굴착기의 생산성과 과도한 부하 회피를 함께 검증했다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>숙련자의 계획 형상과 힘 대응을 하나의 실행 프레임워크로</h3>
+<p>자율 굴착에서 가장 어려운 부분은 토양 동역학이 복잡하고 현장마다 달라 숙련자 수준의 자유형 궤적을 모델 기반으로 계산하기 어렵다는 점이다. 기존 연구는 토양을 무시한 기구학 계획, 직선 또는 고정 형상, 침투·끌기·말아올리기의 단순 단계에 머무르는 경우가 많았다. 동시에 지하 파이프와 암석은 지상 LiDAR만으로 발견하기 어렵고, 사람이 탑승하지 않는 자율 장비에서는 과도한 힘을 즉시 완화할 주체가 없다.</p><p>논문은 숙련자가 지형을 보고 공칭 궤적을 세운 뒤 장비 반력으로 경로를 수정한다는 전략을 두 부분으로 모사한다. 먼저 지형 경사와 깊이에 조건화된 전문가 궤적을 DMP로 학습해 목표점 수렴과 형상 보존을 얻고, 실행 중에는 실린더 압력·동역학 기반 굴착력 추정을 사용해 과도한 힘이 생기는 구간의 궤적을 얕게 변조한다. 데이터가 비싼 산업용 굴착기에서 대규모 end-to-end 학습 대신 구조적이고 설명 가능한 DMP와 작은 MLP를 선택했다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p057-figure-p0001-1-o01-ad30c107">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4e68f1781945b9b4948e0b7d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1: Industrial autonomous robotic excavator, Doosan DX380LC, customized with IMUs, LiDAR, cylinder pressure sensor, RTK-GNSS sensors.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0002-2-o01-47c8fc98">
+<img alt="원문 Figure 2, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/775cec45bc0cdc6cf8025a41.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.2</b> — Fig. 2: Conﬁguration of the industrial autonomous robotic excavator, Doosan DX380LC</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>토양을 고려하지 않는 기구학 계획은 현장 생산성과 과부하를 직접 최적화하지 못한다.</li><li>토양모델 기반 방법은 직선·고정 형상 또는 단순 단계 궤적에 제한돼 숙련자의 자유형 굴착을 표현하기 어렵다.</li><li>고차원 LiDAR 점군의 end-to-end 학습은 많은 전문가 실차 데이터가 필요하다.</li><li>버킷 힘센서는 대형 장비에서 비용과 내구성 문제로 실용성이 낮다.</li><li>공칭 궤적만 실행하면 파이프·암석·토질 변화에서 굴착력이 위험 수준으로 증가할 수 있다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>전문가 굴착 궤적을 목표점 수렴과 시간·공간 스케일링을 갖는 DMP로 표현했다.</li><li>지형 경사와 깊이, DMP clock signal에서 shaping force를 출력하는 64·16노드 MLP를 학습했다.</li><li>3자유도 굴착기 동역학과 모멘텀 외란관측기로 실린더 압력에서 버킷 끝 굴착력을 실시간 추정했다.</li><li>전문가 힘 임계값을 초과하는 구간에서 coupling movement primitive로 공칭 경로를 얕게 변조했다.</li><li>Doosan DX380LC 실차에서 학습 범위 내·외 경사, 평지와 연속 세 번 굴착을 시험하고 생산성·힘 응답을 보고했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>플랫폼은 IMU, 실린더 압력센서, RTK-GNSS와 Velodyne VLP-16 LiDAR를 장착한 Doosan DX380LC다. 굴착은 선회 없는 사지탈 평면 운동으로 제한하고, 제조사 PI 관절제어가 주어진 상태에서 상위 버킷 끝 궤적을 생성한다. LiDAR 점군의 x 3~11m, z -1.5~1.5m 관심영역을 평면화한 뒤 구간 경사면과 가우시안 함수를 피팅해 경사각과 굴착 깊이를 추출한다.</p><p>전문가 궤적의 버킷 끝 x·y 위치를 각각 DMP로 표현하고 공통 clock signal을 사용한다. 시작·목표 거리 차이를 줄이는 공간 정규화와 8초·100Hz·800스텝 시간 정규화를 거쳐 shaping force를 계산한다. MLP는 clock signal과 지형 파라미터를 받아 shaping force의 비선형 항을 출력한다. 버킷 자세는 궤적 속도 방향과 버킷 외접 삼각형의 지면 충돌을 피하는 최소 각도로 별도 결정한다.</p><p>실행 중 3자유도 동역학과 모멘텀 외란관측기로 굴착력을 추정한다. 힘의 정규화 크기가 평지·경사 전문가 임계값을 넘으면 양의 초과분만 사용해 지면 법선 방향 coupling term을 만든다. 이 항을 DMP의 속도와 가속도 수준에 동시에 넣어 공칭 궤적을 얕게 바꾸고 접촉 오버슈트를 줄인다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>전문가 궤적·힘 수집</h4><p>평지와 20.38도·28.30도 경사에서 전문가 연속 굴착 궤적과 압력 기반 힘을 수집하고, 논문이 보고한 총 18개 데이터셋을 시간·공간 정규화한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>지형 태스크 파라미터 추출</h4><p>VLP-16 점군에서 경사면을 피팅하고 불규칙 굴착부를 가우시안으로 근사해 T=(경사각, 깊이)를 만든다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>DMP shaping force 학습</h4><p>전문가 위치 궤적에서 DMP shaping force를 역산하고, 두 완전연결층 64·16노드 MLP로 (s,T)에서 비선형 형상항 h(s)를 예측한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>공칭 궤적·버킷 자세 복원</h4><p>새 지형 T와 clock signal에서 shaping force를 생성해 DMP를 적분하고, 버킷 외형과 지면 충돌을 피하는 최소 자세각을 기하적으로 계산한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>굴착력 추정과 온라인 변조</h4><p>IMU·압력에서 외력을 추정하고 전문가 임계값 초과분을 지면 법선 방향 coupling term으로 변환해 매 제어주기 공칭 궤적을 수정한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>DMP clock과 공칭 동역학</h4><code>\tau\dot s=-\alpha_s s,\qquad \tau\ddot y=\alpha_y(\beta_y(y_g-y)-\dot y)+f(s),\qquad f(s)=h(s)(y_g-y_0)s</code><p>단조 감소하는 clock이 shaping force의 영향을 끝에서 0으로 만들고, 임계감쇠 attractor가 가변 목표점에 수렴하도록 한다.</p></div><div class="eq"><h4>coupling movement primitive</h4><code>\tau\dot z=\alpha_y(\beta_y(y_g-y)-z)+f(s)+c_2\dot C,\qquad \tau\dot y=z+c_1C</code><p>굴착력 기반 변조를 속도와 가속도 수준에 함께 넣어 궤적을 실시간 변경하면서 단순 가속도 주입의 오버슈트를 줄인다.</p></div><div class="eq"><h4>모멘텀 기반 외란관측</h4><code>\hat\tau_{ext}=K_0\left(p(t)-\int_0^t(\tau_u-\tau_\mu-\beta(\theta,\dot\theta)+\hat\tau_{ext})\,ds-p(0)\right)</code><p>관절각·각속도와 압력에서 계산한 입력토크를 이용해 외부 굴착토크를 1차 저역통과 형태로 추정하고 자코비안 역전치로 버킷 힘으로 변환한다.</p></div><div class="eq"><h4>힘 초과 기반 법선 변조</h4><code>C(s)=\max(F_{xcv}-F_{threshold},0),\quad C_{DMP}=\begin{bmatrix}-C\sin(\theta_{DMP}-\theta_{slope})\\C\cos(\theta_{DMP}-\theta_{slope})\end{bmatrix}</code><p>전문가 임계값을 넘는 힘만 사용해 굴착 경로를 작업면에서 멀어지는 방향으로 이동시킨다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p057-figure-p0004-4-o01-03c0202c">
+<img alt="원문 Figure 4, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b6d56c6b9d8e1e4052bbeb24.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.4</b> — Fig. 4: An architecture of the learning and retrieving the nominal trajectory.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0005-7-o01-2957242b">
+<img alt="원문 Figure 7, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3b3e08f03aa1e52bf2d1ada5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.5</b> — Fig. 7: Deﬁnition of bucket angle φ. (left) The bucket tooth and headings coincide but the bucket collide with the ground. (right) The bucket tooth and headings form the minimum angle avoiding collision.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0006-9-o01-9860ec05">
+<img alt="원문 Figure 9, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b6c1868fffc3567b999d5e49.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.6</b> — Fig. 9: Schematic of the coordinates of DMP dynamics and online modulation strategy.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>데이터 효율적인 DMP-MLP 전문가 모사</h3><p>DMP는 전문가 궤적을 임계감쇠 attractor와 shaping force로 분리한다. 목표점이 바뀌어도 질적 형상을 유지하고 마지막에는 목표로 수렴하므로 단순 좌표 회귀보다 실차 실행의 안정성을 확보하기 쉽다. MLP는 모든 위치점을 직접 출력하지 않고 지형과 시간에 따른 shaping force만 학습해 제한된 시연을 활용한다.</p><ul><li>학습 MLP는 64노드와 16노드의 두 완전연결층으로 구성된다.</li><li>학습 지형은 평지와 20.38도·28.30도 경사다.</li><li>공칭 위치 재생 RMS 오차는 0.51m이며 이 중 주요 원인은 0.42m의 초기점 오차다.</li></ul></article><article class="tech-card"><h3>지형 특징과 버킷 자세의 명시적 분리</h3><p>고차원 점군을 직접 정책에 넣지 않고 경사와 깊이라는 두 태스크 파라미터로 줄인다. DMP는 버킷 끝 위치만 만들고, 버킷 자세는 버킷 치형이 진행방향을 따르되 외접 삼각형이 지면과 충돌하지 않는 최소 각도로 계산한다. 이 분리는 데이터 요구량을 줄이고 각 단계의 의미를 설명하기 쉽지만, 지나간 경로의 토사가 모두 제거됐다는 가정을 둔다.</p><ul><li>LiDAR 관심영역은 x 3~11m, z -1.5~1.5m다.</li><li>경사면과 단일 pit 깊이를 각각 구간 피팅과 가우시안 피팅으로 얻는다.</li><li>버킷 자세는 DMP가 아닌 별도 기하 알고리즘의 출력이다.</li></ul></article><article class="tech-card"><h3>힘 추정 기반 안전 변조</h3><p>전문가 힘 데이터는 굴착 중 일정 최대치를 유지하는 사다리꼴 경향을 보였고, 평지와 경사에서 서로 다른 임계 수준을 사용했다. 실차는 버킷 힘센서 대신 IMU와 실린더 압력으로 외력을 추정한다. 추정력이 임계값보다 클 때만 경로를 얕게 바꿔 과도한 힘을 낮추며, 공칭 경로 형상과 목표 수렴은 DMP가 유지한다.</p><ul><li>실차 힘 임계값은 경사 1.0×10^5N, 평지 1.5×10^5N이다.</li><li>CAN 제어주기는 100Hz, LiDAR 점군 전달은 10Hz다.</li><li>coupling gain은 αp=5.0, βp=√20, c1=0.03, c2=0.008로 설정됐다.</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p057-figure-p0003-3-o01-f338de92">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/310797327d36e48df91ab190.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3: The acquired expert excavation trajectories (processed data from eighteen data-set): (a) three rounds of consecutive excavation in ﬂat and two different angled slopes; (b) modi- ﬁed training trajectory matching goal position yg to equalize spatial scaling.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0005-8-o01-9515dc9a">
+<img alt="원문 Figure 8, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3acb1e2c695caf27840a9845.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.5</b> — Fig. 8: Raw external force data from experts, resampling data,mean and variance between each data during excavation. Top: ﬂat terrain, bottom: slope terrain</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>IMU, LiDAR, 실린더 압력센서와 RTK-GNSS를 추가한 Doosan DX380LC 산업용 굴착기를 사용했다.</li><li>온보드 계획 PC는 Intel i7 2.7GHz NUC의 Ubuntu·ROS 환경, 점군 처리는 Nvidia Jetson TX2를 사용했다.</li><li>학습 지형은 평지와 20.38도·28.30도 경사이며, 실차 시험은 평지와 26.05도 보간 경사, 32.2862도 외삽 경사에서 연속 세 번 굴착했다.</li><li>CAN으로 100Hz 관절 상태와 궤적 명령을 교환하고 LiDAR 점군은 10Hz로 NUC에 전달했다.</li><li>평지·경사에서 힘 피드백 없는 공칭 궤적과 힘 초과를 반영한 변조 궤적을 비교했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>전문가 궤적 재생에서 DMP-MLP 공칭 위치와 원 시연의 RMS 오차를 계산했다.</li><li>학습 범위 안의 경사와 범위 밖 경사에서 지형 조건부 궤적 생성의 일반화 거동을 확인했다.</li><li>평지에서는 연속 굴착에 따라 깊어지는 공칭 궤적과 최종 적재량을 측정했다.</li><li>두 경사면에서는 공칭·변조 궤적의 최대 정규화 굴착력과 임계값 초과 누적오차를 비교했다.</li><li>변조 궤적이 전문가 사다리꼴 힘 패턴에 가까워지는지 그래프와 정량값으로 평가했다.</li></ul>
+<h3>비교 기준</h3><ul><li>DMP-MLP 공칭 전문가 모사 궤적</li><li>굴착력 임계 초과 피드백을 추가한 coupling 변조 궤적</li></ul>
+<h3>평가 지표</h3><ul><li>전문가 원 궤적 대비 위치 RMS 오차</li><li>평지 버킷 적재량과 버킷 충전율</li><li>경사별 최대 정규화 굴착력</li><li>힘 임계값 초과 누적오차의 공칭/변조 비율</li><li>학습 범위 내 보간과 범위 밖 외삽 경사에서의 궤적 생성</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p057-figure-p0006-10-o01-d4dcc375">
+<img alt="원문 Figure 10, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/089bcd1a73568367df4e6dba.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.6</b> — Fig. 10: Results of digging in ﬂat terrain- left: plot of the three trajectories which operates deeper, right: each trajectory with y-dir ﬂatten PCD before digging. The initial point is a yellow star.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0007-12-o01-c750f799">
+<img alt="원문 Figure 12, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/952cd487b1c903c0b4c075cb.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.7</b> — Fig. 12: Nominal trajectories and online modulating trajec- tories in slope 1 (top) and slope 2 (bottom) for consecutive three times excavations. The green area is digging inside the ground and the rest is booming up to designated goal point. The initial point is a yellow star.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>학습된 공칭 궤적은 전문가 궤적의 구조를 재현했지만 위치 RMS 오차는 0.51m였고 초기점 차이 0.42m가 주된 원인으로 보고됐다. 평지 연속 굴착에서는 이전 굴착으로 변한 깊이에 따라 점차 더 깊은 궤적을 생성했다. 평지의 추정력이 1.5×10^5N 임계값 아래에 있어 coupling 변조는 개입하지 않았고, 공칭 DMP-MLP만으로 3.03톤, 버킷 용량의 89.9%를 적재했다.</p><p>두 경사면에서 힘 변조는 공칭 궤적보다 얕은 경로를 만들었다. 공칭 최대 정규화 힘 1.68과 1.93은 변조 후 1.25와 1.38로 낮아졌고, 임계값을 넘는 누적 힘 오차는 공칭이 변조보다 각각 1.72배와 2.40배 컸다. 이는 힘 피드백이 최대 부하와 초과 지속시간을 함께 줄였음을 보여준다. 다만 시험 지형 수와 전문가 시연이 적고, 보간·외삽 일반화에 대한 별도 정확도 지표나 통계 검정은 없다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>공칭 궤적 위치 RMS 오차</td><td>0.51m</td><td>학습된 DMP-MLP 궤적과 전문가 원 궤적 비교</td><td>PDF p.4</td></tr><tr><td>초기점 오차</td><td>0.42m</td><td>0.51m RMS 오차의 주된 원인으로 보고</td><td>PDF p.4</td></tr><tr><td>평지 실차 적재량</td><td>3.03톤, 버킷 용량의 89.9%</td><td>힘이 임계값 이하라 온라인 변조가 개입하지 않은 공칭 궤적</td><td>PDF p.6</td></tr><tr><td>경사 1 최대 정규화 굴착력</td><td>1.68→1.25</td><td>공칭→힘 변조 궤적</td><td>PDF p.6</td></tr><tr><td>경사 2 최대 정규화 굴착력</td><td>1.93→1.38</td><td>공칭→힘 변조 궤적</td><td>PDF p.6</td></tr><tr><td>임계 초과 누적오차 비율</td><td>공칭이 변조보다 경사별 1.72배·2.40배</td><td>전문가 힘 임계값을 넘은 누적 오차 비교</td><td>PDF p.6</td></tr><tr><td>실차 통신 주기</td><td>CAN 100Hz, LiDAR 10Hz</td><td>NUC·Jetson TX2 기반 ROS 실차 시스템</td><td>PDF p.6</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>공칭 궤적 재생 오차 0.51m 중 0.42m가 초기점 차이에서 발생해 시작 상태 정렬에 민감하다.</li><li>외삽 경사 32.2862도에서는 학습 범위 밖 입력의 품질을 보장할 수 없고 논문도 외삽 성능 개선을 후속 과제로 남겼다.</li><li>평지 시험은 힘이 임계값 아래여서 온라인 변조가 실제로 작동하는 평지 사례를 제공하지 않는다.</li><li>버킷 자세 계산은 이미 지나간 궤적의 토사가 모두 제거됐다고 가정해 재퇴적이나 큰 암석이 있으면 충돌 여유가 달라질 수 있다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p057-figure-p0006-11-o01-8509df7b">
+<img alt="원문 Figure 11, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9d6425083eab2de5c73a6a14.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.6</b> — Fig. 11: External force data Fxcv during digging in ﬂat terrain.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0007-13-o01-57116f98">
+<img alt="원문 Figure 13, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5815acd2b4b746be53d91669.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 13 · PDF p.7</b> — Fig. 13: External force results on slopes. The blue dotted lines are the results of the excavation force without feedback, and red lines are the excavation force results of considering coupling feedback. (top) slope 1, (bottom) slope 2.</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>전문가 데이터가 총 18개 수준이고 학습 지형도 평지와 두 경사로 제한된다.</li><li>지형 입력이 경사와 깊이 두 값뿐이라 복잡한 다중 굴곡과 토질 차이를 표현하지 못한다.</li><li>실험은 사지탈 평면의 단일 굴착 프리미티브이며 선회·배출·차체 이동을 포함하지 않는다.</li><li>coupling gain과 평지·경사 힘 임계값을 수동 설정했다.</li><li>위치 RMS 오차가 0.51m이고 초기점 정렬 오차가 큰 비중을 차지한다.</li><li>실제 미지 토질과 지하 장애물 종류를 바꾼 체계적 일반화 시험이 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>굴착기 시스템에 맞는 최적 coupling gain을 자동 탐색한다.</li><li>학습 범위를 벗어난 지형 파라미터의 외삽 성능을 개선한다.</li><li>다양한 토질과 지하 장애물에서 전문가 힘 임계값의 일반성을 검증한다.</li><li>시작점 정렬과 공간 정규화를 개선해 공칭 궤적 RMS 오차를 줄인다.</li><li>선회·적재·이동을 포함한 전체 작업계획과 DMP 굴착 프리미티브를 통합한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>지형 경사·깊이에 조건화된 DMP shaping force를 64-16 MLP로 학습하고, 추정 굴착력이 전문가 임계값을 넘으면 법선 방향 coupling term으로 공칭 경로를 얕게 만든다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>DX380LC 평지에서 3.03톤·89.9% 적재를 달성했고, 경사면 최대 정규화 힘을 1.68→1.25와 1.93→1.38로 낮췄다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>소량·소수 지형 데이터와 수동 gain·임계값에 의존하며, 외삽·토질·지하 장애물 일반화와 전체 굴착 사이클 통합은 검증되지 않았다.</p></div></div>
+<div class="kw"><span>#작업·궤적계획</span><span>#학습·RL·IL·VLA</span><span>#제어·MPC</span><span>#DMP</span><span>#MLP</span><span>#학습 시연</span><span>#외란관측기</span><span>#coupling movement primitives</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 숙련자의 자유형 궤적을 구조화된 운동 프리미티브로 학습하고, 실차에서 관측 가능한 압력 신호로 안전하게 수정하는 연결고리를 제시한다. 순수 모방학습과 순수 모델 기반 제어 사이에서 공칭 형상은 데이터로, 목표 수렴과 온라인 대응은 동역학 구조로 담당한다는 점이 중요하다.</p><p>후속 자율 굴착 시스템에서는 지형·토질 임베딩을 강화하고 MCV 유량 제약, 미끄럼·전복 제약과 결합할 수 있다. DMP 출력 자체를 최종 명령으로 사용하기보다 물리 제약 최적화와 안전 감시를 통과시키면 대형 장비 적용의 설명성과 강건성을 높일 수 있다.</p><ul><li>소량 전문가 데이터로 초기 공칭 굴착 프리미티브를 만드는 기준 방법이다.</li><li>압력 기반 힘 피드백은 시각으로 보이지 않는 지중 위험의 실시간 대체 감각이 된다.</li><li>DMP의 목표 수렴 구조는 온라인 변조 후 작업 종료 상태를 유지하는 데 유리하다.</li><li>토질 적응, 자동 gain 선정과 유압·안정성 제약을 추가하면 현장 일반화 연구로 이어질 수 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0004-5-o01-51c0a820">
+<img alt="원문 Figure 5, PDF 4쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7133b9326cab24351d1bb7bc.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.4</b> — Fig. 5: Results of three times consecutive nominal trajectory retrieving in the training terrains from left to the right - top: ﬂat terrain, middle: slope1, bottom: slope2</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p057-figure-p0004-6-o01-6a4579b3">
+<img alt="원문 Figure 6, PDF 4쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/85a08f34bbe81ca1f4b83c00.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.4</b> — Fig. 6: Results of nominal trajectory retrieving for unseen test task parameters - left: test degree, right: test depth</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4, p.5, p.6</li><li><b>실험</b>: p.6</li><li><b>결과</b>: p.4, p.6, p.7</li><li><b>한계</b>: p.5, p.7</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li><li><a href="../notes/bbbae40c04f1b5a7.html" rel="noopener" target="_blank">원문 변환 MD</a> <span>md</span></li><li><a href="../notes/266ff19167ce109d.html" rel="noopener" target="_blank">기존 요약</a> <span>md</span></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 HTML</span> <span>html</span></li><li><a href="../media/335a7ca0cda61a181f28d6ce.webp" rel="noopener" target="_blank">인포그래픽</a> <span>image</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/7f4762e988be9963.html" rel="noopener" target="_blank">서울대 자율굴착 논문 카드 요약 2018-2025.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2020 Expert-emulating excavation trajectory planning for autonomous robotic industrial excavator - 서울대(이동준).pdf</span></li><li><a href="../notes/266ff19167ce109d.html" rel="noopener" target="_blank">(한민확인) 2020 Expert-emulating excavation trajectory planning for autonomous robotic industrial excavator - 서울대(이동준)_요약.md</a></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-056.html"><span class="lbl">← 이전 #56</span>현장 자율 건설 로봇: 무감독 시공을 향하여</a><a class="next" href="paper-058.html"><span class="lbl">다음 #58 →</span>자동화 굴착기를 위한 숙련자 굴착력 패턴 기반 굴착 작업 궤적 생성</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2025 Real-Time_Excavation_Trajectory_Modulation_for_Slip_and_Rollover_Prevention-서울대(이동준)_요약</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2025 Real-Time_Excavation_Trajectory_Modulation_for_Slip_and_Rollover_Prevention-서울대(이동준)_요약</h1><h1 id="real-time-excavation-trajectory-modulation-for-slip-and-rollover-prevention">Real-Time Excavation Trajectory Modulation for Slip and Rollover Prevention</h1>
+<h2 id="_1">한줄 요약</h2>
+<p>경사면에서 자율 굴삭기의 <strong>슬립(slip)과 전복(rollover)</strong>을 실시간으로 방지하기 위해, 경사면 접선/법선 힘 비율 $\mu$와 영모멘트점(ZMP) $\xi$를 단일 선형 부등식으로 통합하고, Transformer 기반 굴착력 차분 예측 모델과 Robust Optimization을 결합한 QP 기반 궤적 변조 프레임워크를 제안한다.</p>
+<hr/>
+<h2 id="1">1. 연구 배경 및 동기</h2>
+<h3 id="11">1.1 문제 정의</h3>
+<ul>
+<li>산업용 굴삭기는 건설, 농업, 광업, 임업 등에서 핵심 중장비이며, 자동화 추세가 가속화</li>
+<li><strong>경사면 굴착(excavation on a slope)</strong>은 슬립과 전복 위험이 증가하여 더욱 도전적</li>
+<li>기존 연구의 한계:</li>
+<li>평지 굴착에 초점 [5][6][7][8] → 슬립/전복 위험 미고려</li>
+<li>ZMP/마찰력 기반 안정성 연구 [10]-[16] → 굴착력(manipulation force)을 무시하거나 연속시간 토크 제어를 가정</li>
+<li>산업용 굴삭기는 유압 구동(MCV) 기반으로 <strong>저수준 디지털 운동학적 제어(low-level digital kinematic control)</strong>만 가능 → 연속시간 토크 제어 불가</li>
+</ul>
+<h3 id="12">1.2 핵심 도전 과제</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">도전 과제</th>
+<th style="text-align: left;">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">유압 구동 한계</td>
+<td style="text-align: left;">MCV 기반 actuator는 포화, 히스테리시스, 데드존 등 복잡한 비선형 현상 → 토크 레벨 제어 불가</td>
+</tr>
+<tr>
+<td style="text-align: left;">인과성 문제 (Causality-like issue)</td>
+<td style="text-align: left;">현재 시점 $t_k$에서 다음 시점 $t_{k+1}$의 변조 $u_{k+1}$을 계산해야 하나, $f_{b_{k+1}}$은 알 수 없음</td>
+</tr>
+<tr>
+<td style="text-align: left;">토양 역학 복잡성</td>
+<td style="text-align: left;">기존 토양 모델은 파라미터 추정 및 계산량 문제로 실시간 적용 불가 [19][20][21]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-contribution">1.3 기여 (Contribution)</h3>
+<ol>
+<li>$\mu$와 $\xi$의 <strong>공통 분모 분수 구조</strong>를 활용하여 슬립/전복 방지 조건을 <strong>단일 선형 부등식</strong>으로 통합</li>
+<li>Transformer 기반 <strong>굴착력 차분 예측 모델</strong> ($\Delta\hat{f}_{b_k}$) 개발</li>
+<li>Box uncertainty 기반 <strong>Robust Optimization (RO)</strong>으로 예측 오차 보상</li>
+<li>QP 형태의 실시간 최적화 → 스케일다운 굴삭기로 실험 검증</li>
+</ol>
+<hr/>
+<h2 id="2">2. 시스템 구성 및 좌표계</h2>
+<p>400
+<em>Fig. 1. 경사면에서 굴삭기 구성: $</em>_0$=베이스, $<em>_1$=붐, $</em>_2$=암, $<em>_3$=버킷. 관성 좌표계 ${O}$, 차체 좌표계 ${B}$, 경사각 $\psi_0$, ZMP $\xi$, 안정 영역 $\xi_s$, 굴착력 $f_b$, 궤적 면적 $a_q$ 등이 표시됨.</em></p>
+<h3 id="_2">주요 변수 정리</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">기호</th>
+<th style="text-align: left;">의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">$q_b = (x_b, y_b, \phi_b)$</td>
+<td style="text-align: left;">버킷 끝단(end-tip) 좌표</td>
+</tr>
+<tr>
+<td style="text-align: left;">$q_i = (x_i, y_i, \phi_i)$</td>
+<td style="text-align: left;">$i$-번째 링크 CoM 위치 및 방향 ($i \in {1,2,3}$)</td>
+</tr>
+<tr>
+<td style="text-align: left;">$\psi_0$</td>
+<td style="text-align: left;">경사면 각도 (상수)</td>
+</tr>
+<tr>
+<td style="text-align: left;">$f_b = (f_{bx}, f_{by})$</td>
+<td style="text-align: left;">버킷 끝단에 작용하는 유효 굴착력</td>
+</tr>
+<tr>
+<td style="text-align: left;">$f_o = (f_{ox}, f_{oy})$</td>
+<td style="text-align: left;">경사면 접선/법선 반력</td>
+</tr>
+<tr>
+<td style="text-align: left;">$\mu$</td>
+<td style="text-align: left;">경사면 접선/법선 힘 비율 (슬립 지표)</td>
+</tr>
+<tr>
+<td style="text-align: left;">$\xi$</td>
+<td style="text-align: left;">영모멘트점 ZMP 위치 (전복 지표)</td>
+</tr>
+<tr>
+<td style="text-align: left;">$u \in \mathbb{R}^3$</td>
+<td style="text-align: left;">DMP 궤적 변조 입력</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="3">3. 방법론</h2>
+<h3 id="31-dmp-nominal-trajectory">3.1 DMP 기반 공칭 궤적 (Nominal Trajectory)</h3>
+<p>DMP(Dynamic Movement Primitive) 기반 2차 미분방정식으로 정의:</p>
+<p>$$\ddot{q}_b + D\dot{q}_b + K(q_b - q_g) = f_m(s) + u \tag{1}$$</p>
+<ul>
+<li>$q_g$: DMP 목표점 (차체 좌표계 ${B}$ 기준 상수)</li>
+<li>$D, K$: 대각 상수 게인 행렬</li>
+<li>$f_m(s)$: 전문가 궤적을 모방하는 shaping force [5]</li>
+<li>$u$: 본 연구에서 설계하는 <strong>변조 입력</strong></li>
+</ul>
+<p>역기구학(inverse kinematics)으로 $q_b$에서 각 링크 좌표 $q_i$로의 사상이 유일하게 존재하며, 이를 미분하면:</p>
+<p>$$\ddot{q}_i = J_i(q_b)u + n_i(q_b, \dot{q}_b) \tag{2}$$</p>
+<ul>
+<li>$J_i(q_b) \in \mathbb{R}^{3 \times 3}$: 야코비안 행렬</li>
+<li>$n_i(q_b, \dot{q}_b)$: 잔여 비선형 항</li>
+</ul>
+<h3 id="32-mu">3.2 슬립 지표: 경사면 접선/법선 힘 비율 $\mu$</h3>
+<p>D'Alembert 원리로 각 축 반력을 계산:</p>
+<p>$$f_{o\star} = \sum_i m_i(\ddot{\star}<em>i - g</em>\star) - f_{b\star}, \quad \star \in {x, y} \tag{3}$$</p>
+<p>슬립 지표 $\mu$는:</p>
+<p>$$\mu = \frac{\sum_i m_i(\ddot{x}<em>i - g_x) - f</em>{bx}}{\sum_i m_i(\ddot{y}<em>i - g_y) - f</em>{by}} \tag{4}$$</p>
+<p>슬립 방지 조건:</p>
+<p>$$|\mu| &lt; \bar{\mu} &lt; \mu_s \tag{5}$$</p>
+<ul>
+<li>$\mu_s$: 정마찰계수</li>
+<li>$\bar{\mu}$: 안전 마진을 둔 한계값</li>
+</ul>
+<h3 id="33-zmp-xi">3.3 전복 지표: ZMP $\xi$</h3>
+<p>D'Alembert 원리로 ZMP를 유도:</p>
+<p>$$\xi = \frac{\sum_i G_i \ddot{q}<em>i + \sum_i m_i(y_i g_x - x_i g_y) + y_b f</em>{bx} - x_b f_{by}}{\sum_i m_i(\ddot{y}<em>i - g_y) - f</em>{by}} \tag{6}$$</p>
+<ul>
+<li>$G_i = (-m_i y_i, \ m_i x_i, \ I_i) \in \mathbb{R}^3$</li>
+</ul>
+<p>전복 방지 조건:</p>
+<p>$$|\xi| &lt; \bar{\xi} &lt; \xi_s \tag{7}$$</p>
+<ul>
+<li>$\xi_s$: 하부 프레임 파라미터로 정의되는 안정 영역 크기</li>
+<li>$\bar{\xi}$: 안전 마진을 둔 한계값</li>
+</ul>
+<h3 id="34-mu-xi">3.4 $\mu$와 $\xi$의 공통 분수 구조</h3>
+<blockquote>
+<p><strong>핵심 관찰</strong>: $\mu$ (식 4)와 $\xi$ (식 6) 모두 <strong>동일한 분모</strong> $\sum_i m_i(\ddot{y}<em>i - g_y) - f</em>{by}$를 공유하며, 분자는 가속도 $\ddot{q}_i$에 대해 선형이다.</p>
+</blockquote>
+<p>경사각 $\psi_0 \in [-\frac{\pi}{2}, \frac{\pi}{2}]$에서 $g_y &lt; 0$이고, 링크 중력이 지배적이므로 분모를 양(positive)으로 가정:</p>
+<p>$$\sum_i m_i(\ddot{y}<em>i - g_y) - f</em>{by} &gt; 0 \tag{8}$$</p>
+<pre><code class="language-mermaid">flowchart TD
+    A["μ = Numerator_μ / Common Denominator"] --&gt; C["공통 분모 양수 가정 (식 8)"]
+    B["ξ = Numerator_ξ / Common Denominator"] --&gt; C
+    C --&gt; D["분모 양수 → 분수 부등식을 선형 부등식으로 변환"]
+    D --&gt; E["슬립 + 전복 방지 조건 → 단일 선형 부등식 (식 11)"]
+    E --&gt; F["A(q_b)u + b(q_b, q̇_b) + L(q_b)f_b ≤ 0"]
+</code></pre>
+<h3 id="35">3.5 선형 부등식 제약 조건</h3>
+<p>$\mu$와 $\xi$를 변조 입력 $u$의 함수로 다시 표현:</p>
+<p>$$\mu = \frac{A_\mu u + b_\mu - f_{bx}}{Cu + d - f_{by}}, \quad \xi = \frac{A_\xi u + b_\xi + y_b f_{bx} - x_b f_{by}}{Cu + d - f_{by}} \tag{9}$$</p>
+<p>여기서:
+- $A_\mu = \sum_i m_i e_x \cdot J_i$, $\quad b_\mu = \sum_i m_i(e_x \cdot n_i - g_x)$
+- $A_\xi = \sum_i G_i J_i$, $\quad b_\xi = \sum_i G_i n_i + \sum_i m_i(y_i g_x - x_i g_y)$
+- $C = \sum_i m_i e_y \cdot J_i$, $\quad d = \sum_i m_i(e_y \cdot n_i - g_y)$</p>
+<p>분모가 양이므로 슬립 및 전복 방지 조건 (5), (7)을 결합하여 <strong>단일 선형 부등식</strong>:</p>
+<p>$$A(q_b)u + b(q_b, \dot{q}_b) + L(q_b)f_b \leq 0 \tag{11}$$</p>
+<ul>
+<li>$A(q_b) \in \mathbb{R}^{4 \times 3}$, $b(q_b, \dot{q}_b) \in \mathbb{R}^4$, $L(q_b) \in \mathbb{R}^{4 \times 2}$</li>
+</ul>
+<h3 id="36">3.6 디지털 제어에서의 인과성 문제</h3>
+<p>저수준 디지털 운동학적 제어 채택으로 인해, 현재 시점 $t_k$에서 <strong>다음 시점 $t_{k+1}$</strong>의 부등식을 만족시켜야 함:</p>
+<p>$$A(q_{b_{k+1}})u_{k+1} + b(q_{b_{k+1}}, \dot{q}<em>{b</em>{k+1}}) + L(q_{b_{k+1}})f_{b_{k+1}} \leq 0 \tag{12}$$</p>
+<ul>
+<li>$q_{b_{k+1}}$, $\dot{q}<em>{b</em>{k+1}}$: Explicit Euler 적분으로 예측 가능</li>
+</ul>
+<p>$$q_{b_{k+1}} = q_{b_k} + \dot{q}<em>{b_k}\Delta t_k, \quad \dot{q}</em>{b_{k+1}} = \dot{q}<em>{b_k} + \ddot{q}</em>{b_k}\Delta t_k \tag{13}$$</p>
+<ul>
+<li>$f_{b_{k+1}}$: 토양 역학이 복잡하여 직접 예측 불가 → <strong>데이터 기반 힘 차분 예측</strong> 필요</li>
+</ul>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph "시점 t_k (현재)"
+        M["측정: q_bk, q̇_bk, f_bk"]
+        P["예측: q_b(k+1), q̇_b(k+1) (Euler)"]
+        F["예측: Δf̂_bk (Transformer)"]
+    end
+    subgraph "시점 t_(k+1) (다음)"
+        U["u_(k+1) 적용"]
+        S["슬립/전복 방지 조건 충족"]
+    end
+    M --&gt; P
+    M --&gt; F
+    P --&gt; U
+    F --&gt; U
+    U --&gt; S
+</code></pre>
+<hr/>
+<h2 id="4-transformer">4. 핵심 기술: Transformer 기반 굴착력 차분 예측</h2>
+<h3 id="41">4.1 모델 구조</h3>
+<p>400
+<em>Fig. 2. 데이터 기반 모델 $\Delta\hat{f}_{b_k}$의 구조. 인코더-디코더 Transformer 아키텍처 기반.</em></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">구성요소</th>
+<th style="text-align: left;">세부사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">아키텍처</td>
+<td style="text-align: left;">Attention-based Encoder-Decoder Transformer [22]</td>
+</tr>
+<tr>
+<td style="text-align: left;">인코더</td>
+<td style="text-align: left;">Multi-head self-attention + Feed-forward (잔차 연결 + Layer Norm)</td>
+</tr>
+<tr>
+<td style="text-align: left;">디코더</td>
+<td style="text-align: left;">Masked multi-head self-attention + Multi-head attention (인코더 출력 연결) + Feed-forward + Linear 출력</td>
+</tr>
+<tr>
+<td style="text-align: left;">Attention heads</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr>
+<td style="text-align: left;">Feed-forward nodes</td>
+<td style="text-align: left;">64</td>
+</tr>
+<tr>
+<td style="text-align: left;">시간 윈도우 $w$</td>
+<td style="text-align: left;">10 (100Hz 기준)</td>
+</tr>
+<tr>
+<td style="text-align: left;">인코더 입력 $x_k^{enc} \in \mathbb{R}^{9 \times w}$</td>
+<td style="text-align: left;">버킷 위치 $q_b$, 속도 $\dot{q}<em>b$, 굴착력 $f_b$, 과거 궤적 면적 $a</em>{q_b}$</td>
+</tr>
+<tr>
+<td style="text-align: left;">디코더 입력 $x_k^{dec} \in \mathbb{R}^{2 \times w}$</td>
+<td style="text-align: left;">$t_k$ 직전까지의 굴착력 차분</td>
+</tr>
+<tr>
+<td style="text-align: left;">디코더 출력 $y_k^{dec} \in \mathbb{R}^{2 \times w}$</td>
+<td style="text-align: left;">굴착력 차분 예측 (마지막 원소가 $\Delta\hat{f}_{b_k}$)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42">4.2 학습 데이터 및 훈련</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">항목</th>
+<th style="text-align: left;">값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">총 데이터 수</td>
+<td style="text-align: left;">$N \approx 1 \times 10^6$</td>
+</tr>
+<tr>
+<td style="text-align: left;">굴착 궤적 수</td>
+<td style="text-align: left;">470 (양/음 경사면 모두 포함)</td>
+</tr>
+<tr>
+<td style="text-align: left;">데이터 분할 (학습:검증:테스트)</td>
+<td style="text-align: left;">12:3:1</td>
+</tr>
+<tr>
+<td style="text-align: left;">좌표계</td>
+<td style="text-align: left;">관성 좌표계 ${O}$ (평탄 토양 기하 일관성)</td>
+</tr>
+<tr>
+<td style="text-align: left;">프레임워크</td>
+<td style="text-align: left;">TensorFlow + Adam optimizer</td>
+</tr>
+<tr>
+<td style="text-align: left;">배치 크기</td>
+<td style="text-align: left;">256</td>
+</tr>
+<tr>
+<td style="text-align: left;">초기 학습률</td>
+<td style="text-align: left;">0.001 (지수 감쇠 스케줄러)</td>
+</tr>
+<tr>
+<td style="text-align: left;">손실 함수</td>
+<td style="text-align: left;">MSE (Mean Square Error)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43">4.3 훈련 및 예측 결과</h3>
+<p>700
+<em>Fig. 3. $\Delta\hat{f}_{b_k}$ 훈련 및 예측 결과: (좌) 손실 함수 수렴 곡선, (중) 단일 테스트 궤적 예측 결과, (우) 예측 오차 분포. 실선은 box uncertainty 경계 $(\zeta_x, \zeta_y) = 0.05$[N], 점선은 3-sigma 및 5-sigma 신뢰 구간.</em></p>
+<h3 id="44-box-uncertainty">4.4 예측 오차와 Box Uncertainty</h3>
+<p>굴착력 예측은 오차 $\Delta e$를 포함:</p>
+<p>$$f_{b_{k+1}} = f_{b_k} + \Delta\hat{f}_{b_k} + \Delta e \tag{14}$$</p>
+<p>여기서 $\Delta e := \Delta f_{b_k} - \Delta\hat{f}_{b_k} \in \mathbb{R}^2$이며, <strong>box uncertainty</strong>로 모델링:</p>
+<p>$${\Delta e \in \mathbb{R}^2 : |\Delta e_\star| \leq \zeta_\star, \quad \star \in {x, y}}$$</p>
+<p>실험에서 $(\zeta_x, \zeta_y) = 0.05$[N]으로 설정.</p>
+<hr/>
+<h2 id="5-robust-optimization">5. Robust Optimization 기반 실시간 궤적 변조</h2>
+<h3 id="51">5.1 불확실 선형 부등식</h3>
+<p>예측된 굴착력 (14)를 슬립/전복 조건 (12)에 대입:</p>
+<p>$$A_{k+1}u_{k+1} + b_{k+1} + L_{k+1}(f_{b_k} + \Delta\hat{f}_{b_k} + \Delta e) \leq 0 \tag{15}$$</p>
+<h3 id="52-rorobust-optimization">5.2 RO(Robust Optimization) 적용</h3>
+<p>$L_{k+1}\Delta e$를 행 벡터 $l_{k+1}^j \cdot \Delta e$로 분리하면, worst-case 상한:</p>
+<p>$$l_{k+1}^j \cdot \Delta e \leq |l_{k+1}^j \cdot (\zeta_x, \zeta_y)|_1$$</p>
+<p>따라서 (15)는 다음으로 변환:</p>
+<p>$$A_{k+1}u_{k+1} + b_{k+1} + L_{k+1}(f_{b_k} + \Delta\hat{f}<em>{b_k}) + N</em>{k+1} \leq 0$$</p>
+<ul>
+<li>$N_{k+1} \in \mathbb{R}^4$: $l_1$-norm 벡터 스택</li>
+</ul>
+<h3 id="53-qp">5.3 QP 정식화</h3>
+<p>최종 최적화 문제:</p>
+<p>$$\min_{u_{k+1}} \lambda_u |u_{k+1}|^2 + \lambda_h |u_{k+1} - u_k|^2 \tag{16}$$</p>
+<p>$$\text{s.t.} \quad \underline{u}<em>{k+1} \leq u</em>{k+1} \leq \bar{u}_{k+1} \tag{17}$$</p>
+<p>$$A_{k+1}u_{k+1} + b_{k+1} + L_{k+1}(f_{b_k} + \Delta\hat{f}<em>{b_k}) + N</em>{k+1} \leq 0 \tag{18}$$</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">비용 항</th>
+<th style="text-align: left;">의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">$\lambda_u |u_{k+1}|^2$</td>
+<td style="text-align: left;">변조 크기 최소화</td>
+</tr>
+<tr>
+<td style="text-align: left;">$\lambda_h |u_{k+1} - u_k|^2$</td>
+<td style="text-align: left;">변조 변화 smoothing (계층적 비용)</td>
+</tr>
+<tr>
+<td style="text-align: left;">(17)</td>
+<td style="text-align: left;">유압 구동 한계 (관절 속도/가속도 제한)</td>
+</tr>
+<tr>
+<td style="text-align: left;">(18)</td>
+<td style="text-align: left;">슬립/전복 방지 제약 (RO 포함)</td>
+</tr>
+</tbody>
+</table>
+<p>이를 표준 QP 형태로 변환:</p>
+<p>$$\min_{u_{k+1}} u_{k+1}^T P u_{k+1} + q \, u_{k+1} \quad \text{s.t.} \quad G u_{k+1} \leq h \tag{19}$$</p>
+<p>→ 오픈소스 솔버(예: SciPy [24])로 실시간 해를 구함.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A["센서 측정&lt;br/&gt;q_bk, q̇_bk, f_bk"] --&gt; B["Euler 적분&lt;br/&gt;q_b(k+1), q̇_b(k+1) 예측"]
+    A --&gt; C["Transformer 모델&lt;br/&gt;Δf̂_bk 예측"]
+    B --&gt; D["선형 부등식 구성&lt;br/&gt;A(k+1), b(k+1), L(k+1)"]
+    C --&gt; E["Box Uncertainty&lt;br/&gt;N(k+1) 계산"]
+    D --&gt; F["QP 정식화&lt;br/&gt;(식 16-18)"]
+    E --&gt; F
+    F --&gt; G["QP 솔버&lt;br/&gt;u(k+1) 계산"]
+    G --&gt; H["DMP 궤적 변조&lt;br/&gt;(식 1)에 u 주입"]
+    H --&gt; I["저수준 유압 제어기&lt;br/&gt;관절 속도 추종"]
+    I --&gt; J["t_(k+1)에서&lt;br/&gt;슬립/전복 방지 달성"]
+</code></pre>
+<hr/>
+<h2 id="6">6. 실험 결과</h2>
+<h3 id="61">6.1 실험 환경</h3>
+<p>400
+<em>Fig. 4. 커스텀 스케일다운 굴삭기 실험 셋업: 토양 컨테이너, 경사면 조절 리니어 액추에이터, 센서 장착 구성.</em></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">항목</th>
+<th style="text-align: left;">세부사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">굴삭기</td>
+<td style="text-align: left;">LESU BA-B0001 (RC 유압 굴삭기) 커스텀 버전</td>
+</tr>
+<tr>
+<td style="text-align: left;">유압 시스템</td>
+<td style="text-align: left;">기어드 펌프 모터, 3-way 밸브, 실린더</td>
+</tr>
+<tr>
+<td style="text-align: left;">조인트 센서</td>
+<td style="text-align: left;">RLS 인코더 (200-250 Hz)</td>
+</tr>
+<tr>
+<td style="text-align: left;">IMU</td>
+<td style="text-align: left;">PhidgetSpatial (방향 측정)</td>
+</tr>
+<tr>
+<td style="text-align: left;">힘/토크 센서</td>
+<td style="text-align: left;">Robotous F/T 센서 (프린트 브라켓 장착)</td>
+</tr>
+<tr>
+<td style="text-align: left;">슬립 센서</td>
+<td style="text-align: left;">VL53L4CD 레인지 센서 (200 Hz)</td>
+</tr>
+<tr>
+<td style="text-align: left;">깊이 카메라</td>
+<td style="text-align: left;">Intel Realsense D435 (30 Hz, 붐 링크 장착)</td>
+</tr>
+<tr>
+<td style="text-align: left;">토양</td>
+<td style="text-align: left;">규조토(diatomite)</td>
+</tr>
+<tr>
+<td style="text-align: left;">컴퓨터</td>
+<td style="text-align: left;">Intel NUC Mini PC @3.8GHz, 16GB RAM</td>
+</tr>
+<tr>
+<td style="text-align: left;">OS/프레임워크</td>
+<td style="text-align: left;">Ubuntu 20.04, Python + ROS</td>
+</tr>
+<tr>
+<td style="text-align: left;">제어 주기</td>
+<td style="text-align: left;">300 Hz (저수준), 100 Hz (궤적 변조 + 예측)</td>
+</tr>
+<tr>
+<td style="text-align: left;">예측 계산 시간</td>
+<td style="text-align: left;">$&lt; 10^{-3}$ seconds</td>
+</tr>
+</tbody>
+</table>
+<p>400
+<em>Fig. 5. 실험 시나리오 스냅샷: (좌) 슬립 방지 - 음의 6도 경사면, (우) 전복 방지 - 양의 35도 경사면. 전복 관찰을 위해 캐빈을 90도 회전하여 안정 영역을 의도적으로 축소.</em></p>
+<h3 id="62-1-slip-prevention">6.2 시나리오 1: 슬립 방지 (Slip Prevention)</h3>
+<ul>
+<li>정마찰계수: 경사 ~12.8도에서 슬립 시작 → $\mu_s \approx 0.227$</li>
+<li>실험 경사: $\psi_0 \in {-6.0°, -7.5°}$ (음의 경사면)</li>
+<li>한계값: $\bar{\mu} \in {0.18, 0.16}$ (큰/작은 안전 마진)</li>
+</ul>
+<p>700
+<em>Fig. 6. 슬립 방지 실험 결과: (좌) $\psi_0 = -6°$, (우) $\psi_0 = -7.5°$. 버킷 끝단 궤적 $q_{b_x}, q_{b_y}$, 힘 비율 $\mu$, 슬립 변위 $d_x$, 굴착력 $f_{b_x}, f_{b_y}$.</em></p>
+<p><strong>주요 결과:</strong>
+- 변조 미적용 시: ~10초 부근에서 $\mu$가 $\mu_s$ 초과 → 최종 슬립 변위 약 0.147[m]
+- 변조 적용 시 ($\bar{\mu} = 0.18, 0.16$): $|\mu| &lt; \mu_s$으로 성공적 규제
+- 작은 $\bar{\mu}$일수록 변조 지속시간 길고, 얕은 굴착 궤적 생성
+- 10회 반복 실험 결과: 변조 적용 시 슬립 변위 거의 0</p>
+<h3 id="63-2-rollover-prevention">6.3 시나리오 2: 전복 방지 (Rollover Prevention)</h3>
+<ul>
+<li>안정 영역: $\xi_s \approx 0.147$[m] (스윙 각도 $\frac{\pi}{2}$ 회전으로 축소)</li>
+<li>실험 경사: $\psi_0 \in {30°, 35°}$ (양의 경사면)</li>
+<li>한계값: $\bar{\xi} \in {0.12, 0.1}$[m]</li>
+</ul>
+<p>700
+<em>Fig. 7. 전복 방지 실험 결과: (좌) $\psi_0 = 35°$, (우) $\psi_0 = 30°$. 버킷 끝단 궤적, ZMP $\xi$, 피치각 $\psi$, 굴착력 $f_{b_x}, f_{b_y}$.</em></p>
+<p><strong>주요 결과:</strong>
+- 변조 미적용 시: ~2-5초에서 $\xi$가 $\xi_s$ 초과 → 큰 피치각(전복 지표)
+- 변조 적용 시 ($\bar{\xi} = 0.12, 0.1$): $\xi$가 안정 영역 내 유지
+- 작은 $\bar{\xi}$일수록 양방향($x$, $y$) 모두 얕은 궤적, 작은 굴착력</p>
+<h3 id="64">6.4 통계 요약</h3>
+<p>400
+<em>Fig. 8. 10회 반복 실험 통계 요약: (좌) 슬립 변위 $d_x$, (우) 최대 피치각 $\psi$.</em></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">시나리오</th>
+<th style="text-align: left;">조건</th>
+<th style="text-align: left;">변조 미적용</th>
+<th style="text-align: left;">$\bar{\mu}=0.18$ / $\bar{\xi}=0.12$</th>
+<th style="text-align: left;">$\bar{\mu}=0.16$ / $\bar{\xi}=0.1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Slip, $\psi_0=-6°$</td>
+<td style="text-align: left;">슬립 변위 $d_x$</td>
+<td style="text-align: left;">평균 0.127 [m]</td>
+<td style="text-align: left;">~0 [m]</td>
+<td style="text-align: left;">~0 [m]</td>
+</tr>
+<tr>
+<td style="text-align: left;">Slip, $\psi_0=-7.5°$</td>
+<td style="text-align: left;">슬립 변위 $d_x$</td>
+<td style="text-align: left;">평균 0.133 [m]</td>
+<td style="text-align: left;">~0 [m]</td>
+<td style="text-align: left;">~0 [m]</td>
+</tr>
+<tr>
+<td style="text-align: left;">Rollover, $\psi_0=35°$</td>
+<td style="text-align: left;">최대 피치각 $</td>
+<td style="text-align: left;">\psi-\psi_0</td>
+<td style="text-align: left;">$</td>
+<td style="text-align: left;">(전복 발생)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Rollover, $\psi_0=30°$</td>
+<td style="text-align: left;">최대 피치각 $</td>
+<td style="text-align: left;">\psi-\psi_0</td>
+<td style="text-align: left;">$</td>
+<td style="text-align: left;">평균 1.64e-2 [rad]</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="7">7. 한계 및 향후 연구</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">한계</th>
+<th style="text-align: left;">향후 과제</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">변조 $u$로 인한 비스무스(unsmooth) 궤적</td>
+<td style="text-align: left;">궤적 스무스니스 보장 및 전역 최적성 연구</td>
+</tr>
+<tr>
+<td style="text-align: left;">단일 토양 타입, 평탄 토양 표면만 고려</td>
+<td style="text-align: left;">다양한 토양, 불규칙 표면 + 환경 센싱 확장</td>
+</tr>
+<tr>
+<td style="text-align: left;">시상면(sagittal-plane) 2D 굴착만 가능</td>
+<td style="text-align: left;">틸트로테이터 등 추가 부착물로 <strong>3D 굴착</strong> 확장</td>
+</tr>
+<tr>
+<td style="text-align: left;">실물 굴삭기 미검증 (스케일다운만)</td>
+<td style="text-align: left;">빠르고 정확한 토양-버킷 상호작용 시뮬레이션 구축</td>
+</tr>
+<tr>
+<td style="text-align: left;">슬립과 전복 동시 발생 시나리오 미검증</td>
+<td style="text-align: left;">동시 위반 조건 실험 필요</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="_3">한마디로 정리</h2>
+<ul>
+<li>경사면 굴착 중 슬립/전복 방지를 <strong>실시간 QP 변조</strong>로 구현</li>
+<li>$\mu$(슬립)와 $\xi$(전복)의 <strong>공통 분모 분수 구조</strong>를 발견하여 단일 선형 부등식으로 통합</li>
+<li>Transformer 기반 <strong>굴착력 차분 예측 모델</strong>로 디지털 제어의 인과성 문제 해결</li>
+<li><strong>Robust Optimization + Box Uncertainty</strong>로 예측 오차에 대한 안전성 보장</li>
+<li>스케일다운 굴삭기로 슬립/전복 방지 실험 <strong>성공적 검증</strong> 달성</li>
+<li>실물 굴삭기, 3D 굴착, 다양한 토양 조건 등은 <strong>미대응</strong></li>
+</ul>
+<hr/>
+<h2 id="_4">나의 의견</h2>
+<p><em>(작성 예정)</em></p>
+<hr/>
+<h2 id="_5">참고 코드</h2>
+<ul>
+<li>GitHub: https://github.com/changukim-inrol/modulation_ral24.git</li>
+</ul></main><script src="../assets/live.js"></script></body></html>

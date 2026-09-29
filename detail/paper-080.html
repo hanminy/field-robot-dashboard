@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#80 딥러닝 기반 강화학습을 이용한 토목 공정 계획 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Korea Advanced Institute of Science and Technology · #080</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-other">Korea Advanced Institute of Science and Technology</span><span class="badge">#080</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">학술 발표자료</span></div>
+<h1>딥러닝 기반 강화학습을 이용한 토목 공정 계획</h1>
+<p class="title-en" lang="en">딥러닝 기반 강화학습을 이용한 토목 공정 계획</p>
+<p class="authors">지민기, 우성철, 정요한, 박진규, 문일철</p>
+</header>
+<main>
+<div class="oneliner"><b>한줄 요약</b> — 굴삭기 5개 행동과 트럭 6개 행동의 Q값을 상태크기 n²+4인 별도 신경망으로 근사하고 성공 작업 +10·할인율 0.9의 Double DQN을 작은 격자부터 확장해, 크기 3·5·8·10 모두에서 이론 최적 행동 수의 1.15배 이내로 절토·적재·운반·배출 공정을 완료했다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>굴삭기와 트럭의 전체 토공 흐름을 함께 학습하기</h3>
+<p>토공 공정은 집터 조성, 절토·성토와 되메우기 등으로 구성되며 거의 모든 건설공정에 포함되는 반복적 대량 작업이다. 공정 순서와 장비 간 대기 때문에 효율과 비용이 크게 달라지고 작업자 숙련도에 따라 생산성이 좌우된다. 기존 토량 배분과 최소 운반거리 최적화는 전체 물량 배치에는 강하지만 굴삭기가 파고 트럭이 싣고 이동해 매립지에 내리는 연속 의사결정을 함께 다루기 어렵다.</p><p>이 자료는 굴삭기와 트럭을 함께 모델링한다. 굴삭기는 땅을 흙으로 바꾸고 트럭은 흙을 싣고 매립지로 운반해 내린다. 두 에이전트는 같은 격자에 함께 있을 수 있고 매 tick 굴삭기가 먼저, 트럭이 다음으로 행동한다. 상태공간이 환경 크기 n에 따라 n² 규모로 커지므로 표형 Q-learning 대신 신경망으로 행동가치를 근사하고 DQN 과대추정 편향을 줄이기 위해 Double DQN을 사용한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p080-slide-p0003-page">
+<img alt="발표자료 PDF 3쪽 page 시각자료" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6501f96a4bf11beb9f0cc2de.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.3</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>토량 배분만으로는 절토·적재·운반·배출의 시점별 상호작용을 정하기 어렵다.</li><li>장비 위치와 토양상태의 표형 Q함수는 격자 크기와 함께 폭증한다.</li><li>일반 DQN은 행동 선택과 평가의 최대화로 Q값을 과대추정할 수 있다.</li><li>처음부터 큰 환경을 학습하면 탐색과 에피소드 길이가 급증한다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>굴삭기 1대와 트럭 1대의 연동 격자 시뮬레이션을 구성했다.</li><li>위치 one-hot n²와 작업대상 방향 4개를 합친 상태를 정의했다.</li><li>두 ReLU 은닉층과 Double DQN으로 장비별 Q함수를 근사했다.</li><li>3→5→8→10 순차 학습과 환경별 행동 수·학습시간을 제시했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>격자는 매립지, 통로, 땅과 흙으로 구성된다. 굴삭기는 상하좌우 이동과 땅파기 등 5개 행동, 트럭은 이동·흙 싣기·내리기 등 6개 행동을 가진다. 매 tick 굴삭기가 먼저 행동하고 트럭이 이어서 행동하며 두 장비는 같은 셀에 존재할 수 있다. 모든 땅이 흙으로 바뀌고 흙이 매립지로 운반되면 에피소드가 끝난다.</p><p>각 에이전트 상태는 현재 위치를 나타내는 n²차원 one-hot 벡터와 다음 작업대상이 있는 방향의 4차원 벡터를 연결한 n²+4차원이다. 굴삭기는 가장 가까운 땅, 트럭은 가장 가까운 흙 방향을 관측한다. 각 Q네트워크는 입력 뒤에 4n²+16개 ReLU 뉴런을 갖는 은닉층 두 개를 두고 장비별 행동 Q값을 출력한다. Double DQN은 온라인 네트워크가 행동을 선택하고 target network가 평가한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>이종 장비 격자 생성</h4><p>매립지·통로·셀별 땅과 흙을 초기화하고 굴삭기와 트럭을 매립지에 배치한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>장비별 상태 인코딩</h4><p>현재 셀의 n² one-hot 위치와 굴삭기의 땅 방향 또는 트럭의 흙 방향을 연결한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>순차 장비 행동</h4><p>굴삭기가 이동 또는 절토를 먼저 하고 트럭이 이동·적재·배출을 수행한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>Double DQN 갱신</h4><p>각 장비의 별도 Q네트워크와 target network로 선택과 평가를 분리한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>단계적 난이도 확장</h4><p>완료 행동 수가 이론 최적값의 1.15배 안에 들면 환경을 3에서 5, 8, 10으로 늘린다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>Q-learning 갱신식</h4><code>Q(s,a)\leftarrow Q(s,a)+\alpha\left(R(s,a)+\gamma\max_{a'}Q(s',a')-Q(s,a)\right)</code><p>현재 가치에 시간차 오차를 반영한다.</p></div><div class="eq"><h4>Double DQN target</h4><code>y=r+\gamma Q\left(s',\arg\max_{a'}Q(s',a';\theta);\theta^-\right)</code><p>온라인 네트워크로 행동을 선택하고 target network로 평가한다.</p></div><div class="eq"><h4>DQN 비교 target</h4><code>y_{\mathrm{DQN}}=r+\gamma\max_{a'}Q(s',a';\theta^-)</code><p>일반 DQN은 target network 최대값을 직접 사용한다.</p></div></div>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>굴삭기와 트럭의 역할 분해</h3><p>굴삭기 정책은 땅을 찾아 이동해 흙으로 바꾸고 트럭 정책은 흙을 적재한 뒤 매립지로 돌아가 내린다. 두 장비가 같은 셀에 있을 수 있고 굴삭기가 먼저 행동하므로 후속 트럭 상태가 생산물을 이용한다.</p><p>공동 행동공간 대신 장비별 행동공간을 유지하지만 중앙집중 critic이나 명시적 통신이 없어 장비 수가 늘 때의 비정상성과 교착은 다루지 않는다.</p><ul><li>굴삭기 5개 행동</li><li>트럭 6개 행동</li><li>굴삭기 선행·트럭 후행</li><li>동일 셀 공존 가능</li></ul></article><article class="tech-card"><h3>n²+4 상태와 크기 적응 신경망</h3><p>장비 위치는 n²차원 one-hot이고 작업대상 방향은 네 차원이다. 굴삭기는 가까운 땅, 트럭은 가까운 흙 방향을 사용한다.</p><p>각 은닉층은 입력 차원의 네 배인 4n²+16개 ReLU 뉴런으로 구성된다. 환경 크기가 달라지면 입력과 파라미터 수도 바뀌므로 완전한 크기 불변 정책은 아니다.</p><ul><li>입력 n²+4</li><li>은닉층당 4n²+16</li><li>장비별 대상 방향</li></ul></article><article class="tech-card"><h3>Double DQN과 단계적 난이도 확장</h3><p>Double DQN은 선택과 평가를 분리해 과대추정을 줄인다. 땅파기·싣기·내리기의 성공에만 +10을 주고 다른 행동은 0으로 둔다.</p><p>크기 3부터 시작해 완료 행동 수가 최적값의 1.15배 이내면 다음 크기로 넘어가 협업의 기본 순서를 작은 환경에서 먼저 익힌다.</p><ul><li>성공 작업 +10</li><li>할인율 0.9</li><li>3→5→8→10 curriculum</li></ul></article></div>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>굴삭기 1대와 트럭 1대의 2차원 격자</li><li>환경 크기 3·5·8·10과 초기 토량 1</li><li>성공 작업 +10·기타 0·할인율 0.9</li><li>장비별 별도 Double DQN</li></ul>
+<h3>실험 프로토콜</h3><ul><li>크기 3에서 시작한다.</li><li>최적 행동 수의 1.15배 이내면 다음 크기로 확장한다.</li><li>환경별 최초 통과 에피소드·행동 수·최적값·누적시간을 기록한다.</li><li>5×5 실행 예시를 3D로 확인한다.</li></ul>
+<h3>비교 기준</h3><ul><li>환경별 이론 최적 행동 수</li><li>최적값의 1.15배 통과 기준</li><li>일반 DQN target</li></ul>
+<h3>평가 지표</h3><ul><li>최초 통과 에피소드</li><li>완료 행동 수</li><li>이론 최적 행동 수</li><li>완료/최적 비율</li><li>누적 학습시간</li></ul>
+<h3>핵심 결과 해석</h3><p>크기 3은 78번째 에피소드에 35행동으로 완료해 최적 33행동 대비 약 1.06배였다. 크기 5는 122번째에 218/193행동, 크기 8은 153번째에 982/883행동, 크기 10은 231번째에 2,043/1,783행동이었다. 네 환경 모두 설정한 1.15배 이내 통과조건을 만족했다.</p><p>환경이 커지면서 누적 학습시간은 158.09초에서 8,718.95초로 늘었다. 5×5 실행 그림은 파란 굴삭기와 빨간 트럭의 진행을 보여준다. 그러나 반복실험 분산, 무작위 시드, 하드웨어와 다른 알고리즘 대비 통계 검정은 없어 Double DQN의 절대 우월성보다 이종 장비 공정을 큰 격자까지 학습한 가능성 증명으로 해석해야 한다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>크기 3</td><td>78회, 35/33행동, 158.09초</td><td>1.15배 기준 최초 통과</td><td>PDF p.24</td></tr><tr><td>크기 5</td><td>122회, 218/193행동, 828.19초</td><td>순차 학습 두 번째 단계</td><td>PDF p.24</td></tr><tr><td>크기 8</td><td>153회, 982/883행동, 3,868.86초</td><td>1.15배 기준 통과</td><td>PDF p.24</td></tr><tr><td>크기 10</td><td>231회, 2,043/1,783행동, 8,718.95초</td><td>가장 큰 환경</td><td>PDF p.24</td></tr><tr><td>보상·할인율</td><td>성공 +10, 기타 0, γ=0.9</td><td>굴삭기와 트럭 공통</td><td>PDF p.23</td></tr><tr><td>환경 curriculum</td><td>3→5→8→10</td><td>최적 행동 수 1.15배 이내면 확장</td><td>PDF p.23</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>크기 증가와 함께 학습시간이 급증한다.</li><li>불가능 행동은 no-op이어서 행동 수만 늘 수 있다.</li><li>크기 10은 최적보다 약 14.6% 많은 행동이 필요하다.</li><li>충돌·교착·용량 초과와 반복분산은 제시되지 않았다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>격자 시뮬레이션으로 실제 동역학과 유압을 제외한다.</li><li>토양은 이산 수량이며 토질·함수율·경사가 없다.</li><li>장비가 각각 한 대뿐이고 충돌회피·통신지연을 제외한다.</li><li>환경 크기가 바뀌면 신경망 크기도 바뀐다.</li><li>반복 평균·분산과 실차 검증이 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>더 크고 다양한 형상에서 검증한다.</li><li>다수 장비의 배차·대기·충돌을 포함한다.</li><li>GNN·attention 등 크기 불변 표현을 사용한다.</li><li>토질·연료·작업시간·안전을 보상에 포함하고 실차와 연계한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>굴삭기와 트럭의 역할을 분리하고 n²+4 상태의 두 Double DQN을 작은 격자부터 학습했다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>크기 3·5·8·10 모두 완료 행동 수가 이론 최적값의 1.15배 이내였다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>단순 격자와 두 에이전트의 발표용 시뮬레이션으로 실제 동역학과 다수 장비는 미검증이다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#작업·궤적계획</span><span>#시스템통합·현장실증</span><span>#Double DQN</span><span>#deep reinforcement learning</span><span>#Q-function approximation</span><span>#multi-agent simulation</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>같은 KAIST 단일 굴삭기 자료와 달리 트럭을 명시적으로 추가한다. ‘다양한 환경’은 국소 5×5 상태와 표형 Q-learning, ‘Route Generation’은 Double DQN과 결손 토양을 다루며, 본 자료는 크기 불변성은 약하지만 절토 이후 적재·운반·배출까지 공정범위를 넓힌다.</p><p>‘Earthwork Planning via Reinforcement Learning with Heterogeneous Construction Equipment’와 문제설정이 유사하지만 학술논문은 순차·독립 Q-learning을, 이 발표자료는 Double DQN curriculum과 학습시간 표를 강조한다. 공식 버전 관계가 PDF에 없어 별도 기록하되 내용 중복 가능성을 명시해야 한다.</p><ul><li>상위 장비 순서를 버킷 궤적과 차량경로 목표로 전달할 수 있다.</li><li>TD3·MPC는 연속동작, 본 Double DQN은 장비 역할과 셀 순서를 담당한다.</li><li>one-hot 대신 elevation patch와 장비 그래프를 쓰면 확장성이 높아진다.</li><li>고유 축은 굴삭기·트럭 협업과 환경 크기 curriculum이다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0004-page">
+<img alt="발표자료 PDF 4쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ae00e18ce4dcb1b4cc6a6557.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.4</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0005-page">
+<img alt="발표자료 PDF 5쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7a3dc2c991c4927f5c0a7efe.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.5</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0008-page">
+<img alt="발표자료 PDF 8쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4c7e355abd6e8eacbfdbdd01.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.8</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0010-page">
+<img alt="발표자료 PDF 10쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/492e0a725ab8e6edaae04bab.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.10</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0014-page">
+<img alt="발표자료 PDF 14쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/36bb93021441ebbc646392b7.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.14</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0015-page">
+<img alt="발표자료 PDF 15쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ad35c9c19b36fd12ef806ffd.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.15</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0016-page">
+<img alt="발표자료 PDF 16쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/87a5ee3723ba8236f25a8fc7.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.16</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0017-page">
+<img alt="발표자료 PDF 17쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f530b924fd54912667c9bc10.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.17</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0018-page">
+<img alt="발표자료 PDF 18쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/469d1a3f409aa1300b906155.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.18</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0019-page">
+<img alt="발표자료 PDF 19쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7fd0e3a841cc1d96966b5c02.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.19</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0020-page">
+<img alt="발표자료 PDF 20쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/efbbd97a419019a6f3332866.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.20</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0021-page">
+<img alt="발표자료 PDF 21쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fa23c87c3557fbec2ed8a3b9.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.21</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p080-slide-p0025-page">
+<img alt="발표자료 PDF 25쪽 page 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/325fa978a77d24099a418e6c.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.25</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.3, p.4, p.5, p.7</li><li><b>방법론</b>: p.9, p.10, p.11, p.12, p.14, p.15, p.16, p.17, p.18, p.19, p.20, p.21</li><li><b>실험</b>: p.23, p.24, p.25</li><li><b>결과</b>: p.24, p.25, p.27</li><li><b>한계</b>: p.24, p.27</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">발표자료 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">딥러닝_기반_강화학습을_이용한_토목_공정_계획.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-079.html"><span class="lbl">← 이전 #79</span>로봇 굴착을 위한 전술 계획 합성</a><span class="spacer"></span></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#67 강화학습을 이용한 다양한 환경에서의 절토 공정 계획 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Korea Advanced Institute of Science and Technology · #067</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-other">Korea Advanced Institute of Science and Technology</span><span class="badge">2018</span><span class="badge">#067</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">학술 발표자료</span></div>
+<h1>강화학습을 이용한 다양한 환경에서의 절토 공정 계획</h1>
+<p class="title-en" lang="en">강화학습을 이용한 다양한 환경에서의 절토 공정 계획</p>
+<p class="authors">지민기, 우성철, 박진규, 문일철 · 2018 춘계공동학술대회(한국경영과학회/대한산업공학회/한국시뮬레이션학회), 2018-04-04~07, 호텔현대 경주</p>
+</header>
+<main>
+<div class="oneliner"><b>한줄 요약</b> — 작업자 직관에 좌우되던 절토 순서를 국소 상태 MDP와 표형 Q-learning으로 치환하고 최소 5% 탐색을 유지하는 ε-greedy 정책을 학습해, 훈련 격자보다 훨씬 큰 정사각 환경에도 재학습 없이 적용한 KAIST 발표자료로 후속 Double DQN 연구의 상태 축소와 환경 전이 아이디어를 선행적으로 보여준다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>숙련자 직관에 의존하는 절토 순서를 재사용 가능한 정책으로</h3>
+<p>발표자료는 토공사를 구조물 시공 전 지반을 조성하는 기초 공정으로 정의하며 절토, 쌓기, 운반, 성토와 다짐이 순차적으로 연결된다고 설명한다. 토공은 대부분의 건설과정에 포함되고 물량이 많으며 반복적이지만 실제 효율과 생산성은 작업자 직관과 숙련도에 크게 좌우된다. 같은 토량이라도 장비가 어느 셀을 먼저 파고 어떤 경로로 이동하는지에 따라 운반거리와 공사비가 달라지므로 인공지능이 최적 의사결정을 학습해 절토 공정계획을 자동 생성하는 것이 연구 목표다.</p><p>기존 토공계획은 절·성토량 계산, 최소 운반거리와 토량 배분, 작업자 패턴 기반 구역 분할과 장비 협업 규칙을 중심으로 발전했다. 저자들은 고정 수리모형보다 환경과 상호작용하며 정책을 개선하는 강화학습에 주목한다. 특히 전체 격자를 상태로 넣지 않고 굴삭기 주변의 제한된 토양정보를 사용해 작은 환경에서 배운 정책을 100×100 이상 대형 환경으로 옮긴다. 실제 버킷 궤적이 아니라 격자 수준 절토 순서를 계획하는 초기 연구 데모다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p067-slide-p0002-top">
+<img alt="발표자료 PDF 2쪽 top 시각자료" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/436b6bfce82c46917542f623.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.2</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>토공 순서와 생산성이 작업자 숙련에 크게 의존한다.</li><li>토량 배분 중심 방법은 장비의 시점별 행동을 재사용 가능한 정책으로 제공하지 않는다.</li><li>전체 격자 상태는 환경 크기와 함께 폭증한다.</li><li>절대 위치 표현은 더 큰 현장에 정책을 직접 적용하기 어렵다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>이동 네 가지와 절토 한 가지를 갖는 단일 굴삭기 격자 MDP를 구성했다.</li><li>주변 5×5 토양분포와 네 방향 단서를 결합한 국소 상태를 만들었다.</li><li>최소 5% 탐색을 유지하는 ε-greedy 정책으로 학습 후반의 상태 다양성을 보전했다.</li><li>크기 15 정책을 100×100, 200×200, 300×300 환경에 적용해 최적 step을 보고했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>환경은 통로와 절토 대상 땅으로 구성된 2차원 격자이며 에이전트는 굴삭기 한 대다. 굴삭기는 매 tick 상하좌우 이동 또는 땅파기 중 하나를 고른다. 환경 밖 이동이나 땅이 없는 셀의 절토처럼 불가능한 행동은 실행되지 않고 no-op으로 처리된다. 시작 시 굴삭기는 통로에 있고 모든 대상 셀이 땅으로 채워지며, 모든 땅이 흙으로 바뀌면 종료한다.</p><p>상태는 전체 지도 대신 굴삭기 주변 5×5 영역의 땅 분포와 상·하·우·좌 중 땅이 가장 많이 남은 방향 정보로 구성된다. 이 표현은 절대 좌표를 직접 입력하지 않아 환경 크기가 달라도 같은 Q표를 호출할 수 있다. 행동은 ε-greedy로 선택하며, ε을 에피소드 수로 계속 나누면 후반 탐색이 사라지는 문제를 막기 위해 ε=max(0.05, ε0/episode)로 최소 5% 탐색을 남긴다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>절토 격자 초기화</h4><p>통로와 중앙 토양영역을 배치하고 굴삭기를 통로에서 시작시킨다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>국소 관측 구성</h4><p>주변 5×5 토양분포와 토양이 가장 많은 상하좌우 방향의 one-hot 단서를 결합한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>행동과 전이</h4><p>상하좌우 이동과 절토 중 하나를 선택하며 불가능한 행동은 상태를 바꾸지 않는다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>표형 Q-learning</h4><p>상태·행동·보상·다음 상태로 Q값을 갱신하고 최소 탐색률 0.05를 둔 ε-greedy로 1,500에피소드를 학습한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>대형 환경 전이</h4><p>크기 15에서 얻은 정책을 재학습 없이 100×100, 200×200, 300×300 정사각 환경에 적용한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>Q-learning 갱신식</h4><code>Q(s,a)\leftarrow Q(s,a)+\alpha\left(R(s,a)+\gamma\max_{a'}Q(s',a')-Q(s,a)\right)</code><p>현재 Q값에 즉시보상과 다음 상태 최대 Q값으로 계산한 시간차 오차를 학습률만큼 반영한다.</p></div><div class="eq"><h4>최소 탐색률 ε-greedy</h4><code>\epsilon=\max\left(0.05,\frac{\epsilon_0}{\mathrm{episode}}\right)</code><p>에피소드가 늘어도 탐색확률이 5% 아래로 내려가지 않게 한다.</p></div></div>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>지도 크기를 제거한 국소 토양상태</h3><p>굴삭기의 절대 위치나 전체 격자를 쓰지 않고 주변 5×5의 땅 분포와 잔여 토양이 많은 방향을 관측해 눈앞의 절토 가능성과 장기 이동방향을 함께 표현한다.</p><p>크기 15에서 학습한 Q표를 100×100 이상의 환경에도 적용할 수 있지만 서로 다른 전역 위치가 같은 국소 패턴으로 축약되는 상태 별칭 문제가 있고 정사각형 유사 형상에서만 최적성이 확인됐다.</p><ul><li>5×5 토양정보</li><li>상하좌우 방향 단서</li><li>절대 좌표와 지도 크기 배제</li></ul></article><article class="tech-card"><h3>최소 5% 탐색을 유지하는 Q-learning</h3><p>에피소드 수에 따라 ε을 계속 줄이면 학습 후반에 다양한 상태를 얻지 못한다. ε의 하한을 0.05로 두어 최적 행동을 주로 선택하면서도 낯선 국소 패턴을 탐색한다.</p><p>5회 반복에서 단순 감소형 탐색은 1.04±0.03, 하한 방식은 1.02±0.02의 최적 step 대비 비율을 보였다. 최적 경로 167 step 조건에서 두 방식 모두 근최적이지만 하한 방식의 평균과 산포가 작다.</p><ul><li>성공 절토 +1, 기타 0</li><li>할인율 0.7</li><li>1,500에피소드</li></ul></article><article class="tech-card"><h3>초대형 정사각 격자로의 직접 전이</h3><p>훈련 환경은 크기 15지만 시험 환경은 100×100부터 300×300까지 확장된다. 국소 상태가 같은 규칙으로 계산되므로 Q표 차원을 바꾸거나 다시 학습하지 않는다.</p><p>세 환경의 step은 모두 optimal로 표시됐다. 이는 지역 패턴이 반복되는 정사각형 토양영역의 결과이며 장애물, 복수 토양섬과 비정형 경계까지 일반화된다는 근거는 아니다.</p><ul><li>100×100: 19,603 step</li><li>200×200: 79,203 step</li><li>300×300: 178,803 step</li></ul></article></div>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>단일 굴삭기의 2차원 격자</li><li>훈련 크기 15: 통로 3·중앙 토양 9·초기 토량 1</li><li>절토 +1·기타 0·할인율 0.7</li><li>100×100·200×200·300×300 시험</li></ul>
+<h3>실험 프로토콜</h3><ul><li>표형 Q-learning을 1,500에피소드 반복한다.</li><li>감소형 ε과 최소 0.05 하한 방식을 비교한다.</li><li>최적 167 step 대비 실행 step 비율을 5회 집계한다.</li><li>학습 정책으로 세 대형 환경의 완료 step을 계산한다.</li></ul>
+<h3>비교 기준</h3><ul><li>ε=ε0/episode</li><li>ε=max(0.05, ε0/episode)</li><li>환경별 최적 step</li></ul>
+<h3>평가 지표</h3><ul><li>최적 step 대비 비율</li><li>5회 평균과 표준편차</li><li>대형 환경 완료 step</li><li>미학습 크기 최적 경로 여부</li></ul>
+<h3>핵심 결과 해석</h3><p>훈련 환경에서 기본 ε-greedy의 최적 step 대비 실행 비율은 1.04±0.03, ε을 최소 0.05로 유지한 방식은 1.02±0.02였다. 표에 명시된 최적 경로는 167 step이고 각 조건은 5회 반복됐다. 두 정책 모두 근최적이지만 탐색 하한 방식이 평균 초과량과 산포가 작아 다양한 상태를 계속 얻으면서 최적에 가까운 경로를 세울 수 있음을 보인다.</p><p>학습된 에이전트는 100×100에서 19,603 step, 200×200에서 79,203 step, 300×300에서 178,803 step으로 절토를 완료했고 발표자료는 세 결과를 모두 optimal로 표시한다. 훈련 크기 15보다 훨씬 큰 환경에서도 재학습 없이 경로가 생성됐지만 시험 토양이 훈련 환경과 유사한 정사각형이라는 조건이 있으므로 임의 형상 일반화로 확대 해석해서는 안 된다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>훈련 환경과 반복 수</td><td>크기 15, 1,500에피소드</td><td>통로 3·중앙 땅 9·초기 토량 1</td><td>PDF p.10</td></tr><tr><td>보상과 할인율</td><td>절토 +1, 기타 0, γ=0.7</td><td>표형 Q-learning 설정</td><td>PDF p.10</td></tr><tr><td>기본 ε-greedy 경로 비율</td><td>1.04±0.03</td><td>최적 167 step 대비, 5회 반복</td><td>PDF p.10</td></tr><tr><td>최소 5% 탐색 경로 비율</td><td>1.02±0.02</td><td>최적 167 step 대비, 5회 반복</td><td>PDF p.10</td></tr><tr><td>100×100 완료 경로</td><td>19,603 step, optimal</td><td>정사각형 토양분포</td><td>PDF p.11</td></tr><tr><td>200×200 완료 경로</td><td>79,203 step, optimal</td><td>재학습 없는 환경 확장</td><td>PDF p.11</td></tr><tr><td>300×300 완료 경로</td><td>178,803 step, optimal</td><td>가장 큰 시험 환경</td><td>PDF p.11</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>탐색률이 계속 감소하면 후반 상태 다양성이 사라진다.</li><li>불가능 행동은 no-op이어서 잘못된 정책이 생산성 없는 step을 누적한다.</li><li>대형 환경 최적성은 정사각형 유사 형상에 한정된다.</li><li>실제 유압·토양력·충돌 실패는 포함되지 않았다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>단일 굴삭기의 2차원 격자 절토만 모델링한다.</li><li>토질·깊이·경사·장애물·장비 자세를 상태에 넣지 않는다.</li><li>대형 시험은 정사각형 토양영역에 한정된다.</li><li>표형 Q-learning은 상태특징 증가 시 다시 폭증한다.</li><li>계산시간·전체 학습곡선·실차 시험이 없다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>신경망 Q함수로 더 큰 상태공간을 처리한다.</li><li>비정형 토양과 복수 작업구역에서 검증한다.</li><li>트럭·다짐기 협업계획으로 확장한다.</li><li>격자 step을 작업시간·연료·생산량과 실차 궤적에 연결한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>5×5 국소 상태와 네 방향 단서, 최소 5% 탐색의 표형 Q-learning을 사용했다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>크기 15 정책이 100×100~300×300 정사각 환경에서 optimal로 표시된 경로를 만들었다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>정사각형·단일 장비 시뮬레이션이며 비정형 지형과 실제 동역학은 미검증이다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#작업·궤적계획</span><span>#강화학습</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>후속 ‘Route Generation’과 국소 상태·단일 굴삭기·환경 전이 아이디어가 겹친다. 본 발표는 표형 Q-learning과 초대형 정사각 격자 step에 초점을 두고, 후속 논문은 Double DQN·결손 토양·직사각형 분할을 추가한다.</p><p>버킷 궤적 연구는 관절 변화량과 힘을 다루지만 이 자료의 행동은 격자 이동과 절토 명령이다. 현장에서는 본 정책이 작업 셀과 순서를 고르고 TD3·DMP·MPC가 셀 내부의 실제 동작을 수행하는 두 계층으로 결합할 수 있다.</p><ul><li>국소 상태를 elevation map의 고정 관측창으로 확장할 수 있다.</li><li>실장비 탐색에는 안전필터가 필수다.</li><li>비정형 현장에는 구역 분할과 전역 탐색기가 필요하다.</li><li>고유 초점은 표형 Q-learning의 대형 격자 전이와 탐색률 비교다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0002-bottom">
+<img alt="발표자료 PDF 2쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c43857c6b98ce84b4b56150f.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.2</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0003-top">
+<img alt="발표자료 PDF 3쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1243a0f644c81cb62e8e9459.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.3</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0003-bottom">
+<img alt="발표자료 PDF 3쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3d8d6073cdc7894f0342bbbf.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.3</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0004-top">
+<img alt="발표자료 PDF 4쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/08f938a8c76ab7fcb967c52e.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.4</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0004-bottom">
+<img alt="발표자료 PDF 4쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4a454933249990b8b9d69b6b.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.4</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0005-top">
+<img alt="발표자료 PDF 5쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/742d529c6ab2222b867a741c.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.5</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0005-bottom">
+<img alt="발표자료 PDF 5쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e917a1be71867e1cc502f3df.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.5</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0006-top">
+<img alt="발표자료 PDF 6쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f85af3cdc5e1cbeb4371640e.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.6</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0006-bottom">
+<img alt="발표자료 PDF 6쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6bd864358453be4878ff96e4.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.6</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0007-top">
+<img alt="발표자료 PDF 7쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ce72f5ea5b2c5bfd36f66c57.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.7</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0007-bottom">
+<img alt="발표자료 PDF 7쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/94914368e0626da1244c2082.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.7</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0008-top">
+<img alt="발표자료 PDF 8쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c5d3c6f2fd8400c8d6575834.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.8</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0008-bottom">
+<img alt="발표자료 PDF 8쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7e38883d4424cc6c8d8225a1.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.8</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0009-top">
+<img alt="발표자료 PDF 9쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/06fb5f4dba6e991887f7b866.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.9</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0009-bottom">
+<img alt="발표자료 PDF 9쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/628616c80dfe6f5971102190.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.9</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0010-top">
+<img alt="발표자료 PDF 10쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9840374cd797f55d31f9db8f.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.10</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0010-bottom">
+<img alt="발표자료 PDF 10쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9458dad459fe30f85d8ba14e.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.10</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0011-top">
+<img alt="발표자료 PDF 11쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8c8f281a9a800715ca46d2e5.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.11</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0011-bottom">
+<img alt="발표자료 PDF 11쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fd39f4a00f17f4ddcc27bff5.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.11</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0012-top">
+<img alt="발표자료 PDF 12쪽 top 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ac61f0c8d2d420bd92d5c473.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.12</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p067-slide-p0012-bottom">
+<img alt="발표자료 PDF 12쪽 bottom 시각자료" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c36c08a450e1d1517676bb6c.webp" tabindex="0"/>
+<figcaption><b>원문 발표자료 · PDF p.12</b> — 캡션이 없는 발표자료의 의미 있는 원문 시각자료</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2, p.3</li><li><b>방법론</b>: p.4, p.5, p.6, p.7, p.8, p.9</li><li><b>실험</b>: p.10</li><li><b>결과</b>: p.10, p.11</li><li><b>한계</b>: p.11, p.12</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">발표자료 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">강화학습을_이용한_다양한_환경에서의_절토_공정_계획.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-066.html"><span class="lbl">← 이전 #66</span>강화학습을 활용한 터파기 경로 생성</a><a class="next" href="paper-068.html"><span class="lbl">다음 #68 →</span>장비 상호작용 기반 토공 작업 인식</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

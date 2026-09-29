@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes_요약</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes_요약</h1><h1 id="high-accuracy-autonomous-excavation-of-free-form-shapes-">High-Accuracy Autonomous Excavation Of Free-Form Shapes - 요약</h1>
+<h2 id="_1">한줄 요약</h2>
+<p>세계 최초 자율 보행 굴착기 HEAP을 개발하고, 힘-토크 궤적 기반의 토양 독립적 굴착 사이클과 드론 측량-설계-시공을 통합한 실시간 디지털 공정으로 자유곡선 형태의 제방을 ~3-5cm 정밀도로 자율 시공하였다.</p>
+<hr/>
+<h2 id="1">1. 연구 배경 및 동기</h2>
+<h3 id="_2">문제</h3>
+<ul>
+<li>건설 분야 생산성은 지난 20년간 1% 성장에 그침 (세계 경제 2.8% 대비)</li>
+<li>노동력 부족 심화 + 대형 건설 프로젝트의 반복적 지연</li>
+<li>측량(Survey) → 설계(Design) → 시공(Fabrication)이 순차적으로 분리되어 실시간 적응 불가</li>
+</ul>
+<p>500
+<em>기존 순차적 Survey-Design-Fabrication 공정(위)에서 삼각형 병렬 통합 공정(아래)으로의 패러다임 전환</em></p>
+<h3 id="_3">기존 연구의 한계</h3>
+<table>
+<thead>
+<tr>
+<th>시스템</th>
+<th>기관</th>
+<th>한계점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LUCIE (1988)</td>
+<td>Lancaster Univ.</td>
+<td>위치 궤적 기반, 단순 트렌치만 가능</td>
+</tr>
+<tr>
+<td>ALS (1998)</td>
+<td>Carnegie Mellon</td>
+<td>LiDAR 추가했으나 대량 굴착에 한정</td>
+</tr>
+<tr>
+<td>THOR</td>
+<td>TU Kaiserslautern</td>
+<td>행동 기반 제어, 정밀 형상 불가</td>
+</tr>
+<tr>
+<td>1.5t 굴착기</td>
+<td>Australian ACFR</td>
+<td>임피던스 제어, 토양 변화 대응 미흡</td>
+</tr>
+<tr>
+<td>기존 연구 전반</td>
+<td>다수</td>
+<td>위치 궤적 → 토양 강도 초과 시 대응 불가</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">본 연구의 기여</h3>
+<ol>
+<li>엔드이펙터 힘-토크 궤적 기반의 토양 독립적 굴착 사이클</li>
+<li>세계 최초 자율 보행 굴착기 HEAP: 센싱·액추에이션·제어</li>
+<li>바퀴-다리 복합 로봇을 위한 일반화된 상태 추정 기법</li>
+<li>고유감각(버킷 경로)+외부감각(LiDAR) 융합 굴착 매핑</li>
+<li>자유곡선 트렌치 및 3D 제방을 위한 굴착 계획기</li>
+<li>드론 측량 + 경관 설계 + 자율 굴착을 통합한 디지털 적응형 제작 공정</li>
+<li>다양한 자유 형상에 대한 고정밀 자율 굴착 실증</li>
+</ol>
+<hr/>
+<h2 id="2-heap">2. 시스템 구성: HEAP</h2>
+<p>500
+<em>HEAP (Hydraulic Excavator for an Autonomous Purpose) — 세계 최초 자율 보행 굴착기</em></p>
+<h3 id="_5">전체 아키텍처</h3>
+<pre><code class="language-mermaid">graph TD
+    A["측량&lt;br&gt;(드론 LiDAR)"] --&gt; B["설계 환경&lt;br&gt;(Rhino + Docofossor)"]
+    B --&gt; C["원하는 고도맵 전송"]
+    C --&gt; D["HEAP 자율 굴착"]
+    D --&gt; E["실제 고도맵 피드백"]
+    E --&gt; B
+
+    D --&gt; F["굴착 매핑&lt;br&gt;(LiDAR + 버킷 경로)"]
+    D --&gt; G["굴착 계획기&lt;br&gt;(PoA + 덤프 포인트)"]
+    D --&gt; H["암 제어&lt;br&gt;(역동역학 + 역기구학)"]
+    D --&gt; I["섀시 제어&lt;br&gt;(능동 균형)"]
+    D --&gt; J["주행 제어&lt;br&gt;(Ackermann)"]
+    D --&gt; K["상태 추정&lt;br&gt;(IMU+GNSS)"]
+</code></pre>
+<h3 id="_6">하드웨어 구성</h3>
+<table>
+<thead>
+<tr>
+<th>구성 요소</th>
+<th>세부 사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기반 기계</td>
+<td>Menzi Muck M545 보행 굴착기 (12톤)</td>
+</tr>
+<tr>
+<td>위치 센서</td>
+<td>Leica iCON iXE3 GNSS (RTK, 2안테나)</td>
+</tr>
+<tr>
+<td>IMU</td>
+<td>SBG Ellipse2-A (캐빈 + 섀시)</td>
+</tr>
+<tr>
+<td>LiDAR</td>
+<td>Velodyne VLP-16 × 2 (인식용)</td>
+</tr>
+<tr>
+<td>암 관절 측정</td>
+<td>Draw wire encoder + IMU (이중화)</td>
+</tr>
+<tr>
+<td>컴퓨터</td>
+<td>Intel i7-5820K (Ubuntu 18.04)</td>
+</tr>
+<tr>
+<td>소프트웨어</td>
+<td>ROS + shared memory (100Hz)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3">암 액추에이션 3가지 방식 비교</h3>
+<p>400
+<em>HEAP 관절별 가용 측정·액추에이션 방식 요약</em></p>
+<table>
+<thead>
+<tr>
+<th>방식</th>
+<th>응답시간(t90)</th>
+<th>힘제어 컷오프</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>서보 밸브</strong></td>
+<td><strong>35ms (속도), 40ms (힘)</strong></td>
+<td><strong>&gt;20Hz</strong></td>
+<td>고성능, 굴착 힘제어에 필수</td>
+</tr>
+<tr>
+<td>파일럿 스테이지</td>
+<td>680~850ms</td>
+<td>0.85Hz</td>
+<td>저비용, dead-zone 큼</td>
+</tr>
+<tr>
+<td>조이스틱 액추에이터</td>
+<td>~600ms</td>
+<td>0.73Hz</td>
+<td>최소 침습, 공중 이동에 활용</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="3-1">3. 핵심 기술 1: 힘제어 단일 굴착 사이클</h2>
+<h3 id="3_1">3단계 굴착 사이클 개요</h3>
+<pre><code class="language-mermaid">graph LR
+    A["Penetrate&lt;br&gt;(침투 단계)"] --&gt; B["Drag&lt;br&gt;(끌기 단계)"]
+    B --&gt; C["Close&lt;br&gt;(닫기 단계)"]
+
+    style A fill:#4472C4,color:#fff
+    style B fill:#ED7D31,color:#fff
+    style C fill:#70AD47,color:#fff
+</code></pre>
+<p>기존 연구들이 <strong>위치 궤적</strong>을 따르는 것과 달리, 본 연구는 <strong>힘-토크 궤적</strong>을 사용한다. 힘 궤적은 최대 힘 한계를 알고 설계되므로 토양 종류에 관계없이 안전하며, 토양이 달라지면 자연스럽게 다른 운동(딱딱한 토양: 침투+끌기, 부드러운 토양: 침투+회전)이 발생한다.</p>
+<h3 id="_7">수식: 굴착 단계별 힘 제어 입력</h3>
+<p><strong>(1) 침투(Penetrate) 단계</strong> — Eq. (2.18), (2.19)</p>
+<p>$$\mathbf{f}^{\text{des}}<em>t = \begin{bmatrix} 0 \ s</em>{\text{pen}} F_{z,\text{pen}} \ 0 \ 0 \end{bmatrix}, \quad \ddot{\mathbf{r}}<em>{\text{des}} = \begin{bmatrix} \text{PID}(x</em>{\text{PoA}}) \ 0 \ 0 \ \text{PID}(\psi_{\text{PoA}}) \end{bmatrix}$$</p>
+<p>여기서 기하 형상 근접 시 힘 스케일 팩터:
+$$s_{\text{pen}} = \begin{cases} \dfrac{d}{\theta}, &amp; \text{if } d \leq \theta \ 1, &amp; \text{else} \end{cases}$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$F_{z,\text{pen}}$</td>
+<td>z 방향 침투력 (-45kN)</td>
+</tr>
+<tr>
+<td>$s_{\text{pen}}$</td>
+<td>원하는 형상 근접 시 힘 감쇠 계수</td>
+</tr>
+<tr>
+<td>$d$</td>
+<td>버킷 끝에서 목표 형상까지의 거리</td>
+</tr>
+<tr>
+<td>$\theta$</td>
+<td>힘 스케일링 시작 임계 거리</td>
+</tr>
+<tr>
+<td>$x_{\text{PoA}}$, $\psi_{\text{PoA}}$</td>
+<td>공격 지점의 x좌표, 캐빈 회전각</td>
+</tr>
+</tbody>
+</table>
+<p><strong>(2) 끌기(Drag) 단계</strong> — Eq. (2.20)~(2.22)</p>
+<p>형상 위반 방지를 위해 힘 크기 감소 대신 힘 벡터 방향을 회전:
+$$R_\phi = \begin{bmatrix} \cos(\phi) &amp; -\sin(\phi) \ \sin(\phi) &amp; \cos(\phi) \end{bmatrix}$$</p>
+<p>$$\phi = \begin{cases} \alpha!\left(1 - \dfrac{d}{\theta}\right), &amp; \text{if } d \leq \theta \ 0, &amp; \text{else} \end{cases}$$</p>
+<p>$$\mathbf{f}^{\text{des}}<em>t = \begin{bmatrix} R</em>\phi F_{\text{drag}} \ 0 \ 0 \end{bmatrix}, \quad F_{\text{drag}} = \begin{bmatrix} F_{x,\text{drag}} \ F_{z,\text{drag}} \end{bmatrix}$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\phi$</td>
+<td>힘 벡터 회전각</td>
+</tr>
+<tr>
+<td>$\alpha$</td>
+<td>목표 형상 경사각과 끌기력의 각도 차</td>
+</tr>
+<tr>
+<td>$F_{x,\text{drag}}$</td>
+<td>굴착기 방향 끌기력 (-40kN)</td>
+</tr>
+<tr>
+<td>$F_{z,\text{drag}}$</td>
+<td>하향 유지력 (-40kN)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>(3) 닫기(Close) 단계</strong> — Eq. (2.23)</p>
+<p>$$\mathbf{f}^{\text{des}}<em>t = \begin{bmatrix} 0 \ F</em>{z,\text{close}} \ \tau_{\text{close}} \ 0 \end{bmatrix}$$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\tau_{\text{close}}$</td>
+<td>버킷 닫기 토크 (30kNm)</td>
+</tr>
+<tr>
+<td>$F_{z,\text{close}}$</td>
+<td>흘림 방지 하향력 (-5kN)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>직관:</strong> 같은 힘 궤적을 적용해도 딱딱한 토양에서는 짧게 침투하고 길게 끌며, 부드러운 토양에서는 깊게 침투하고 짧게 끄는 동작이 자연스럽게 나타난다 — 숙련 운전자의 행동과 동일.</p>
+</blockquote>
+<hr/>
+<h2 id="4-2">4. 핵심 기술 2: 계층적 최적화 암 컨트롤러</h2>
+<h3 id="_8">역동역학 컨트롤러 우선순위 과제 (감소 순)</h3>
+<table>
+<thead>
+<tr>
+<th>우선순위</th>
+<th>과제</th>
+<th>수식</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>운동 방정식</td>
+<td>$[-M \quad \mathbb{I}]\mathbf{x}_d = \mathbf{h} + J^T\mathbf{f}^{\text{des}}_t + F_v\mathbf{u} + F_s\text{sign}(\mathbf{u})$</td>
+</tr>
+<tr>
+<td>2</td>
+<td>펌프 유량 한계</td>
+<td>$[\delta t \mathbf{A}E(\mathbf{q}) \quad 0]\mathbf{x}<em>d \leq Q</em>{\max} - \mathbf{A}E(\mathbf{q})\mathbf{u}$</td>
+</tr>
+<tr>
+<td>3</td>
+<td>실린더 힘/토크 한계</td>
+<td>$\mathbf{x}_d \leq E(\mathbf{q})\boldsymbol{\tau}^{\max}_p$</td>
+</tr>
+<tr>
+<td>4</td>
+<td>실린더 속도 한계</td>
+<td>$\delta t \mathbf{x}<em>d \leq E(\mathbf{q})^{-1}\mathbf{v}</em>{\max} - \mathbf{u}$</td>
+</tr>
+<tr>
+<td>5</td>
+<td>실린더 위치 한계</td>
+<td>$\frac{\delta t^2}{2}\mathbf{x}<em>d \leq \mathbf{q}</em>{\max} - \mathbf{q}$</td>
+</tr>
+<tr>
+<td>6</td>
+<td>자기충돌 회피</td>
+<td>$[\delta t \mathbf{n}<em>c^T J</em>{p_1} \quad 0]\mathbf{x}<em>d \leq \xi\frac{d-d_s}{d_i-d_s} - \mathbf{n}_c^T J</em>{p_1}\mathbf{u}$</td>
+</tr>
+<tr>
+<td>7</td>
+<td>엔드이펙터 자세 (회전)</td>
+<td>$[J_R \quad 0]\mathbf{x}<em>d = \ddot{\mathbf{r}}</em>{R,\text{des}} - \dot{J}_R^T\mathbf{u}$</td>
+</tr>
+<tr>
+<td>8</td>
+<td>엔드이펙터 위치 (이동)</td>
+<td>$[J_T \quad 0]\mathbf{x}<em>d = \ddot{\mathbf{r}}</em>{T,\text{des}} - \dot{J}_T^T\mathbf{u}$</td>
+</tr>
+<tr>
+<td>9</td>
+<td>관절 운동 감쇠</td>
+<td>$[\mathbb{I} \quad 0]\mathbf{x}_d = -k_p\mathbf{u}$</td>
+</tr>
+</tbody>
+</table>
+<p>최적화 해 벡터: $\mathbf{x}_d = [\dot{\mathbf{u}}_d^T \quad \boldsymbol{\tau}_d^T]^T$</p>
+<hr/>
+<h2 id="5-3-poa">5. 핵심 기술 3: 굴착 계획기 (PoA 및 덤프 포인트)</h2>
+<pre><code class="language-mermaid">graph TD
+    A["초기화&lt;br&gt;(CAD 목표 고도맵 로드)"] --&gt; B["다음 공격 지점&lt;br&gt;PoA 탐색"]
+    B --&gt; C{"고도 오차&lt;br&gt;&lt; θ+?"}
+    C -- No --&gt; D["대량 굴착&lt;br&gt;(힘-토크 궤적)"]
+    D --&gt; E["다음 덤프 포인트 탐색"]
+    E --&gt; F["덤프 (버킷 비우기)"]
+    F --&gt; B
+    C -- Yes --&gt; G["정밀 다듬기&lt;br&gt;(위치 궤적)"]
+    G --&gt; H["완료"]
+
+    style A fill:#5B9BD5,color:#fff
+    style H fill:#70AD47,color:#fff
+</code></pre>
+<h3 id="poa-eq-224228">공격 지점(PoA) 선택 수식 — Eq. (2.24)~(2.28)</h3>
+<p>오차 행렬: $Z_e = Z_{\text{act}} - Z_{\text{des}}$</p>
+<p>선택 행렬 (오차 &gt; 임계값):
+$$S^+(x_i, y_j) = \begin{cases} 1, &amp; \text{if } Z_e(x_i, y_j) &gt; \theta^+ \ \text{NaN}, &amp; \text{else} \end{cases}$$</p>
+<p>PoA 선택 (최대값 argmax):
+$$\underset{x_i, y_j}{\arg\max} \; S^+(x_i, y_j)(Z_{\text{act}}(x_i, y_j) + \mu \cdot d(x_i, y_j))$$</p>
+<p>여기서 $\mu = \tan\alpha$, $d$는 굴착기까지 유클리드 거리.</p>
+<p>PoA 3D 좌표: $\mathbf{p}<em>{\text{PoA}} = [x</em>{\text{PoA}} + v_{\text{offset}}, \; y_{\text{PoA}}, \; Z_{\text{act}}(x_{\text{PoA}}, y_{\text{PoA}})]^T$</p>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\theta^+$</td>
+<td>굴착 오차 임계값 (0.2m)</td>
+</tr>
+<tr>
+<td>$\mu$</td>
+<td>경사 파라미터 ($\tan\alpha$, 0.75)</td>
+</tr>
+<tr>
+<td>$\alpha$</td>
+<td>최대 허용 경사각</td>
+</tr>
+<tr>
+<td>$v_{\text{offset}}$</td>
+<td>수직 오프셋 (0.3m, 확실한 접촉 보장)</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="6-4-">6. 핵심 기술 4: 상태 추정 (바퀴-다리 복합 로봇)</h2>
+<pre><code class="language-mermaid">graph LR
+    A["IMU 예측&lt;br&gt;(캐빈 프레임)"] --&gt; E["TSIF 필터"]
+    B["GNSS-RTK 업데이트&lt;br&gt;(2안테나)"] --&gt; E
+    C["롤링 예측&lt;br&gt;(바퀴 속도)"] --&gt; E
+    D["다리 오도메트리 업데이트&lt;br&gt;(관절 위치)"] --&gt; E
+    E --&gt; F["상태 출력&lt;br&gt;위치/자세/속도/편향"]
+
+    style E fill:#ED7D31,color:#fff
+</code></pre>
+<p><strong>IMU 예측 수식</strong> — Eq. (3.3)~(3.6)</p>
+<p>$${}^I\mathbf{r}'<em>{IC} = {}^I\mathbf{r}</em>{IC} + \Delta t \left[ {}^I\mathbf{v}_{IC} + \frac{{}^I\bar{\mathbf{w}}_v}{\sqrt{\Delta t}} \right]$$</p>
+<p>$${}^I\mathbf{v}'<em>{IC} = {}^I\mathbf{v}</em>{IC} + \Delta t \left[ \Phi^{-1}<em>{CI}\left( {}^C\tilde{\mathbf{f}}</em>{IC} - {}^C\mathbf{b}_f - \frac{{}^C\bar{\mathbf{w}}_f}{\sqrt{\Delta t}} \right) + {}^I\mathbf{g} \right]$$</p>
+<p><strong>GNSS 업데이트 혁신 방정식</strong> — Eq. (3.7)</p>
+<p>$$\mathbf{y}<em>{\xi_k} = {}^I\tilde{\boldsymbol{\xi}}_k - {}^I\mathbf{r}'</em>{IC} - \Phi'^{-1}<em>{CI}({}^C\mathbf{l}</em>{C\xi_k}) + {}^I\bar{\mathbf{w}}_{\xi_k}$$</p>
+<blockquote>
+<p><strong>실제 배치 결과:</strong> 롤링+다리 오도메트리는 바퀴 슬립 시 성능 저하로 인해 최종적으로 IMU+GNSS 조합만 배포.</p>
+</blockquote>
+<hr/>
+<h2 id="7-4-heap">7. 챕터 4: HEAP에서의 자유곡선 트렌치 굴착</h2>
+<p>500
+<em>굴착 매핑의 3가지 핵심 과제: (1) LiDAR 미탐지 구역, (2) 동적 환경 변화, (3) 자기 인식 오류</em></p>
+<h3 id="_9">굴착 매핑 파이프라인</h3>
+<pre><code class="language-mermaid">graph TD
+    A["LiDAR 스캔&lt;br&gt;(Velodyne VLP-16)"] --&gt; C["고도 맵 업데이트"]
+    B["버킷 끝 경로&lt;br&gt;(고유감각)"] --&gt; C
+    C --&gt; D["필터링:&lt;br&gt;낙토(버킷 아래), 자기인식 제거"]
+    D --&gt; E["2.5D 고도 맵"]
+    E --&gt; F["SQP 기반 스플라인 궤적 계획&lt;br&gt;(SDF 충돌 회피)"]
+</code></pre>
+<h3 id="sqp-eq-4145">SQP 기반 스플라인 궤적 최적화 — Eq. (4.1)~(4.5)</h3>
+<p>$$\min_{\mathbf{x}<em>k} \left{ \sum</em>{k=0}^{N-1} c_{\text{length}}(\mathbf{x}<em>k, \mathbf{x}</em>{k+1}) + c_{\text{init}} + c_{\text{final}} \right}$$</p>
+<p>SDF 제약:
+$$d_{\text{SDF}}(\mathbf{x}_k) \geq \epsilon, \quad \forall k$$</p>
+<h3 id="eq-46-47">힘 제어 굴착 중 관절 토크 계산 — Eq. (4.6), (4.7)</h3>
+<p>$$\boldsymbol{\tau}_d = J^T\mathbf{f}^{\text{des}}_t + \mathbf{h}(\mathbf{q}, \mathbf{u}) + F_v\mathbf{u} + F_s\text{sign}(\mathbf{u})$$</p>
+<p>with constraint: $\boldsymbol{\tau}_d \in [E(\mathbf{q})\boldsymbol{\tau}^{\min}_p, \; E(\mathbf{q})\boldsymbol{\tau}^{\max}_p]$</p>
+<hr/>
+<h2 id="8-5-robotic-embankments">8. 챕터 5: 로봇 제방 시공 (Robotic Embankments)</h2>
+<p>500
+<em>드론 측량 → 설계 환경(Docofossor/Rhino) → HEAP 시공의 실시간 피드백 루프</em></p>
+<h3 id="3d">3D 제방 굴착 계획기 개선</h3>
+<p>2D 트렌치 계획기(거리 기반 스코어링)를 3D로 확장, 진행 방향선(β 각도) 도입:</p>
+<p>$$\underset{x_i, y_j}{\arg\max} \; S_{lb}(x_i, y_j) S^+(x_i, y_j)\left(Z_{\text{act}}(x_i, y_j) + \mu(\cos\beta \cdot x_i + \sin\beta \cdot y_i)\right)$$</p>
+<ul>
+<li>$S_{lb}$: 가장 큰 오차 블롭만 선택하는 마스크 (OpenCV findContour 활용)</li>
+<li>작은 블롭 무시로 굴착기 이동 거리 최소화, 효율 향상</li>
+</ul>
+<h3 id="eq-54-55">덤프 포인트 계획기 — Eq. (5.4), (5.5)</h3>
+<p>$$S^-(x_i, y_j) = \begin{cases} 1, &amp; \text{if } Z_e(x_i, y_j) &lt; \theta^- \ \text{NaN}, &amp; \text{else} \end{cases}$$</p>
+<p>$$\underset{x_i, y_j}{\arg\min} \; S_{lv}(x_i, y_j) S^-(x_i, y_j)\left(Z_{\text{act}}(x_i, y_j) + \mu \cdot d(x_i, y_j)\right)$$</p>
+<ul>
+<li>$S_{lv}$: 0.1m³ 미만 소형 볼륨 블롭 제거 마스크 (버킷 용량의 1/5)</li>
+<li>재료 중립 설계 구현 (cut-fill 균형)</li>
+</ul>
+<hr/>
+<h2 id="9">9. 실험 결과</h2>
+<h3 id="_10">설계 파라미터</h3>
+<p>400
+<em>굴착 계획 및 제어에 사용된 설계 파라미터 값</em></p>
+<h3 id="_11">전체 실험 정밀도 요약</h3>
+<p>500
+<em>모든 굴착 실험의 셀당 평균 오차 비교 (시뮬레이션 vs HEAP 실기)</em></p>
+<table>
+<thead>
+<tr>
+<th>설계 형상</th>
+<th>환경</th>
+<th>평균 오차/셀</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>곡선 바닥 트렌치</td>
+<td>Vortex 시뮬</td>
+<td>0.035m</td>
+</tr>
+<tr>
+<td>곡선 바닥 트렌치</td>
+<td>HEAP 실기</td>
+<td><strong>0.024m</strong></td>
+</tr>
+<tr>
+<td>직선 세그먼트 트렌치</td>
+<td>Vortex 시뮬</td>
+<td>0.044m</td>
+</tr>
+<tr>
+<td>직선 세그먼트 트렌치</td>
+<td>HEAP 실기</td>
+<td><strong>0.027m</strong></td>
+</tr>
+<tr>
+<td>S-커브 제방 (오목부)</td>
+<td>HEAP 실기</td>
+<td><strong>0.038m</strong></td>
+</tr>
+<tr>
+<td>S-커브 제방 (전체)</td>
+<td>HEAP 실기</td>
+<td>0.056m</td>
+</tr>
+<tr>
+<td>코너 있는 양면 제방</td>
+<td>HEAP 실기</td>
+<td><strong>0.032m</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>핵심 발견:</strong> 시뮬레이션 결과가 실기에서 오히려 정밀도가 향상됨. 시뮬레이션의 토양 탄성 변형이 마지막 몇 cm를 깎기 어렵게 만들었기 때문.</p>
+</blockquote>
+<h3 id="_12">굴착기 컨트롤러 성능</h3>
+<pre><code class="language-mermaid">graph LR
+    A["위치·속도 한계&lt;br&gt;미포함"] --&gt; B["평균 추적 오차&lt;br&gt;22.08cm"]
+    C["위치·속도 한계&lt;br&gt;포함 (제안 방법)"] --&gt; D["평균 추적 오차&lt;br&gt;2.89cm (-87%)"]
+
+    style B fill:#C00000,color:#fff
+    style D fill:#375623,color:#fff
+</code></pre>
+<h3 id="s-">S-커브 제방 실험 개요</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>제방 길이</td>
+<td>20m (S자 곡선)</td>
+</tr>
+<tr>
+<td>이동 토량</td>
+<td>30m³</td>
+</tr>
+<tr>
+<td>자율도</td>
+<td>Level 4 (SAE)</td>
+</tr>
+<tr>
+<td>작업 시간</td>
+<td>6시간</td>
+</tr>
+<tr>
+<td>굴착 부피</td>
+<td>30.60m³</td>
+</tr>
+<tr>
+<td>성토 부피</td>
+<td>32.20m³</td>
+</tr>
+<tr>
+<td>설계 경사</td>
+<td>33.7°</td>
+</tr>
+<tr>
+<td>오목부 평균 오차</td>
+<td>0.038m</td>
+</tr>
+<tr>
+<td>전체 평균 오차</td>
+<td>0.056m</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="10">10. 한계 및 향후 연구</h2>
+<h3 id="_13">현재 한계</h3>
+<ul>
+<li>서보 밸브는 대형 기계에서 느린 최대 동작 속도 (소형 레그 실린더용으로 설계됨)</li>
+<li>롤링 + 다리 오도메트리 잔차는 바퀴 슬립 시 오차 유발 → GNSS+IMU만 최종 배포</li>
+<li>S-커브 제방의 볼록한 남쪽 부분은 평평한 버킷 날로 도달하기 어려움 (0.056m 오차)</li>
+<li>덤프 사이클에서 버킷 부분 채우기 미구현 (운전자는 가능하지만 로봇은 미지원)</li>
+<li>GNSS 수신 불량 시 순수 IMU 적분으로 드리프트 발생 가능</li>
+</ul>
+<h3 id="_14">향후 연구 방향</h3>
+<pre><code class="language-mermaid">graph TD
+    A["롤링/다리 오도메트리&lt;br&gt;바퀴 슬립 탐지 활용"] --&gt; E["더 복잡한 지형&lt;br&gt;자율 주행"]
+    B["버킷 부분 채우기&lt;br&gt;구현"] --&gt; F["효율 향상"]
+    C["다중 굴착기 조율"] --&gt; G["대규모 프로젝트"]
+    D["토양 조성 피드백&lt;br&gt;설계 적응"] --&gt; H["완전 적응형&lt;br&gt;디지털 제작"]
+    E --&gt; I["건설 자동화&lt;br&gt;레벨 5 달성"]
+    F --&gt; I
+    G --&gt; I
+    H --&gt; I
+
+    style I fill:#1F3864,color:#fff
+</code></pre>
+<hr/>
+<h2 id="_15">한마디로 정리</h2>
+<ul>
+<li><strong>핵심 방법은?</strong> — 엔드이펙터 힘-토크 궤적으로 토양 독립적 굴착 구현, 서보 밸브로 정밀 힘제어, 계층적 최적화 컨트롤러로 다중 한계 동시 처리, LiDAR+버킷경로 융합 매핑, 드론-설계-굴착 통합 실시간 공정 구축</li>
+<li><strong>핵심 결과는?</strong> — 시뮬레이션 결과 실기 이전 시 정밀도 오히려 향상(3.5→2.4cm), S-커브 20m 제방 자율 시공 달성(0.038m 오차), 시공 중 설계 실시간 수정으로 cut-fill 균형 재조정 실증</li>
+<li><strong>한계는?</strong> — 볼록 곡면 제방의 정밀도 저하 미해결, 바퀴 슬립 시 상태추정 성능 저하, 완전 자율화(Level 5) 미달성</li>
+</ul>
+<hr/>
+<h2 id="_16">핵심 키워드</h2>
+<p><code>자율 굴착</code> <code>보행 굴착기</code> <code>HEAP</code> <code>힘-토크 궤적</code> <code>토양 독립적 제어</code> <code>계층적 최적화</code> <code>상태 추정</code> <code>고도 매핑</code> <code>자유곡선 형상</code> <code>디지털 제작</code> <code>Docofossor</code> <code>드론 측량</code> <code>바퀴-다리 복합 로봇</code></p>
+<hr/>
+<h2 id="_17">관련 산출물</h2>
+<ul>
+<li><strong>원문 MD</strong>: <a href="d93de688d35a58a8.html">2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes</a></li>
+<li><strong>인터랙티브 시각화</strong>: <span title="Obsidian 볼트에서 확인할 수 있는 자료">2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes_viz</span></li>
+<li><strong>슬라이드</strong>: 2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes_슬라이드</li>
+<li><strong>인포그래픽</strong>: <img alt="2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes_인포그래픽" src="../media/d27166fe5236f8e0a21b074d.webp"/></li>
+</ul>
+<hr/>
+<h2 id="_18">나의 의견</h2>
+<blockquote>
+<p><em>이 논문을 읽고 느낀 점, 우리 연구와의 연관성, 활용 가능성 등을 자유롭게 기록</em></p>
+</blockquote>
+<ul>
+<li>힘-토크 궤적 기반의 굴착 접근법은 토양 독립성을 자연스럽게 달성한다는 점에서 매우 우아한 아이디어. 위치 제어 기반 접근의 근본적 한계를 정면 돌파.</li>
+<li>계층적 최적화 컨트롤러가 실린더 힘/속도/위치 한계를 모두 우선순위를 가지고 처리하는 방식은 유압 시스템 제어 설계의 모범 사례로 참고 가능.</li>
+<li>드론 측량 → Docofossor 설계 → HEAP 시공의 실시간 피드백 루프는 '디지털 트윈+자율 시공'의 실증 사례로서, 우리 연구에서 유사한 공정 통합 가능성 탐색에 활용 가능.</li>
+<li>ETH 박사 논문이어서 실험 검증이 충실하고 시스템 공학적 깊이가 있음. 실제 적용 시 서보 밸브 비용과 기존 굴착기 개조 복잡도가 주요 실용화 장벽.</li>
+</ul></main><script src="../assets/live.js"></script></body></html>

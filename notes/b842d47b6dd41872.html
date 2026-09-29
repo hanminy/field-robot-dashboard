@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2022 Precision_Motion_Control_of_Robotized_Industrial_Hydraulic_Excavators_via_Data-Driven_Model_Inversion-서울대(이동준)_요약</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2022 Precision_Motion_Control_of_Robotized_Industrial_Hydraulic_Excavators_via_Data-Driven_Model_Inversion-서울대(이동준)_요약</h1><h1 id="precision-motion-control-of-robotized-industrial-hydraulic-excavators-via-data-driven-model-inversion">Precision Motion Control of Robotized Industrial Hydraulic Excavators via Data-Driven Model Inversion</h1>
+<h2 id="_1">한줄 요약</h2>
+<p>산업용 38톤급 유압 굴착기(Doosan DX380LC)의 입력 지연(input delay)과 사장대(dead-zone)를 물리 기반 모듈형 데이터 구동 모델로 학습하고, 그 역변환(model inversion)을 이용한 피드포워드 제어 + P 제어 프레임워크로 <strong>굴삭/정지 작업에서 경로 추종 RMSE 2 cm 이하</strong>의 정밀 제어를 달성한 연구이다.</p>
+<hr/>
+<h2 id="1">1. 연구 배경</h2>
+<h3 id="11">1.1 문제 정의</h3>
+<ul>
+<li>유압 굴착기는 높은 출력 대비 무게 비율로 건설/광업 등에 필수적이나, <strong>다관절 동시 조작</strong>이 필요하여 숙련 조종사에 의존</li>
+<li>자동화의 핵심은 <strong>정밀 모션 제어</strong>이지만, 산업용 유압 시스템의 고유 특성으로 인해 여전히 난제:</li>
+<li><strong>입력 지연(Input Delay)</strong>: MCV(Main Control Valve)를 통한 복잡한 유압 회로에서 발생</li>
+<li><strong>상태 의존 사장대(State-dependent Dead-zone)</strong>: 조이스틱 입력과 실린더 속도 간 비선형 관계</li>
+<li><strong>토양 상호작용(Soil Interaction)</strong>: 굴삭 시 큰 외력이 동적으로 변화</li>
+</ul>
+<h3 id="12">1.2 기존 연구의 한계</h3>
+<table>
+<thead>
+<tr>
+<th>접근법</th>
+<th>대표 연구</th>
+<th>한계점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모델 기반 제어</td>
+<td>[3]-[6]</td>
+<td>유압 시스템의 단순화 모델링 → 제어 성능 저하</td>
+</tr>
+<tr>
+<td>RL 기반 (단일 MLP)</td>
+<td>Egli &amp; Hutter [7],[8]</td>
+<td>파라미터 57,476개, 학습 10시간, 느린 속도(10-20 cm/s)에서만 검증</td>
+</tr>
+<tr>
+<td>RNN 온라인 학습</td>
+<td>Park et al. [9],[10]</td>
+<td>굴삭 시 RMSE &gt; 1 m의 큰 추적 오차</td>
+</tr>
+<tr>
+<td>단일 액추에이터 힘 제어</td>
+<td>Kim et al. [11]</td>
+<td>대차원 히스토리 입력, dead-zone 미고려</td>
+</tr>
+<tr>
+<td>Dead-zone 보상</td>
+<td>[12],[13]</td>
+<td>상태 의존성을 표현하지 못함</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13">1.3 본 논문의 기여</h3>
+<ol>
+<li><strong>물리 기반 모듈형 데이터 구동 모델</strong>: IIR unit + PL map + MLP로 입력 지연, dead-zone, 비선형 동역학을 분리 학습</li>
+<li><strong>모듈형 역변환 제어</strong>: 각 모듈을 독립적으로 역변환하여 학습 속도 대폭 향상</li>
+<li><strong>안정성/강건성 이론 보장</strong>: Proposition 1, Theorem 1으로 수학적 증명</li>
+<li><strong>실기 검증</strong>: 38톤급 상용 굴착기에서 토양 상호작용 하 RMSE &lt; 2 cm 달성</li>
+</ol>
+<hr/>
+<h2 id="2">2. 시스템 설명</h2>
+<p>400
+<em>Fig. 1. Doosan DX380LC 38톤급 산업용 유압 굴착기. IMU, 유압 압력 센서, Velodyne Puck VLP-16 LiDAR로 커스터마이징됨.</em></p>
+<p>400
+<em>Fig. 2. 굴착기 관절 구성. 버킷 끝단 위치는 굴착기 베이스에 부착된 좌표계 {B}에서 관측.</em></p>
+<h3 id="21">2.1 센서 구성</h3>
+<table>
+<thead>
+<tr>
+<th>센서</th>
+<th>위치</th>
+<th>목적</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IMU</td>
+<td>Boom, Arm, Bucket 링크</td>
+<td>관절 각도(joint configuration) 추정</td>
+</tr>
+<tr>
+<td>유압 압력 센서</td>
+<td>펌프 2개 + 실린더 6개(헤드/로드)</td>
+<td>유압 상태 측정</td>
+</tr>
+<tr>
+<td>Velodyne Puck VLP-16 LiDAR</td>
+<td>차체 상부</td>
+<td>지형 PCD 스캔 (궤적 계획용)</td>
+</tr>
+<tr>
+<td>모멘텀 기반 렌치 추정기</td>
+<td>소프트웨어</td>
+<td>토양 상호작용력 추정 (F/T 센서 대체)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22">2.2 시스템 아키텍처</h3>
+<ul>
+<li><strong>제어 입력</strong>: 조이스틱 신호 $u_t \in [-1, 1]^3$ (boom, arm, bucket)</li>
+<li><strong>통신</strong>: CAN 버스, 센싱/제어 주파수 100 Hz</li>
+<li><strong>유압 회로</strong>: EPPR 밸브 → MCV 스풀 밸브 → 실린더 속도 생성</li>
+<li><strong>Swing 동작</strong>은 제외 (시상면, sagittal plane 내 운동만 고려)</li>
+</ul>
+<pre><code class="language-mermaid">flowchart LR
+    JS[조이스틱 신호&lt;br/&gt;u_t ∈ [-1,1]³] --&gt; EPPR[EPPR 밸브]
+    JS --&gt; PUMP[펌프 제어&lt;br/&gt;제조사 제공]
+    EPPR --&gt; MCV[MCV&lt;br/&gt;스풀 밸브]
+    PUMP --&gt; MCV
+    MCV --&gt; CYL[유압 실린더&lt;br/&gt;Boom/Arm/Bucket]
+    CYL --&gt; JOINT[관절 각속도&lt;br/&gt;ω_t ∈ ℝ³]
+    ENV[토양/환경] --&gt; |외력 F_ext| CYL
+</code></pre>
+<hr/>
+<h2 id="3-data-driven-model-inversion">3. 핵심 기술: 데이터 기반 모델 역변환 (Data-Driven Model Inversion)</h2>
+<p>700
+<em>Fig. 3. 데이터 기반 모델 역변환 프레임워크 및 오프라인 학습 스키마. 오른쪽: Excavator Plant Model (순방향), 왼쪽: Inversion Control (역방향). 각각 PL map, IIR unit, MLP 모듈로 구성.</em></p>
+<h3 id="31-excavator-plant-model">3.1 Excavator Plant Model (순방향 모델)</h3>
+<p>조이스틱 신호 $u_t$로부터 관절 각속도 $\hat{\omega}_t$를 예측하는 3단계 모듈형 모델:</p>
+<p>$$\eta_{f,t} = f_{\Gamma_t}(u_t) \tag{1}$$</p>
+<p>$$\mathcal{Z}{\eta_{h,t}} = P(z)\,\mathcal{Z}{\eta_{f,t}} \tag{2}$$</p>
+<p>$$\hat{\omega}<em>t = h</em>{\Gamma_t}(\eta_{h,t}) \tag{3}$$</p>
+<p>여기서:
+- $f_{\Gamma_t}: [-1,1]^3 \to \mathbb{R}^{n_f}$ — <strong>Pre-delay map</strong> (PL map): 상태 의존 dead-zone 포착
+- $P(z)$ — <strong>Delaying system</strong> (IIR unit): $n_h \times n_f$ LTI 전달함수 행렬, 다중 입력 지연 모델링
+- $h_{\Gamma_t}: \mathbb{R}^{n_h} \to \mathbb{R}^3$ — <strong>Post-delay map</strong> (MLP): 잔여 비선형 동역학 및 커플링
+- $\Gamma_t := (\theta_t, P_t^{\text{cyl}}, P_t^{\text{pump}}, F_t^{\text{ext}}) \in \mathbb{R}^{13}$ — 굴착기 상태 벡터</p>
+<p><strong>굴착기 상태 벡터 $\Gamma_t$의 구성:</strong></p>
+<table>
+<thead>
+<tr>
+<th>변수</th>
+<th>차원</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\theta_t = (\theta_t^{\text{boom}}, \theta_t^{\text{arm}}, \theta_t^{\text{bucket}})$</td>
+<td>$\mathbb{R}^3$</td>
+<td>관절 각도</td>
+</tr>
+<tr>
+<td>$P_t^{\text{cyl}}$</td>
+<td>$\mathbb{R}^6$</td>
+<td>실린더 헤드/로드 챔버 압력</td>
+</tr>
+<tr>
+<td>$P_t^{\text{pump}}$</td>
+<td>$\mathbb{R}^2$</td>
+<td>펌프 2개의 압력</td>
+</tr>
+<tr>
+<td>$F_t^{\text{ext}}$</td>
+<td>$\mathbb{R}^2$</td>
+<td>버킷 끝단 수평/수직 외력 (토양 상호작용)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph PlantModel["Excavator Plant Model"]
+        direction LR
+        U["u_t&lt;br/&gt;조이스틱 신호"] --&gt; F["f (PL map)&lt;br/&gt;Pre-delay map&lt;br/&gt;Eq.(1)"]
+        F --&gt; |"η_f,t"| P["P(z) (IIR unit)&lt;br/&gt;Delaying system&lt;br/&gt;Eq.(2)"]
+        P --&gt; |"η_h,t"| H["h (MLP)&lt;br/&gt;Post-delay map&lt;br/&gt;Eq.(3)"]
+        H --&gt; W["ω̂_t&lt;br/&gt;예측 각속도"]
+    end
+    STATE["Γ_t&lt;br/&gt;(θ, P_cyl, P_pump, F_ext)"] --&gt; F
+    STATE --&gt; H
+</code></pre>
+<h3 id="32-excavator-plant-model-inversion-control">3.2 Excavator Plant Model Inversion Control (역변환 제어)</h3>
+<p>명령 관절 각속도 $\omega_t^{\text{cmd}}$로부터 조이스틱 신호 $u_t$를 계산하는 역방향 3단계:</p>
+<p>$$\zeta_{h,t} = g_{h,\Gamma_t}(\omega_t^{\text{cmd}}) \tag{4}$$</p>
+<p>$$\mathcal{Z}{\zeta_{f,t}} = C_P(z)\,\mathcal{Z}{\zeta_{h,t}} \tag{5}$$</p>
+<p>$$u_t = g_{f,\Gamma_t}(\zeta_{f,t}) \tag{6}$$</p>
+<p>여기서:
+- $g_{h,\Gamma_t}: \mathbb{R}^3 \to \mathbb{R}^{n_h}$ — <strong>Pre-control map</strong> (MLP): $h$의 유사 역함수
+- $C_P(z)$ — <strong>Delay-tracking system</strong> (IIR unit): $n_f \times n_h$ LTI 전달함수
+- $g_{f,\Gamma_t}: \mathbb{R}^{n_f} \to [-1,1]^3$ — <strong>Post-control map</strong> (PL map 유사역함수): $\text{PL}^+<em>{\Phi</em>{f,t}}$</p>
+<p><strong>Delay-tracking 조건</strong> (최종값 정리, reference tracking):</p>
+<p>$$\lim_{z \to 1} (z-1)\big(P(z)C_P(z) - I_{n_h}\big)\,\mathcal{Z}{t^{n_r}} = 0_{n_h \times n_h} \tag{7}$$</p>
+<ul>
+<li>$n_r = 0$: step reference 추종</li>
+<li>$n_r = 1$: ramp reference 추종</li>
+</ul>
+<h3 id="33-p">3.3 P 제어를 통한 강건성 확보</h3>
+<p>$$\omega_t^{\text{cmd}} := \omega_t^{\text{ref}} - K\,e_{\theta,t} \tag{8}$$</p>
+<p>여기서:
+- $\omega_t^{\text{ref}} \in \mathbb{R}^3$: 레퍼런스 관절 각속도
+- $e_{\theta,t} := \theta_t - \theta_t^{\text{ref}} \in \mathbb{R}^3$: 관절 각도 오차
+- $K \in \mathbb{R}^{3 \times 3}$: P 게인 (양정치 행렬, 실험에서 $K = 1.5 I_3$)</p>
+<pre><code class="language-mermaid">flowchart LR
+    TP[궤적 계획기] --&gt; |"θ_ref, ω_ref"| PC[P Control&lt;br/&gt;Eq.8]
+    SENSOR[센서 측정&lt;br/&gt;θ_t] --&gt; PC
+    PC --&gt; |"ω_cmd"| INV[모델 역변환&lt;br/&gt;Eq.4→5→6]
+    STATE["Γ_t"] --&gt; INV
+    INV --&gt; |"u_t"| EXC[굴착기]
+    EXC --&gt; SENSOR
+    EXC --&gt; ENV[환경/토양]
+    ENV --&gt; |"F_ext"| STATE
+</code></pre>
+<h3 id="34">3.4 안정성 분석</h3>
+<p><strong>Proposition 1</strong> (유계성, Boundedness):
+가정: (a) 모델 예측 오차 $\delta_{\omega,t}$, 유사 역함수 오차 $\delta_{h,t}$, $\delta_{f,t}$가 유계; (b) $h_{\Gamma_t}$가 Lipschitz 연속; (c) $g_{h,\Gamma_t}$가 유계 함수 → $\nu_{\omega,t} := \omega_t - \omega_t^{\text{cmd}}$는 $\forall t \geq t_0$에서 유계.</p>
+<blockquote>
+<p>증명 핵심: BIBO 안정성과 class $\mathcal{KL}$ 함수를 이용하여 $|\eta_{h,t} - \zeta_{h,t}|$의 유계성 확보</p>
+</blockquote>
+<p>$$|\eta_{h,t} - \zeta_{h,t}| \leq \beta(|\eta_{h,t_0} - \zeta_{h,t_0}|,\, t-t_0) + \gamma_1!\left(\sup_{t_0 \leq \tau \leq t}|\zeta_{h,\tau}|\right) + \gamma_2!\left(\sup_{t_0 \leq \tau \leq t}|\delta_{f,\tau}|\right)$$</p>
+<p><strong>Theorem 1</strong> (궁극적 유계성, Ultimate Boundedness):
+P 제어 (8)하에서 Lyapunov 함수 $V = \frac{1}{2}e_{\theta,t}^\top e_{\theta,t}$를 사용하여:</p>
+<p>$$\dot{V} = e_{\theta,t}^\top \dot{e}<em>{\theta,t} = -e</em>{\theta,t}^\top K\,e_{\theta,t} + e_{\theta,t}^\top \nu_{\omega,t}$$</p>
+<p>$$\dot{V} \leq -\lambda_{\min}(K)|e_{\theta,t}|^2 + |e_{\theta,t}||\nu_{\omega,t}|$$</p>
+<p>→ 관절 각도 오차가 반경 $|\nu_{\omega,t}|/\lambda_{\min}(K)$의 폐구에 의해 <strong>궁극적으로 유계</strong>됨.</p>
+<blockquote>
+<p>기존 데이터 기반 굴착기 제어 연구([7]-[10])에서는 제공하지 못한 <strong>이론적 안정성/강건성 보장</strong></p>
+</blockquote>
+<hr/>
+<h2 id="4">4. 신경망 모듈 상세 및 학습 과정</h2>
+<h3 id="41-iir-unit-infinite-impulse-response-unit">4.1 IIR Unit (Infinite Impulse Response Unit)</h3>
+<p>z-도메인 SISO LTI 전달함수:</p>
+<p>$$H(z) = \frac{b_0 + b_1 z^{-1} + \cdots + b_{n_b} z^{-n_b}}{a_0 + a_1 z^{-1} + \cdots + a_{n_a} z^{-n_a}}$$</p>
+<p>차분 방정식을 정규화하여 재배열:</p>
+<p>$$y_t = \sum_{i=1}^{n_b} \bar{b}<em>i(x</em>{t-i} - x_t) - \sum_{i=1}^{n_a} \bar{a}<em>i(y</em>{t-i} - DC_H \cdot x_t) + DC_H \cdot x_t$$</p>
+<p>여기서:
+- $\bar{b}_i := b_i / a_0$, $\bar{a}_i := a_i / a_0$: 정규화 계수 (학습 가능 파라미터)
+- $DC_H := H(1)$: DC 이득 (저주파 이득)</p>
+<p><strong>구현 사양:</strong>
+- $P(z)$: $3 \times 3$ IIR unit
+- 대각 성분: 3차 전달함수 ($n_b^{jk} = n_a^{jk} = 3$, $j = k$)
+- 비대각 성분: 0 ($n_b^{jk} = n_a^{jk} = 0$, $j \neq k$)
+- $DC_P := P(1)$: 대각이 1, 비대각이 0인 행렬</p>
+<blockquote>
+<p>IIR unit 없이 학습된 제어기는 실기에서 <strong>치명적 진동(fatal oscillation)</strong> 발생</p>
+</blockquote>
+<h3 id="42-piecewise-linear-pl-map">4.2 Piecewise Linear (PL) Map</h3>
+<p>단조 비감소(monotonically non-decreasing) n-segment PL map:</p>
+<p>$$\text{PL}<em>{(\mathcal{X},\mathcal{Y})}(x) = \frac{(Y_i - Y</em>{i-1})x + X_i Y_{i-1} - X_{i-1} Y_i}{X_i - X_{i-1}}, \quad x \in [X_{i-1}, X_i)$$</p>
+<ul>
+<li>연속: $X_{i-1} &lt; X_i$일 때 $\text{PL}(X_i) = Y_i$</li>
+<li><strong>불연속(점프)</strong> 표현 가능: $X_{i-1} = X_i$일 때 → dead-zone의 점프 보상</li>
+</ul>
+<p><strong>유사 역함수</strong>: 단조성에 의해 $\text{PL}^+<em>{(\mathcal{X},\mathcal{Y})} = \text{PL}</em>{(\mathcal{Y},\mathcal{X})}$ (X와 Y를 교환)</p>
+<p><strong>Custom Activation Function</strong> (비감소 시퀀스 학습):</p>
+<p>$$d_i = a + (b-a) \frac{\sum_{j=1}^{i} \exp(c_j)}{\sum_{j=1}^{n} \exp(c_j)}, \quad \forall i \in {1, 2, \ldots, n}$$</p>
+<ul>
+<li>입력: $c \in \mathbb{R}^n$ → 출력: $d = (a, d_1, \ldots, d_n) \in [a, b]^{n+1}$, 비감소 순서 보장</li>
+</ul>
+<p><strong>구현 사양:</strong>
+- Boom, Arm, Bucket 각각 <strong>8-segment PL map</strong> (3개 독립)
+- 보조 네트워크 $\phi_f$: hidden 64 ReLU → output $8 \times 6$ with $\sigma_{[-1,1]}$
+- 경계 breakpoint: $X_0^k = Y_0^k = -1$, $X_{n_k}^k = Y_{n_k}^k = 1$</p>
+<p>400
+<em>Fig. 4. Pre-delay map $f_{\Gamma_t}$ (좌) 및 Delaying system $P(z)$ (우) 시각화. PL map은 그레이딩 작업 중 버킷 조이스틱 신호의 상태 의존 pre-delay map을 보여줌. IIR step response에서 boom/arm/bucket의 5% 정착 시간은 각각 (0.41, 0.33, 0.26) [s].</em></p>
+<h3 id="43-post-delay-map-mlp">4.3 Post-delay Map (MLP)</h3>
+<ul>
+<li>단일 은닉층 256 ReLU 노드 + 선형 출력층</li>
+<li>잔여 비선형성 및 관절 간 커플링 처리</li>
+</ul>
+<h3 id="44">4.4 오프라인 학습 과정</h3>
+<h4 id="plant-model">Plant Model 학습</h4>
+<p>$$\mathcal{L}^{\text{plant}} := |\hat{\omega}_t - \omega_t|^2$$</p>
+<ul>
+<li>$P(z)$, $f$, $h$ 모두 학습 가능</li>
+<li>Adam optimizer, <strong>약 2시간</strong> 수렴</li>
+<li>테스트 데이터 예측 RMSE: (0.51, 0.66, 1.16) [deg/s] (boom, arm, bucket)</li>
+</ul>
+<h4 id="inversion-control">Inversion Control 학습</h4>
+<p>$g_f$ (Post-control map): $\text{PL}^+<em>{\Phi</em>{f,t}}$로 분석적으로 계산 → <strong>학습 불필요</strong></p>
+<p>$C_P(z)$ (Delay-tracking system): 분석적으로 구성
+- 학습된 $P(z)$의 불안정 영점 → 정확한 역함수 불존재
+- Reference tracking 조건 (7)을 $n_r \in {0, 1}$에 대해 충족
+- 극점: 0.82 (중복도 2)로 경험적 최적화</p>
+<p>$g_h$ (Pre-control map): Distal learning [16]</p>
+<p>$$\mathcal{L}<em>h^{\text{inv}} := |\check{\omega}_t - \omega_t|^2, \quad \check{\omega}_t := (h</em>{\Gamma_t} \circ g_{h,\Gamma_t})(\omega_t)$$</p>
+<ul>
+<li>은닉층 256 ReLU + 출력층 tanh (유계 출력 보장)</li>
+<li><strong>5분 미만</strong>으로 학습 완료 (모듈형 역변환의 이점)</li>
+</ul>
+<p>700
+<em>Fig. 5. 관절 각속도 예측(상단) 및 조이스틱 신호 복원(하단): 굴삭(좌) 및 그레이딩(우) 테스트 데이터. Dead-zone 구간에서 서로 다른 조이스틱 신호가 동일 응답을 유발할 수 있으므로 복원 신호와 기록 신호 간 불일치가 나타남.</em></p>
+<h3 id="45">4.5 학습 데이터</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>총 데이터</td>
+<td>2.6M 타임스텝 (100 Hz) = <strong>7.2시간</strong></td>
+</tr>
+<tr>
+<td>최소 요구 데이터</td>
+<td>1.2M 타임스텝 = 3.3시간</td>
+</tr>
+<tr>
+<td>데이터 분할</td>
+<td>Train 80% : Val 15% : Test 5%</td>
+</tr>
+<tr>
+<td>데이터 소스</td>
+<td>자율 굴삭/그레이딩 + 정현파 조이스틱 신호</td>
+</tr>
+<tr>
+<td>학습 환경</td>
+<td>AMD Ryzen 5 3600X, 16GB RAM, GTX 1660 Ti</td>
+</tr>
+</tbody>
+</table>
+<p><strong>본 방법 vs 기존 RL 방법 [7] 비교:</strong></p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>본 연구</th>
+<th>Egli &amp; Hutter [7]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>파라미터 수</td>
+<td><strong>9,160</strong></td>
+<td>57,476</td>
+</tr>
+<tr>
+<td>학습 시간</td>
+<td><strong>2시간</strong></td>
+<td>10시간</td>
+</tr>
+<tr>
+<td>학습 데이터</td>
+<td>2.6M</td>
+<td>0.72M</td>
+</tr>
+<tr>
+<td>속도</td>
+<td>66-87 cm/s</td>
+<td>10-20 cm/s</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="5">5. 실험 결과</h2>
+<p>실험 플랫폼: <strong>Doosan DX380LC</strong> (38톤급 상용 유압 굴착기)</p>
+<h3 id="51">5.1 실험 설정</h3>
+<ul>
+<li>제어 주파수: 100 Hz</li>
+<li>P 게인: $K = 1.5 I_3$</li>
+<li>비교 대상: 제조사 제공 PI 제어 (조이스틱-각속도 look-up table + PI 피드백 + 각속도 피드포워드)</li>
+<li>성능 지표:</li>
+<li><strong>Path following RMSE</strong>: $e_{p,t}^{\text{path}} := \min_{t_0 \leq \tau \leq t_f} |p_t - p_\tau^{\text{ref}}|$ (굴삭 지형 형상 오차)</li>
+<li><strong>Trajectory RMSE</strong>: $e_{p,t}^{\text{traj}} := |p_t - p_t^{\text{ref}}|$ (시간별 위치 오차)</li>
+<li>RMSE는 초기 1초 이후부터 계산 (정상 상태 성능 평가)</li>
+</ul>
+<h3 id="52-digging">5.2 굴삭(Digging) 결과</h3>
+<p>700
+<em>Fig. 6. 굴삭 작업 중 버킷 끝단 위치(좌상), 외력(좌하), 성능 평가(우). 다양한 굴삭 깊이/체적에 대한 반복 실험 결과. 굵은 선은 평균, 음영 버킷은 2초 간격 평균 버킷 형상.</em></p>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>제조사 PI 제어</th>
+<th><strong>제안 방법</strong></th>
+<th>개선율</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Path following RMSE</td>
+<td>5.79 cm</td>
+<td><strong>1.99 cm</strong></td>
+<td>65.6%</td>
+</tr>
+<tr>
+<td>Trajectory RMSE</td>
+<td>25.0 cm</td>
+<td><strong>5.21 cm</strong></td>
+<td>79.2%</td>
+</tr>
+<tr>
+<td>RMS 버킷 끝단 속도</td>
+<td>66.2 cm/s</td>
+<td>66.3 cm/s</td>
+<td>동등</td>
+</tr>
+<tr>
+<td>RMS 외력</td>
+<td>4.31 x 10^4 N</td>
+<td>6.41 x 10^4 N</td>
+<td>더 큰 외력에서도 정밀</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-grading">5.3 그레이딩(Grading) 결과</h3>
+<p>700
+<em>Fig. 7. 반복 그레이딩 작업 실험 결과. 굴삭 후 지표면을 정지하는 작업.</em></p>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>제조사 PI 제어</th>
+<th><strong>제안 방법</strong></th>
+<th>개선율</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Path following RMSE</td>
+<td>5.28 cm</td>
+<td><strong>1.83 cm</strong></td>
+<td>65.3%</td>
+</tr>
+<tr>
+<td>Trajectory RMSE</td>
+<td>15.1 cm</td>
+<td><strong>3.17 cm</strong></td>
+<td>79.0%</td>
+</tr>
+<tr>
+<td>RMS 버킷 끝단 속도</td>
+<td>87.2 cm/s</td>
+<td>87.3 cm/s</td>
+<td>동등</td>
+</tr>
+<tr>
+<td>RMS 외력</td>
+<td>2.69 x 10^4 N</td>
+<td>2.23 x 10^4 N</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>토양 상호작용 유무와 관계없이 <strong>균일하게 작은 오차</strong> → 역변환 모델이 외력의 효과를 포착/보상</p>
+</blockquote>
+<hr/>
+<h2 id="6">6. 전체 프레임워크 요약</h2>
+<pre><code class="language-mermaid">flowchart TB
+    subgraph DataCollection["데이터 수집 (오프라인)"]
+        D1["자율 굴삭/그레이딩 데이터"]
+        D2["정현파 조이스틱 데이터"]
+        D3["2.6M 타임스텝, 7.2시간"]
+    end
+
+    subgraph PlantLearning["Plant Model 학습 (~2시간)"]
+        PL1["PL map (f): dead-zone 학습"]
+        PL2["IIR unit (P): 입력 지연 학습"]
+        PL3["MLP (h): 비선형 동역학 학습"]
+    end
+
+    subgraph InvLearning["Inversion 학습 (~5분)"]
+        IL1["PL⁺: 분석적 유사역함수"]
+        IL2["C_P(z): 분석적 delay-tracking"]
+        IL3["MLP (g_h): Distal learning"]
+    end
+
+    subgraph Control["실시간 제어 (100 Hz)"]
+        C1["P 제어: 강건성 확보"]
+        C2["모델 역변환: 동역학 보상"]
+        C3["조이스틱 신호 출력"]
+    end
+
+    DataCollection --&gt; PlantLearning
+    PlantLearning --&gt; InvLearning
+    InvLearning --&gt; Control
+</code></pre>
+<hr/>
+<h2 id="7">7. 한계 및 향후 연구</h2>
+<h3 id="71">7.1 현재 한계</h3>
+<ul>
+<li>Sagittal plane (2D) 운동만 고려 — <strong>Swing 동작 미포함</strong></li>
+<li>LTI 전달함수 $P(z)$ 사용 — <strong>상태 의존 지연 미반영</strong> (저자도 가능하다고 언급하나 미적용)</li>
+<li>특정 작업(굴삭/그레이딩)에 대해서만 검증 — <strong>전체 작업 공간 미검증</strong></li>
+<li>오프라인 학습만 가능 — 새로운 환경 적응을 위해 <strong>재학습 필요</strong></li>
+</ul>
+<h3 id="72">7.2 저자 제시 향후 방향</h3>
+<ol>
+<li><strong>상태 의존 지연 시스템</strong>으로 Plant Model 일반화</li>
+<li><strong>전문가 모방 궤적 계획</strong> [15] 통합</li>
+<li><strong>OTA(Over-the-Air) 프로그래밍</strong>으로 데이터 수집/제어 업데이트 효율화</li>
+<li>다른 제어 전략과의 <strong>체계적 비교</strong> (e.g., Bayesian optimization [17])</li>
+<li>지연과 dead-zone이 있는 <strong>다른 시스템으로의 확장</strong> 적용</li>
+</ol>
+<hr/>
+<h2 id="8">8. 한마디로 정리</h2>
+<ul>
+<li><strong>물리 기반 모듈형 구조</strong> (IIR + PL + MLP)로 유압 굴착기의 입력 지연, dead-zone, 비선형 동역학을 분리 학습 → 파라미터 9,160개로 효율적 구현</li>
+<li><strong>모듈형 역변환</strong>으로 학습 시간 대폭 단축 (plant 2시간 + inversion 5분) → 기존 RL 대비 5배 이상 빠른 학습 달성</li>
+<li><strong>Lyapunov 기반 안정성 증명</strong> (Proposition 1 + Theorem 1) → 기존 데이터 기반 굴착기 제어에서 미제공된 이론적 보장 구현</li>
+<li>38톤급 상용 굴착기(Doosan DX380LC)에서 <strong>RMSE &lt; 2 cm</strong> 달성 → PI 제어 대비 65% 이상 개선 달성</li>
+<li>산업용 속도(66-87 cm/s)와 큰 토양 외력(~6.4 x 10^4 N) 조건에서 정밀 제어 구현</li>
+<li>Swing 동작, 상태 의존 지연, 전체 작업 공간으로의 확장은 미대응</li>
+</ul>
+<hr/>
+<h2 id="9">9. 나의 의견</h2>
+<p><em>(작성 예정)</em></p></main><script src="../assets/live.js"></script></body></html>

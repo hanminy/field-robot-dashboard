@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#37 자재 적재용 자율굴착기의 계층형 계획 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #037</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2021</span><span class="badge">#037</span><span class="badge score">작업·궤적계획</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>자재 적재용 자율굴착기의 계층형 계획</h1>
+<p class="title-en" lang="en">Hierarchical Planning for Autonomous Excavator on Material Loading Tasks</p>
+<p class="authors">Liyang Wang, Zhixian Ye, Liangjun Zhang · 38th International Symposium on Automation and Robotics in Construction (ISARC 2021)</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html">Baidu 자율굴착 논문 핵심 분석 2019-2024</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 도랑·파일 제거·대규모 상차를 장비 도달범위에 맞춘 route point와 local task region의 순서로 나누고, MRSP의 공격점·굴착·덤핑 루프와 BMSP의 Hybrid A*·MPC 주행을 공통 motion primitive로 연결한다. 36.6톤 실차와 67톤 AGX 모델에서 작업분할부터 저수준 유압명령까지 이어지는 계층형 계획을 검증했다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>서로 다른 토공 작업을 하나의 계획 계층으로 연결하기</h3>
+<p>자율굴착 연구는 작업영역 분할, 버킷 궤적, 유압제어 같은 개별 모듈에서 진전했지만 사용자 목표를 차체 이동과 반복 굴착 명령으로 끝까지 내리는 공통 구조는 부족했다. 도랑은 후진하며 지면 아래를 파고, 파일 제거는 전진하며 지표 위 재료를 없애며, 넓은 파일은 여러 열과 층을 순회한다. 논문은 작업마다 planner를 새로 만드는 대신 사용자 작업-하위작업-motion primitive-제어기의 계층을 정의한다.</p><p>굴착기는 팔로 재료를 제거하는 구간과 차체를 다음 정차점으로 옮기는 구간을 교대로 수행한다. 고수준 planner가 route point와 local task region을 정하고, MRSP와 BMSP가 지역 목표를 푼다. dig·dump·base-move primitive가 관절·차체 궤적을 만들며 PID·MPC와 유압 lookup table이 실행한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p037-figure-p0003-1-o01-d8c16744">
+<img alt="원문 Figure 1, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f8358b2ed2a9822c25b42d2f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.3</b> — Figure 1. Planner architecture. Components are drawn inside the dashed box.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>기존 연구는 작업영역 분할과 고수준 순서계획 또는 단일 굴착 궤적·제어 중 한 수준에 집중해 전체 계획 사슬을 일반화하지 못했다.</li><li>wheel loader용 finite-state motion primitive 구조는 작업장치와 작업주기가 다른 굴착기에 그대로 적용하기 어렵고 재료 제거 하위작업의 정의도 부족했다.</li><li>작업별로 별도 planner를 구현하면 도랑, 파일 제거, 트럭 상차처럼 목표 형상과 이동방향이 다른 작업 사이에서 재사용하기 어렵다.</li><li>차체 이동과 팔 굴착을 별개로 다루면 정차 위치의 도달범위, local region의 잔여 높이와 다음 이동을 일관된 종료조건으로 연결하기 어렵다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>사용자 작업을 재료 제거 하위작업과 차체 이동 하위작업으로 분해하는 고수준 계획 계층을 제안했다.</li><li>장비의 최소·최대 도달거리와 overlap으로 sector 또는 rectangle local task region과 route point를 자동 생성했다.</li><li>MRSP와 BMSP를 dig·dump·base-move primitive 및 PID·MPC 제어에 연결해 팔과 차체를 한 구조에서 다뤘다.</li><li>도랑, 파일 제거, 대규모 파일 제거의 서로 다른 분할 규칙과 이동방향을 동일 planner architecture로 표현했다.</li><li>36.6톤 XCMG490DK 실차와 67톤 CAT365CL AGX 시뮬레이션 모델에서 작업 완료 계획을 검증했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>고수준 계획기의 입력은 사용자가 지정한 작업영역과 목표높이이며 출력은 순서화된 excavator route point와 각 지점의 material-removal sub-task region·goal이다. 장비 reach의 최소 r_min, 최대 r_max와 region overlap r_o를 이용해 도랑은 좁은 직사각형 후진 작업, 파일은 넓은 부채꼴 전진 작업으로 분할한다. 대규모 파일은 최대 처리폭 q보다 넓으면 여러 column으로 나누고, LiDAR 수평 시야를 고려해 180도 sector를 다시 작은 sector와 필요 높이층으로 쪼갠다.</p><p>각 정차점에서 MRSP는 local zone, 목표높이, dump mode와 현재 base·joint·LiDAR 상태를 받아 종료조건까지 POA 선택-dig-dump를 반복한다. 정차점 사이에서는 BMSP가 LiDAR 점유지도와 현재·목표 2D pose로 Hybrid A* waypoint를 만들고 unicycle model MPC가 추종한다. joint primitive는 PID가 관절속도를, base primitive는 MPC가 차체명령을 계산하며, 두 명령은 lookup table로 굴착기의 유압 current 입력에 매핑된다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>작업 유형과 이동방향 판별</h4><p>목표재료가 지표 아래인 도랑은 가까운 재료를 제거한 뒤 후진하는 backward-movement task로, 지표 위 파일은 앞 재료를 없앤 뒤 전진하는 forward-movement task로 분류한다. 이 방향성이 route point의 순서와 마지막 local region 경계를 결정한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>local task region 생성</h4><p>장비 base 좌표계에서 중심각 α, sector 각도/rectangle 폭 β, 근단 r_min, 원단 r_max로 region을 정의한다. 굴착·덤핑 중 base가 움직여도 global zone이 바뀌지 않도록 map-frame center와 현재 pose로 local region을 갱신한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>도랑·파일 route point 분할</h4><p>유효 이동간격 d와 작업길이 l로 하위작업 수를 계산한다. 좁은 도랑은 rectangle을 뒤로, 넓은 파일은 sector를 앞으로 배치하고 마지막 경계를 조정해 길이를 덮는다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>대규모 파일의 열·층 분해</h4><p>작업폭이 q보다 크면 여러 column으로 나눈다. 각 180도 sector를 LiDAR FOV에 맞춘 중첩 sector로 쪼개고 두꺼운 파일은 여러 높이층으로 반복한다. column 사이는 연약지반의 작은 선회반경을 피하는 반원 U-turn으로 연결한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>MRSP 공격점과 굴착 루프</h4><p>local region의 최고점과 평균높이를 구한다. base 원점-최고점 직선에 offset을 주어 POA x,y를, 평균높이로 z를 정한다. POA·관입깊이·관입길이·끌기길이·tilt의 7개 값으로 dig primitive를 만들고 목표높이까지 반복한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>dump mode와 종료조건</h4><p>고정 base-frame point, 동적 floating point, 인지한 truck bed의 낮은 지점이라는 세 dump mode를 지원한다. rigid는 최고점 h&lt;g, regular는 평균 a&lt;g이면서 h&lt;g+b, loose는 평균 a&lt;g일 때 region 완료로 판단한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>BMSP 경로와 유압 실행</h4><p>BMSP는 목표 B=[x_m,y_m,Θ], LiDAR occupancy map과 현재 base pose로 Hybrid A*의 smooth collision-free waypoint를 만든다. unicycle MPC가 base를 추종하고 joint PID와 함께 생성한 속도명령을 유압 lookup table의 current command로 바꾼다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>local region 전진·후진 간격과 하위작업 수</h4><code>d=r_{\max}-r_{\min}-r_o,\qquad n=\left\lceil\frac{l}{d}\right\rceil</code><p>장비가 한 정차점에서 처리 가능한 reach 폭에서 overlap을 뺀 d만큼 이동하고, 작업길이 l을 모두 덮는 데 필요한 material-removal sub-task 수 n을 정한다.</p></div><div class="eq"><h4>단일 파일 제거 작업의 최대 폭</h4><code>q=2\sqrt{r_{\max}^{2}-d^{2}}</code><p>작업폭 w가 q보다 크면 단일 직선 route로 덮을 수 없는 large-scale pile로 판단해 여러 column과 U-turn 경로로 분할한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p037-figure-p0003-2-o01-c271d2af">
+<img alt="원문 Figure 2, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4bdd33336692506c3220f887.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.3</b> — Figure 2. Local task region deﬁnition.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0004-3-o01-7ff97aa9">
+<img alt="원문 Figure 3, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c096449728dbf7d42394188a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.4</b> — Figure 3. Trench task high level planning.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0004-4-o01-876ad3f9">
+<img alt="원문 Figure 4, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/cb3183e6f2e72c22580f4051.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.4</b> — Figure 4. Pile removal task high level planning.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0004-5-o01-73985b3a">
+<img alt="원문 Figure 5, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/da93f3bd12c6b38a9f5c8ce4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.4</b> — Figure 5. An example of large scale pile remove sub-task regions decomposition.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0005-6-o01-fda4445c">
+<img alt="원문 Figure 6, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/682d8ce75d55ddb3f86db38b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.5</b> — Figure 6. An example of large scale pile remove sub-task base move planning.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0005-7-o01-9cb36888">
+<img alt="원문 Figure 7, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/46f1920ba15a75d4fca56dba.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.5</b> — Figure 7. The method to determine POA</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0006-8-o01-62a4368f">
+<img alt="원문 Figure 8, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8ff7b6f4cd7bc25ae5116c11.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.6</b> — Figure 8. Dig motion parameters deﬁnition.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>고수준-하위작업-primitive의 3계층 계약</h3><p>고수준 planner는 어느 정차점에서 어느 region을 어떤 높이까지 처리할지만 정한다. MRSP와 BMSP는 작업 종류에 독립적인 지역 목표를 받아 motion parameter 또는 waypoint를 출력하고, primitive가 실제 궤적으로 바꾼다. 새 작업은 분할 규칙을 추가하면서 기존 굴착·덤핑·주행 실행기를 재사용할 수 있다.</p><ul><li>고수준 출력: route point, local task region, local goal</li><li>하위 planner 출력: 굴착 파라미터 또는 차체 waypoint</li><li>primitive 출력: joint trajectory 또는 base trajectory</li></ul></article><article class="tech-card"><h3>장비 reach 기반 작업영역 완전 커버</h3><p>region 분할은 버킷의 안전 도달범위를 직접 쓴다. overlap은 정차점 사이 누락을 막고 마지막 경계는 목표길이에 맞춘다. 넓은 작업은 column·sector·layer로 나누고 큰 반경 U-turn으로 연약지반의 제자리 선회를 피한다.</p><ul><li>rectangle과 sector 두 region 형상</li><li>전진 파일·후진 도랑의 방향별 분할</li><li>large-scale pile의 column-sector-layer 계층</li></ul></article><article class="tech-card"><h3>MRSP의 지형 반응형 반복 굴착</h3><p>MRSP는 매 cycle의 LiDAR 점군에서 최고점과 평균높이를 다시 읽고 POA와 region 좌표를 base 변화에 맞춰 갱신한다. 종료 엄격도도 선택할 수 있다. 다만 최고점 기반 POA와 굴착 파라미터는 토질·힘 불확실도를 명시적으로 추정하지 않는다.</p><ul><li>POA를 최고점 방향 offset과 평균높이로 정의</li><li>7개 dig motion parameter</li><li>fixed·floating·truck dump mode와 3개 종료 엄격도</li></ul></article><article class="tech-card"><h3>Hybrid A*와 MPC의 차체 이동 계층</h3><p>BMSP는 2D pose와 점유지도를 사용한다. Hybrid A*가 waypoint를 만들고 unicycle MPC가 추종하며 최종 명령은 유압 current로 변환된다. arm과 base의 교대 실행은 연결하지만 경사·지지면·무게중심이 없어 거친 지형의 안정도 검증이 필요하다.</p><ul><li>2D target pose B=[x_m,y_m,Θ]</li><li>LiDAR occupancy map 기반 Hybrid A*</li><li>unicycle model MPC와 hydraulic lookup table</li></ul></article></div>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>실차는 운용중량 36.6톤 XCMG490DK이며 centimeter accuracy RTK 10Hz, 관절각 100Hz·0.1도 정확도, Livox Mid-100 LiDAR point cloud 10Hz를 사용했다.</li><li>시뮬레이션은 운용중량 67.0톤 CAT365CL 모델과 AGX Dynamics를 사용했고 센서 update rate는 실차와 같게 설정했다.</li><li>실차에서 도랑과 파일 제거, 시뮬레이션에서 대규모 파일 제거를 수행했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>사용자가 작업영역·목표높이를 지정하면 planner가 route point와 material-removal sub-task를 자동 산출하고 MRSP/BMSP가 순서대로 실행했다.</li><li>도랑은 rectangle region으로 후진하며, 파일은 sector region으로 전진하며, large-scale pile은 두 column 사이를 U-turn으로 연결했다.</li><li>작업 전후 형상, 자동 생성된 route point·sub-task 수와 총 완료시간을 기록했다.</li></ul>
+<h3>비교 기준</h3><ul><li>논문은 별도 비교 planner나 수동작업 기준선을 두지 않았고, 제안 architecture가 세 작업을 완료하는지에 초점을 맞췄다.</li></ul>
+<h3>평가 지표</h3><ul><li>목표 작업영역의 길이·폭·깊이 또는 높이</li><li>자동 생성 route point와 material-removal sub-task 수</li><li>실차 작업 완료시간</li><li>시뮬레이션 최종 height map의 목표영역 평탄화 여부</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p037-figure-p0007-9-o01-479f771e">
+<img alt="원문 Figure 9, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0848653703810197989d92ae.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.7</b> — Figure 9. Trench experiment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0007-10-o01-6c6b4a96">
+<img alt="원문 Figure 10, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8954c9ba5061b88ea8f4df45.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.7</b> — Figure 10. Pile removal experiment setup.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0007-11-o01-715614b0">
+<img alt="원문 Figure 11, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ad80463693eada9ee2f9b3fa.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.7</b> — Fig. 11 shows 4 moments during the removal experi- ment setup, wherethe base located in diﬀerent route points. Based on the pile size, our algorithm automatically set 4 route points and 4 material remove sub-tasks.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p037-figure-p0007-12-o01-a1572842">
+<img alt="원문 Figure 12, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1296117f93aec24f702bf9c5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.7</b> — Figure 12. Large scale pile removal experiment using AGX simulator.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>36.6톤 실차 도랑 시험에서 목표 10.0×1.5×2.0m를 planner가 5개 route point와 5개 재료 제거 하위작업으로 분해했고 20분에 완료했다. 파일 제거는 8.0×5.6×0.5m 목표를 4개 route point와 4개 하위작업으로 나누어 16분 이내에 마쳤다. 이 결과는 하나의 architecture가 후진형 도랑과 전진형 파일이라는 상반된 route logic을 처리하고, 매 위치의 굴착·덤핑 반복과 차체 이동을 연결했음을 보여준다.</p><p>대규모 파일 제거는 원래 36.0×22.5×0.5m 작업을 계획하되 계산시간을 줄이기 위해 AGX에서 pile을 20.0×12.0×0.5m로 설정했다. 67톤 모델은 첫 column을 처리한 뒤 반원 U-turn으로 두 번째 column으로 이동했고, 완료 후 task zone의 height color가 균일해졌다. 다만 논문은 잔여체적, 형상오차, 주행 안정도나 다른 계획기 대비 효율을 정량 비교하지 않아 일반성 주장은 완료 사례 중심으로 해석해야 한다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>도랑 작업 완료</td><td>10.0×1.5×2.0m, 20분</td><td>XCMG490DK 실차, route point 5개·재료 제거 하위작업 5개</td><td>PDF p.7</td></tr><tr><td>파일 제거 완료</td><td>8.0×5.6×0.5m, 16분 이내</td><td>XCMG490DK 실차, route point 4개·재료 제거 하위작업 4개</td><td>PDF p.7</td></tr><tr><td>실차 플랫폼 규모</td><td>36.6톤</td><td>XCMG490DK, RTK·Livox Mid-100·관절센서</td><td>PDF p.6</td></tr><tr><td>대규모 파일 시뮬레이션 크기</td><td>20.0×12.0×0.5m</td><td>계획 목표 36.0×22.5×0.5m를 계산시간 절감을 위해 축소, 67.0톤 CAT365CL AGX 모델</td><td>PDF p.7</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>현재 BMSP는 2D 가정이라 경사와 단차가 큰 지형에서 차체 roll·pitch, 지지면과 전복 여유를 경로계획에 반영하지 못한다.</li><li>large-scale 시뮬레이션에서 재료를 지면에 바로 덤프해 base 이동 궤적 부근에 작은 pile이 남았다.</li><li>MRSP의 최고점 기반 POA와 기하 파라미터는 단단한 재료나 예상 밖 저항에서 최적 굴착량과 실행 가능성을 보장하지 않는다.</li><li>형상오차나 잔여체적 기준선이 없어 완료시간이 계획 품질과 생산성의 전부를 설명하지 못한다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p037-figure-p0007-11-o02-68a3fcd0">
+<img alt="원문 Figure 11, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a27bca8bbbc18418cb1a54a9.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.7</b> — Figure 11. Pile removal experiment process.</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>차체 이동계획이 2D pose와 점유지도에 제한되어 거친 지형의 높이, 경사, 굴착기 균형과 전복 안정도를 고려하지 않는다.</li><li>고수준 분할·POA·굴착 파라미터가 주로 기하 규칙에 의존하고 토질, 접촉력, 지형 인식 불확실도를 반영하지 않는다.</li><li>실차 검증이 한 기종의 도랑·파일 제거 완료 사례이며 잔여체적 RMSE, 형상오차, 에너지, 안전여유의 비교평가가 없다.</li><li>large-scale 작업은 축소된 AGX 시뮬레이션이며 실제 넓은 현장의 장시간 주행·굴착과 동적 장애물은 검증하지 않았다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>3D terrain height와 base roll·pitch, 지지다각형·질량중심을 포함하는 안정도 제약 base planner로 확장한다.</li><li>힘·압력과 점군 불확실도에 따라 local task region, route point와 POA를 온라인 재분할한다.</li><li>surfacing 등 새 작업의 고수준 분할 규칙을 추가하되 동일 MRSP/BMSP·primitive 인터페이스를 재사용한다.</li><li>잔여체적, 목표형상 오차, 작업시간, 에너지, 재계획 횟수와 개입률을 기준선과 함께 평가한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>사용자 작업을 route point와 local region으로 나누는 고수준 planner, MRSP/BMSP, dig·dump·base primitive 및 PID·MPC의 세 계층으로 팔과 차체 계획을 통합했다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>36.6톤 실차에서 10m 도랑을 20분, 8m 파일 제거를 16분 이내 완료했고 67톤 AGX 모델로 column·U-turn 대규모 작업분할을 시연했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>차체계획이 2D이고 기하 규칙 중심이며, 거친 지형 균형·토질/힘 불확실도와 정량 비교평가가 부족하다.</p></div></div>
+<div class="kw"><span>#작업·궤적계획</span><span>#시스템통합·현장실증</span><span>#계층형 작업계획</span><span>#Hybrid A*</span><span>#동작 프리미티브</span><span>#MPC</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 논문의 가치는 계획 계층의 인터페이스다. 작업계획은 어느 위치에서 어느 region을 처리할지, 동작계획은 굴착·주행 primitive, 제어기는 장비별 유압명령을 담당한다. 이 분리는 장비 크기나 상차·트렌칭이 달라도 공통 planner를 유지하고 하위 제어만 교체하는 기반이 된다.</p><p>현장 확장에는 2D route를 3D 주행성·안정도 모델에 연결하고, MRSP 종료조건을 높이뿐 아니라 잔여체적·적재량·접촉저항으로 보강해야 한다. 이후 AES와 TaskNet은 이 구조를 멀티모달 인지와 학습 작업분해로 확장하며, 본 연구는 명시적 모델 기반 기준선을 제공한다.</p><ul><li>작업-하위작업-primitive 계약을 유지하면 새로운 토공 작업은 고수준 분할만 추가하고 검증된 하위 실행기를 재사용할 수 있다.</li><li>3D 주행성·질량중심 제약을 BMSP 비용에 넣어 정차 pose의 접근 가능성과 전복 여유를 함께 최적화해야 한다.</li><li>버킷 체적센서와 유압 압력으로 MRSP의 목표높이 종료조건을 보정하면 잔여재료와 과굴착을 줄일 수 있다.</li><li>동적 작업자·트럭 인지와 안전정지·복구 상태를 고수준 순서계획에 포함하면 실제 협업 현장으로 확장할 수 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4, p.5, p.6</li><li><b>실험</b>: p.6, p.7</li><li><b>결과</b>: p.7</li><li><b>한계</b>: p.8</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/b2af0390f128022d2be45cd4.webp" rel="noopener" target="_blank">계층형 계획 구조</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 핵심 분석 2019-2024.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2021 Hierarchical planning for autonomous excavator on material loading tasks.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-036.html"><span class="lbl">← 이전 #36</span>군집 강체의 학습 기반 굴착</a><a class="next" href="paper-038.html"><span class="lbl">다음 #38 →</span>폐루프 심층망 기반 영상 제진</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

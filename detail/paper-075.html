@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#75 미래 지형 조성: 굴착기 자율 랜드스케이핑 제어 아키텍처 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Technische Universität Kaiserslautern, Robotics Research Lab · #075</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-other">Technische Universität Kaiserslautern, Robotics Research Lab</span><span class="badge">2016</span><span class="badge">#075</span><span class="badge score">시스템통합·현장실증</span><span class="badge">박사학위논문</span></div>
+<h1>미래 지형 조성: 굴착기 자율 랜드스케이핑 제어 아키텍처</h1>
+<p class="title-en" lang="en">Shaping the Future - A Control Architecture for Autonomous Landscaping with an Excavator</p>
+<p class="authors">Daniel Schmidt · Technische Universität Kaiserslautern doctoral dissertation, ISBN 978-3-8439-2816-8</p>
+</header>
+<main>
+<div class="oneliner"><b>한줄 요약</b> — 정확한 토양-장비 통합모델 대신 숙련 운전자의 반복 의사결정을 계층형 상태기계와 모듈형 문제해결기로 옮기고, 표면 격자 평가·타원형 굴착·행동 기반 자유운동·역기구학을 연결해 한 아키텍처로 대량굴착부터 임의 지표면 성형까지 다루며 여러 작업에 같은 모듈을 재사용한 박사학위 연구다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>변하는 토양과 불완전한 센싱 속에서 반복 지형 조성을 자동화하기</h3>
+<p>대량굴착, 트렌칭, 사면 조성, 표면 성형은 모두 굴착·운반·덤핑·복귀를 반복하지만 성공 기준은 서로 다르다. 대량굴착은 단위시간당 이동 토량과 버킷 충전량이 중요하고, 트렌칭과 랜드스케이핑은 설계면을 넘겨 파지 않는 정밀도가 핵심이다. 실제 건설현장은 토질·기상·지지면·장애물·장비 자세가 계속 달라지고 센서 정보도 불완전하므로, 산업용 로봇처럼 환경과 동역학을 완전하게 모델링해 미리 정한 궤적을 반복하는 방식은 적용하기 어렵다. 저자는 이 문제를 단일 굴착 동작이 아니라 현재 표면을 목표 표면으로 바꾸는 장기 순환 작업의 제어 문제로 정의한다.</p><p>기존 자율굴착 프로젝트는 대량굴착이나 단순 트렌치처럼 좁은 작업에 특화됐고, 저수준 스크립트·퍼지제어·신경망이 관절공간 명령을 직접 만드는 경우가 많았다. 이런 방식은 특정 장비와 시나리오에서는 동작하지만 버킷의 3차원 자세를 명시적으로 계획하거나 목표 표면, 공간 제약, 품질 제약을 함께 표현하기 어렵다. 특히 토양 물성이 변할 때 모든 힘과 장비 동역학을 충분히 정확하게 모델링하고 실시간으로 식별하는 것은 계산·센싱 양쪽에서 비현실적이라고 본다.</p><p>논문은 이 난점을 역방향으로 푼다. 숙련 운전자가 환경을 관찰하고 작업을 단계로 나누며, 매 사이클마다 굴착점·덤핑점·궤적을 수정하는 전략을 추출한 뒤 이를 상위 순환 제어와 하위 의사결정·실행 모듈에 이식한다. 목표는 한 번의 굴착을 최적화하는 것이 아니라 교란과 운용 제약을 받으면서도 대량굴착, 트럭 적재, 높이 평탄화, 트렌칭, 사면과 복합 표면 성형을 같은 재사용 가능한 아키텍처로 수행하는 것이다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p075-figure-p0013-1.1-o01-44db386e">
+<img alt="원문 Figure 1.1, PDF 13쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/05a7d9985de816cc3f63ed35.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.1 · PDF p.13</b> — Figure 1.1: Main question of the mass excavation task: How can the material be transported from the pile into the dumping area or the truck as fast as possible?</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0014-1.3-o01-df373f67">
+<img alt="원문 Figure 1.3, PDF 14쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/26585a608e2a567e763fd342.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.3 · PDF p.14</b> — Figure 1.3: Main question of the landscaping task: How can the current surface be transformed into the desired surface?</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>선행 시스템은 대량굴착 또는 트렌칭 같은 단일 작업에 맞춰져 임의의 목표 표면을 공통 표현으로 다루지 못했다.</li><li>관절공간 중심의 스크립트와 저수준 제어는 버킷 TCP의 위치·자세를 3차원 궤적으로 직접 제약하기 어려웠다.</li><li>정확한 굴착기 동역학과 토양-버킷 상호작용 모델은 변화하는 현장 물성과 불완전한 관측 때문에 실시간 전역 모델로 쓰기 어렵다.</li><li>고정 궤적의 사전계획은 붕괴하는 토사면, 새 장애물, 센서 오차에 대응하려면 빈번한 재계획을 요구한다.</li><li>기존 실증은 로봇 팔·미니굴착기·4자유도 장비 등 제한된 플랫폼과 짧은 시나리오에 머문 경우가 많았다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>숙련 운전자의 전역·지역 굴착 과정을 분석해 환경, 이동, 굴착 상태, 반복 사이클, 공간·불확실성·품질 제약을 일곱 핵심 명제로 정리했다.</li><li>선형 작업과 순환 작업을 분해하고 계층적으로 중첩된 유한상태기계로 구현하는 순환 로봇 설계 규칙을 제시했다.</li><li>표면 격자 평가로 굴착·덤핑 위치를 결정하고 목표면을 침범하지 않는 타원 기반 굴착 궤적과 반응형 자유공간 궤적을 결합했다.</li><li>상위 작업논리와 장비별 기구학을 분리하는 하드웨어 추상화, 수치 역기구학, 원통형 옥트리 기반 충돌회피 구조를 통합했다.</li><li>복합 시뮬레이션과 Volvo EW/180B 18 t 실차에서 궤적 추종, 트럭 적재, 평탄화 및 여러 지형 조성 시나리오를 비교 검증했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>전체 구조는 환경 지식, 전역 의사결정, 이동, 지역 굴착, 안전, 하드웨어 추상화의 층으로 나뉜다. 일반 지식에는 장비 기구학·동역학·센서 불확실성을, 전역 지식에는 공사장 지도와 목표 표면·주행 가능 영역을, 지역 지식에는 실시간으로 갱신되는 주변 표면과 트럭·장애물 정보를 둔다. 전역 FSM은 목표면 달성 여부를 검사하고 필요하면 장비 위치를 옮긴 뒤 지역 굴착을 호출한다. 지역 FSM은 Swinging Back, Digging, Swinging, Dumping을 반복하며 매 사이클 최신 환경정보로 굴착점과 덤핑점을 다시 선택한다.</p><p>의사결정 방식은 문제 성격에 따라 숙고형, 반응형, 혼합형으로 구분된다. 장비 작업공간, 다음 설치 위치, A* 이동경로, 굴착·덤핑 셀 평가는 사전에 구조화된 지도와 제약을 쓰는 숙고형 모듈이다. 반면 토사가 붕괴하거나 장애물이 나타날 수 있는 자유공간 버킷 이동은 각 TCP 축의 행동 모듈을 병렬 결합해 연속적으로 수정한다. 상위 모듈은 장비 독립적인 TCP 경로만 출력하고, 수치 역기구학과 관절 제어를 포함한 하드웨어 추상화층이 이를 실제 굴착기의 가능한 관절 명령으로 바꾼다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>환경과 목표 표면 구성</h4><p>공사장 전역 지도, 현재 표면, 설계 목표면, 이동 가능 영역, 장애물과 토질 정보를 일반·전역·지역 지식으로 분리한다. 지역 표면은 좌우 평면 레이저 스캐너의 점군을 합치고 필터링해 2차원 높이 격자로 갱신하며, 트럭 적재함 자세도 별도 인지 모듈에서 제공받는다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>전역 실행 사이클</h4><p>Global Goal Surface 상태에서 전체 설계면 달성 여부를 판단하고, 미달성 영역이 현재 작업공간 밖이면 Displacement를, 안이면 Excavation을 실행한다. 작업이 끝날 때까지 이 상태 전이를 반복하므로 장시간 과업을 짧은 지역 문제로 분해할 수 있다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>다음 설치 위치와 이동</h4><p>주행 가능성, 출구 확보, 트럭 동선, 장비 작업반경을 격자 평가에 반영해 다음 설치 자세를 고른다. 확장 A*는 굴착기 기구학과 다중 해상도 탐색을 이용해 대규모 공사장에서도 계산량을 줄이고, 경로추종 제어기가 전진·후진 이동을 실행한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>굴착점·덤핑점 평가</h4><p>현재 표면과 목표 표면의 차이, 버킷 도달성, 장비와의 거리, 경계, 제거 가능한 체적, 트럭 적재함 내부 분포 등을 셀별 평가함수로 결합한다. 최고 점수 셀의 중심을 다음 굴착 또는 덤핑 자세로 선택하며, 새 스캔이 들어오면 평가를 다시 수행한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>제약형 타원 굴착 궤적</h4><p>버킷 진입각, 목표 제거 깊이, 인출각, 토질에 따른 레이크 각을 소수의 파라미터로 표현하는 두 타원 기반 궤적을 만든다. 궤적이 설계면을 넘지 않도록 깊이를 제한하고, 경질 토양에서는 표면 긁기, 느슨한 토양에서는 더 깊은 삽입으로 전략을 조정한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>행동 기반 자유공간 이동</h4><p>굴착 후 운반·덤핑·복귀 구간은 높이, 길이, 방위, 롤, 피치 등 TCP 축별 PID 행동과 융합 노드로 생성한다. 모든 축을 동시에 조정해 숙련 운전자의 원호형 스윙과 유사한 움직임을 만들고, 새로운 장애물이나 표면 변화가 생기면 사전 경로 전체를 다시 만들지 않고 명령을 반응적으로 수정한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>역기구학과 안전 추상화</h4><p>관절별 행동이 후보 각도를 조금씩 바꾸고 정기구학 결과가 목표 TCP에 가까워지는지를 평가해 수치적으로 관절 구성을 구한다. 기체·붐·운전실과 외부 객체는 원통 좌표계 옥트리에 저장하고 watchdog 행동이 위험 방향의 관절 움직임을 부분 또는 완전 억제한다.</p></div><div class="pipeline-card"><span class="step-num">8</span><h4>사이클 평가와 반복</h4><p>덤핑 뒤 복귀하며 새 표면을 스캔하고 목표면과의 차이를 다시 평가한다. 허용 높이 오차 또는 남은 토량 기준을 만족하면 지역 작업을 종료하고, 아니면 갱신된 굴착점으로 다음 사이클을 시작한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"></div>
+<figure class="source-figure figure-asset" data-figure-id="p075-figure-p0093-4.5-o01-3c28651c">
+<img alt="원문 Figure 4.5, PDF 93쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1380b72c47937f09d69bcc55.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.5 · PDF p.93</b> — Figure 4.5: Global execution cycle of the whole excavation operation. Yellow boxes stand for an interaction state with a module from the environment part of the system taking the decision. Red boxes represent the activation of further decomposable or pure action parts.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0095-4.8-o01-7e6381db">
+<img alt="원문 Figure 4.8, PDF 95쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c64e8b898f3f3e428d5b0cee.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.8 · PDF p.95</b> — Figure 4.8: Extended version of the initial state machine including the basic excavation cycle consisting of the four states Swinging Back, Digging, Swinging, and Dumping.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>계층형 순환 FSM과 전문가 전략 전이</h3><p>논문의 중심은 하나의 거대한 최적화기가 아니라 반복 작업을 계층적으로 쪼개는 제어 아키텍처다. 최상위에는 목표 표면 확인, 장비 이동, 지역 굴착이 있고, 지역 굴착 아래에는 복귀·굴착·운반·덤핑이 중첩된다. 각 상태는 특정 문제해결기를 호출하고 종료 조건이 명시돼 있어 새로운 센서나 계획기를 해당 상태에 교체할 수 있다.</p><p>이 구조는 숙련자의 행동을 단순 궤적 복제로 보지 않는다. 전문가는 표면 상태가 바뀔 때 굴착점을 다시 고르고, 버킷을 먼저 안전한 운반 높이로 만든 뒤 몸체를 돌리며, 트럭 적재상태에 따라 덤핑 위치를 바꾼다. 논문은 이런 의사결정 순서를 상태와 전이로, 세부 움직임을 모듈형 계획기로 분리해 재현한다.</p><ul><li>전역 표면 성형과 지역 굴착 사이클을 서로 다른 시간척도로 제어한다.</li><li>상태마다 숙고형·반응형·혼합형 해법을 선택해 전체 시스템을 단일 계획 패러다임에 묶지 않는다.</li><li>FSM 종료조건과 환경 갱신을 결합해 교란 뒤에도 다음 사이클에서 작업계획을 수정한다.</li></ul></article><article class="tech-card"><h3>격자 평가 기반 굴착·덤핑 의사결정</h3><p>현재 높이장과 목표 높이장의 차이를 중심으로 도달성, 거리, 경계, 제거 체적을 셀별로 점수화한다. 이 방식은 토사 더미의 완전한 연속체 모델을 요구하지 않고도 어디를 먼저 파야 목표면에 가까워지는지를 계산할 수 있다. 덤핑에는 트럭 적재함의 채움 분포와 경계 안전거리를 반영해 한 지점에 재료가 몰리는 것을 줄인다.</p><ul><li>굴착점은 목표면 위에 남은 재료가 많고 장비가 안정적으로 도달할 수 있는 셀을 선호한다.</li><li>평가함수는 새 작업이나 센서가 추가될 때 별도 항으로 확장할 수 있다.</li><li>트렌치에서는 버킷 폭과 측벽 보존을 별도 평가해야 한다는 실패 분석까지 제시한다.</li></ul></article><article class="tech-card"><h3>타원형 접촉 궤적과 반응형 비접촉 궤적의 분리</h3><p>토양과 접촉하는 구간은 힘과 설계면 침범 위험이 커서 기하학적으로 제약된 타원 궤적을 사용한다. 반대로 공중 이동은 정밀한 토양 모델보다 충돌 회피와 동시 관절운동이 중요하므로 행동 기반 제어를 사용한다. 접촉 여부에 따라 계획 표현을 바꾸는 것이 모델 불확실성과 실시간 적응을 절충하는 핵심이다.</p><p>덤핑 행동은 길이·높이·버킷 피치를 병렬 조정하고, 복귀 동작도 각 축 행동을 융합한다. 결과적으로 실험에서 자율 궤적이 숙련 운전자의 원호형 운반·덤핑 궤적과 유사한 형태를 보였다.</p><ul><li>진입각과 레이크 각을 분리해 토양 저항과 충전량을 조절한다.</li><li>목표 높이장 아래로 버킷 경로가 내려가지 않도록 깊이를 제한한다.</li><li>자유운동은 온라인 환경 변화에 반응하고 관절공간이 아닌 TCP 공간에서 명령한다.</li></ul></article><article class="tech-card"><h3>장비 독립 하드웨어 추상화와 능동 안전</h3><p>상위 아키텍처가 장비 모델과 직접 결합되지 않도록 TCP 자세와 주행경로를 공통 인터페이스로 사용한다. 수치 역기구학이 여러 자유도의 굴착기 관절을 조정하고, 기구학이 다른 장비에는 추상화층만 교체하는 재사용을 의도한다. 원통형 옥트리와 관절별 watchdog은 가까운 장애물 방향의 움직임을 억제해 반응형 안전층을 구성한다.</p><ul><li>목표 위치와 방향의 중요도를 관절별로 다르게 둘 수 있다.</li><li>운전실·붐·차체 같은 자기 형상과 외부·가상 장애물을 같은 공간 구조에서 다룬다.</li><li>실차에서는 전방위 환경인지와 동적 사람 검출이 부족해 안전층 전체를 운용하지 못했다.</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p075-figure-p0127-5.20-o01-afc55d6b">
+<img alt="원문 Figure 5.20, PDF 127쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/12b7c359378153e21c32afe3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.20 · PDF p.127</b> — Figure 5.20: Temperature visualization of the current (a), desired (b), and fully rated (f) surface maps. Figures (c), (d), and (e) show the result of the pure volume, distance, and edge rating functions. The warmer the colors are, the higher is the cell rated.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0129-5.23-o01-c9fe9d4c">
+<img alt="원문 Figure 5.23, PDF 129쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7eecdea861e34062b8f3ae65.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.23 · PDF p.129</b> — Figure 5.23: Visualization of the excavation trajectory consisting of two ellipses around ⃗e1 and ⃗e3, and an intermediate dragging line from ⃗q to ⃗r to. The planned trajectory from the start pose to the ﬁnal pose is visualized in red with intermediate bucket poses in blue.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0141-5.32-o01-0b5bdedf">
+<img alt="원문 Figure 5.32, PDF 141쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/dd9794f6ed73566efe663782.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.32 · PDF p.141</b> — Figure 5.32: Structure of the DumpMaterial group containing the DumpAtPoint behavior con- trolling three Adjust- behaviors for a parallel Height, Length, and Pitch angle adjustment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0141-5.33-o01-afb021f1">
+<img alt="원문 Figure 5.33, PDF 141쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/aa7963362b9cb009abd84b5b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.33 · PDF p.141</b> — Figure 5.33: Side view of the dump trajectory of the DumpMaterial behav- ior resulting from three behaviors work- ing in parallel.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>실차는 Volvo Construction Equipment의 EW/180B 18 t 휠 굴착기로, 최대 45도 기울일 수 있는 백호 버킷과 붐·디퍼·스틱·버킷 피치 실린더 길이 센서, 유압 밸브 제어기, 좌우 평면 레이저 스캐너를 장착했다.</li><li>시뮬레이션은 SimVis3D와 Newton 물리엔진으로 굴착기·트럭·센서를 모델링하고, 한 변 5 cm의 3차원 복셀을 제거·퇴적하는 토사 모델로 지속적인 표면 변화를 표현했다.</li><li>궤적 추종 시험은 몸체 회전이 없는 시나리오 I과 굴착 후 측면 덤핑을 흉내 낸 시나리오 II를 0.1, 0.2, 0.4, 0.8 m/s에서 실행했다.</li><li>대량굴착은 시뮬레이션의 15.1, 21.4, 25.3, 30.43 m³ 더미 네 개와 실차의 자갈·토양 더미 네 개를 트럭으로 옮겼다.</li><li>랜드스케이핑은 1.0, 0.75, 0.50, 0.25 m 평탄화, -0.5와 -1.0 m 트렌치, 두 사면, 평면과 사면이 결합된 복합 표면을 단계적으로 시험했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>각 자율 작업은 초기 스캔으로 표면과 트럭을 찾고, 굴착점 선택, 타원 궤적 굴착, 자유공간 운반, 덤핑, 복귀, 표면 재평가를 종료 기준까지 반복했다.</li><li>궤적 추종에서는 동일한 지지점을 선형 보간해 시뮬레이션과 실차의 TCP 위치 오차를 속도별로 비교했다.</li><li>대량굴착에서는 사이클 수, 초기 스캔시간, 최소·최대·평균 사이클 시간, 전체 시간을 기록했다.</li><li>중급자와 숙련자에게 약 20 m³ 더미를 실차로 적재하게 하고, 자율 시스템의 사이클 시간과 궤적 형태를 비교 기준으로 삼았다.</li><li>실차에서 버킷 롤 관절을 폐루프 제어할 수 없어 트렌치 시험장은 시뮬레이션만 사용했고, 사면·복합 성형도 시뮬레이션으로 제한했다.</li></ul>
+<h3>비교 기준</h3><ul><li>중급 인간 운전자와 숙련 인간 운전자의 트럭 적재</li><li>동일 궤적을 실행하는 이상적 폐루프 시뮬레이션과 실제 유압 굴착기</li><li>속도 0.1·0.2·0.4·0.8 m/s 조건</li><li>목표 평면·트렌치·사면의 설계 높이장</li></ul>
+<h3>평가 지표</h3><ul><li>TCP 위치 편차와 속도별 오차 분포</li><li>사이클 수와 초기·최소·최대·평균·전체 작업시간</li><li>시간당 이동 체적</li><li>목표 높이장 대비 표면 오차</li><li>잔류 토량과 육안 형상</li><li>인간·자율 궤적의 형태적 유사성</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p075-figure-p0154-6.1-o01-5231fcad">
+<img alt="원문 Figure 6.1, PDF 154쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/bcc193c7b202d37f4ae975e3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.1 · PDF p.154</b> — Figure 6.1: Picture of the excavator test platform, including the technical terms for machine elements. It was delivered as a standard 18 t wheeled excavator EW/180B machine produced by VOLVO Construction Equipment. Next to it there is the truck whose truck bed is to be loaded.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0157-6.4-o01-a532c6f4">
+<img alt="원문 Figure 6.4, PDF 157쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0c6d881e4f22a25ee8d14602.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.4 · PDF p.157</b> — Figure 6.4: Screenshot of the simulation environment including the complex model of the excavator, a dumping truck, and a simulated material pile for excavation.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0170-6.16-o01-bd75fa9d">
+<img alt="원문 Figure 6.16, PDF 170쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/200d49896314ce9e5352c189.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.16 · PDF p.170</b> — Figure 6.16 shows the initial piles of the diﬀerent truck loading scenarios executed within the simulation environment. The task starts with a surface scan in order to initially determine the pile and the truck position within the collected three-dimensional distance data. This adds some extra time to the whole operation.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>시뮬레이션에서는 몸체 회전이 없는 궤적이 0.4 m/s에서도 대체로 10 cm 이하 오차를 유지했고, 몸체 회전이 포함되면 약 0.2 m/s 이하가 필요했다. 실차는 몸체 관절의 낮은 해상도와 서로 다른 관절 지연 때문에 오차가 크게 늘었다. 0도 근방에서도 약 5도의 몸체 편차가 TCP에 약 0.4 m 오차를 만들었으며, 정밀 작업은 몸체 회전이 없을 때 0.1 m/s 이하, 회전할 때 0.05 m/s 이하로 감속해야 했다. 따라서 아키텍처의 논리적 타당성과 별개로 저수준 유압 제어 품질이 생산성의 직접적인 병목임을 보였다.</p><p>대량굴착 시뮬레이션의 평균 사이클은 약 27초로 숙련자 27.93초와 비슷했고, 계산상 162 m³/h를 이동했다. 재배치·트럭 대기·단단한 재료의 재굴착을 반영한 보수적 3배 시간계수를 적용해도 54 m³/h로 추정됐다. 실차 자율 적재는 평균 85.048~87.506초로 시뮬레이션보다 약 세 배 느렸지만 네 시나리오 모두 더미를 거의 제거했다. 평탄화는 시뮬레이션에서 10 cm 경계 안에 들었으나 실차에서는 제어·인지 오차가 합쳐져 약 0.25 m였다. 트렌치·사면·복합 표면은 시뮬레이션에서 목표 형상을 만들었지만 측벽 폭, 사면-평면 경계 롤각, 복셀 토사모델의 비현실성이 남았다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>실험 플랫폼 질량</td><td>18 t</td><td>Volvo EW/180B 휠 굴착기</td><td>PDF p.154</td></tr><tr><td>숙련 운전자 평균 적재 사이클</td><td>27.93 s</td><td>약 20 m³ 더미를 13사이클, 총 6분 3초에 적재</td><td>PDF p.168</td></tr><tr><td>시뮬레이션 자율 적재 평균 사이클</td><td>26.724~27.901 s</td><td>15.1~30.43 m³ 네 더미 시나리오</td><td>PDF p.171</td></tr><tr><td>시뮬레이션 계산 생산량</td><td>162 m³/h</td><td>평균 0.045 m³/s의 재료 이동률</td><td>PDF p.171</td></tr><tr><td>보수적 지연 반영 생산량</td><td>54 m³/h</td><td>재배치·트럭 대기·재굴착을 고려해 시간에 3배 계수 적용</td><td>PDF p.171</td></tr><tr><td>실차 자율 적재 평균 사이클</td><td>85.048~87.506 s</td><td>자갈·토양 네 실차 시나리오</td><td>PDF p.173</td></tr><tr><td>시뮬레이션 평탄화 오차</td><td>10 cm 미만</td><td>1.0·0.75·0.50·0.25 m 목표 평면</td><td>PDF p.178</td></tr><tr><td>실차 평탄화 오차</td><td>약 0.25 m</td><td>제어 정밀도와 환경인지 측정 불확실성이 결합된 실제 작업</td><td>PDF p.179</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>실차 몸체 관절의 약 5도 영점 편차가 TCP에 약 0.4 m의 상시 위치 오차를 만들었다.</li><li>고속 궤적에서는 관절별 dead time과 낮은 몸체 인코더 해상도로 위치 오차가 급증했다.</li><li>굴착 중 일부 재료가 장비 쪽 안전영역으로 끌려와 계획기가 더 이상 제거하지 못했다.</li><li>트렌치 끝부분은 버킷 폭과 측벽 제약을 평가함수에 충분히 반영하지 않아 폭을 정확히 유지하지 못했다.</li><li>사면과 복합 표면의 경계에서는 버킷 롤각 선택이 부정확했고, 실차 롤 관절 제어 불능으로 현장 검증을 하지 못했다.</li></ul></div>
+<figure class="source-figure figure-asset" data-figure-id="p075-figure-p0172-6.17-o01-2c463364">
+<img alt="원문 Figure 6.17, PDF 172쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1d9ac7018242e574d99b379c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.17 · PDF p.172</b> — Figure 6.17: The remaining piles of the four removal scenarios (a), (b), (c), and (d).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0174-6.19-o01-e072b6be">
+<img alt="원문 Figure 6.19, PDF 174쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/014822b2d149479eef0e4150.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.19 · PDF p.174</b> — Figure 6.19: The remainders of the four pile removal mass excavation scenarios (a), (b), (c), and (d) marked by red boxes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0178-6.23-o01-c3b30ca6">
+<img alt="원문 Figure 6.23, PDF 178쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b764e5058845fbe24b6af0c7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.23 · PDF p.178</b> — Figure 6.23: The results of the four horizontal leveling scenarios reducing the pile to diﬀerent heights executed inside the simulation environment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0180-6.25-o01-2e8ccd53">
+<img alt="원문 Figure 6.25, PDF 180쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5a00334a161c0f550e98ca2c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.25 · PDF p.180</b> — Figure 6.25: The results of the four horizontal leveling scenarios for diﬀerent piles in reality (a), (b), (c), and (d), marked by red boxes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0183-6.32-o01-376b6bae">
+<img alt="원문 Figure 6.32, PDF 183쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/59d8cee5a0d4a6c745023745.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.32 · PDF p.183</b> — Figure 6.32: Resulting piles of the complex shaping operation for scenarios I (a) and II (b).</figcaption>
+</figure>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>실차 유압 폐루프 제어와 몸체 관절 센서 정밀도가 낮아 시뮬레이션 대비 속도를 절반 또는 3분의 1 이하로 줄여야 했다.</li><li>복셀 토사는 접촉한 부피를 바로 제거하므로 토양의 전단, 붕괴, 압밀, 버킷 충전 불완전성을 재현하지 못한다.</li><li>두 평면 레이저 스캐너만으로는 주행 중 정밀 측위와 360도 동적 장애물 인지가 불가능했다.</li><li>사람·장비 검출이 통합되지 않아 제안한 능동 충돌회피를 실차 안전보증으로 사용할 수 없었다.</li><li>트렌칭·사면·복합 형상의 상당 부분이 시뮬레이션에 한정돼 실제 토양에서의 일반성이 검증되지 않았다.</li><li>평가함수와 행동·제어 파라미터를 해당 굴착기에 수작업으로 맞춰 다른 장비와 토질에 즉시 이식하기 어렵다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>유압 동역학 모델과 자동 제어기 튜닝을 결합해 높은 속도에서도 TCP 정밀도를 유지한다.</li><li>운용 중 학습으로 굴착 속도, 토질별 궤적, 격자 평가 가중치를 자동 조정한다.</li><li>텍스처 카메라·3D LiDAR와 사람·동적 객체 인식을 통합해 능동 안전층을 실차에 완성한다.</li><li>SLAM·DGPS·지역 기준점을 융합해 이동 중에도 센티미터급 전역·지역 측위를 제공한다.</li><li>휠로더·지게차·드릴 등 다른 순환 장비에 하드웨어 추상화층을 구현해 아키텍처의 범용성을 검증한다.</li><li>입자 또는 연속체 기반 토사모델과 온라인 접촉센싱으로 굴착 결과와 힘 예측을 개선한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>숙련자의 반복 의사결정을 계층형 FSM으로 구조화하고, 표면 격자 기반 굴착·덤핑점 평가, 타원형 접촉 궤적, 행동 기반 자유운동, 수치 역기구학과 안전층을 연결했다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>18 t 실차에서 대량굴착과 평탄화를 무인 수행했고 시뮬레이션에서는 숙련자와 유사한 약 27초 사이클 및 다양한 목표 표면 성형을 보였지만, 실차의 저수준 제어 한계로 속도와 정밀도가 크게 저하됐다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>전방위 인지·정밀 측위·사람 검출이 없고 토사 시뮬레이션이 단순하며 사면·복합 성형의 실차 검증이 부족하다.</p></div></div>
+<div class="kw"><span>#시스템통합·현장실증</span><span>#작업·궤적계획</span><span>#제어·MPC</span><span>#학습·RL·IL·VLA</span><span>#hierarchical behavior-based architecture</span><span>#expert strategy transfer</span><span>#cyclic planning and execution</span><span>#particle simulation</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>이 연구는 자율굴착을 단일 궤적 생성기가 아니라 작업계획-인지-궤적-제어-안전이 닫힌 순환 시스템으로 보아야 한다는 기준점을 제공한다. 우리 연구에서는 FSM을 그대로 복제하기보다 현재 높이장, 목표면, 버킷 적재상태, 작업단계, 안전상태를 명시적인 상태계약으로 분리하고, 각 모듈이 어떤 관측과 신뢰도를 제공해야 다음 단계가 실행되는지 정의하는 데 활용할 수 있다.</p><p>2016년 시스템의 약점은 오늘날의 3D LiDAR·멀티카메라·GNSS/IMU 융합, 학습 기반 토질 추정, 모델예측제어로 직접 보완할 수 있다. 특히 상위 목표면 계획과 장비별 저수준 제어를 분리한 추상화는 서로 다른 굴착기 모델에 공통 작업정책을 배치하려는 연구와 잘 맞는다. 다만 논문에서 시뮬레이션 성능이 실차 성능을 대표하지 못한 사례가 분명하므로, 디지털 트윈 결과는 실차 관절 지연·유압 포화·인지 불확실성을 포함한 단계별 검증과 함께 사용해야 한다.</p><ul><li>현재·목표 높이장 차이와 작업 가능 영역을 통합한 다중 패스 굴착 플래너의 선행 구조로 활용할 수 있다.</li><li>숙고형 굴착점 선택과 반응형 충돌회피를 분리한 설계는 계획기와 안전제어기의 책임 경계를 정하는 데 유용하다.</li><li>하드웨어 추상화층을 장비 공통 TCP 속도·힘 인터페이스로 확장하면 여러 유압 플랫폼에 정책을 재사용할 수 있다.</li><li>실차에서 확인된 속도-정밀도 상충은 MPC 제약, 유압 dead time 보상, 경로별 허용오차 설계의 검증 항목이 된다.</li><li>버킷 폭·측벽·잔류토 안전영역 실패는 기하 제약을 보상함수나 셀 평가에 명시적으로 넣어야 함을 보여준다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0013-1.2-o01-df240dd9">
+<img alt="원문 Figure 1.2, PDF 13쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3e33c56627f0b5a8b874fab3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.2 · PDF p.13</b> — Figure 1.2: Main question of the trenching task: How can the material be successively removed from the trench or the hole without removing too much by undershooting the digging depth or by cracking the side walls?</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0015-1.4-o01-bc58934f">
+<img alt="원문 Figure 1.4, PDF 15쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7333a7193e21ff2a7838c2ed.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.4 · PDF p.15</b> — Figure 1.4: A standard car-manufacturing assembly line with industry robots1.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0016-1.5-o01-d60bca6e">
+<img alt="원문 Figure 1.5, PDF 16쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d9425d86f8fa4dc6de6db558.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.5 · PDF p.16</b> — Figure 1.5: A middle-sized construction site with diﬀerent types of construction machinery2.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0018-1.6-o01-9bcfdce5">
+<img alt="원문 Figure 1.6, PDF 18쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1bd9c0b02e4c6c469174d0c5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.6 · PDF p.18</b> — Figure 1.6: Goal situation on a construction site with multiple manually, partially, or fully autonomous operated construction machines operating in designated excavation areas.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0019-1.7-o01-ef380c3b">
+<img alt="원문 Figure 1.7, PDF 19쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ff23c9e13d62c2bc92a37fd2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.7 · PDF p.19</b> — Figure 1.7: Main goals of this thesis showing the architecture design including sub-architecture elements controlling the execution process and speciﬁc planners taking important decisions.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0021-1.8-o01-e1f20035">
+<img alt="원문 Figure 1.8, PDF 21쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/77c3a78b8637a062b115dfec.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1.8 · PDF p.21</b> — Figure 1.8: Structure of this thesis including the diﬀerent information paths containing extracted, developed, and combined knowledge for the creation of the autonomous control architecture.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0023-2.1-o01-63d494d2">
+<img alt="원문 Figure 2.1, PDF 23쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/52208dbb51ec13427db19851.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.1 · PDF p.23</b> — Figure 2.1: Visualized states of the truck loading cycle [Elezaby 08] (redrawn).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0024-2.2-o01-de004d75">
+<img alt="원문 Figure 2.2, PDF 24쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/88eb639e75e4fa73b32d3054.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.2 · PDF p.24</b> — Figure 2.2: The state selector FSM which selects between diﬀerent tasks [Elezaby 08] (redrawn).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0025-2.3-o01-54768974">
+<img alt="원문 Figure 2.3, PDF 25쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8b96d2d94f0cb2296ab18e25.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.3 · PDF p.25</b> — Figure 2.3: Mass excavation including a truck loading scenario (a) [Stentz 99] and system structure of the ALS (b) [Rowe 97b].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0026-2.4-o01-09304e6c">
+<img alt="원문 Figure 2.4, PDF 26쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/885781fe767f770efccdddca.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.4 · PDF p.26</b> — Figure 2.4: Visualization of the dig region planner and the LRFs mounting positions [Singh 98].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0028-2.5-o01-c929b5ac">
+<img alt="원문 Figure 2.5, PDF 28쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/46a6bc574af3a7ea7810028f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.5 · PDF p.28</b> — Figure 2.5: Parameterized truck loading script for the ALS consisting of four parallel sub- scripts [Rowe 97b] (redrawn). The joint angles are named θ0 −θ3 for swing, boom, stick, and bucket.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0029-2.6-o01-dc338f6e">
+<img alt="원문 Figure 2.6, PDF 29쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/dc35acca4e7ab6657744a731.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.6 · PDF p.29</b> — Figure 2.6: The execution hierarchy from goals to actions (b) and a visualized example trajectory evolving from the behaviors horizontal digger, under particle follower, over particle follower, and bucket lifter (a) [Shi 96b].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0031-2.7-o01-e76315c4">
+<img alt="원문 Figure 2.7, PDF 31쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/14fa3f72a439528a0e8edd40.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.7 · PDF p.31</b> — Figure 2.7: PNT for the task of unearth-an-over-sized-particle with the control agents CA2 horizontal-digger, CA4 under-particle follower, CA5 bucket-lifter, CA6 bucket-extractor, and CA9 up-digger [Wang 04] (redrawn).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0033-2.8-o01-e76d56fa">
+<img alt="원문 Figure 2.8, PDF 33쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/86a89056477c1288b373b33a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.8 · PDF p.33</b> — Figure 2.8: The sequence for trench digging [Bradley 98].</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0034-2.1-o01-892092ea">
+<img alt="원문 Table 2.1, PDF 34쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f5c442d143f1ba8289c791d8.webp" tabindex="0"/>
+<figcaption><b>원문 Table 2.1 · PDF p.34</b> — Table 2.1: Division of the task of excavating a trench into goals and activities [Bradley 98].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0035-2.9-o01-3d0be35d">
+<img alt="원문 Figure 2.9, PDF 35쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7bbd1bb5d94ca73a03ee0fd3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.9 · PDF p.35</b> — Figure 2.9: Obstacle removal strategy states at initial contact (a), partial completion (b), and penetration beneath a boulder (c) [Bradley 98].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0036-2.10-o01-9cd978c5">
+<img alt="원문 Figure 2.10, PDF 36쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d3c512d1e808a9644c2bb899.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.10 · PDF p.36</b> — Figure 2.10: The LUCIE mini excavator Komatsu PC05-7 [Ha 02].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0037-2.11-o01-ca5cb025">
+<img alt="원문 Figure 2.11, PDF 37쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8e45fc093cc252df9d0c5f50.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.11 · PDF p.37</b> — Figure 2.11: Basic task structure containing one task supervisor and multiple possible subtask solvers [Ha 04].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0039-2.12-o01-261d85f3">
+<img alt="원문 Figure 2.12, PDF 39쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/eb3b3c314165146185158816.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.12 · PDF p.39</b> — Figure 2.12: Statechart of the trench forming [Ha 04].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0042-2.13-o01-375973d8">
+<img alt="원문 Figure 2.13, PDF 42쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fb90ae97ed06b8404b71d23e.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2.13 · PDF p.42</b> — Figure 2.13: Depiction of a simple work piece P with the four sub-assemblies cap, stick, receptacle, and handle (a) and the relating AND/OR assembly graph (b) [de Mello 90].</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0045-2.2-o01-2af805bd">
+<img alt="원문 Table 2.2, PDF 45쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3953d4a9071403e9883b4b70.webp" tabindex="0"/>
+<figcaption><b>원문 Table 2.2 · PDF p.45</b> — Table 2.2: Overview of the capabilities of the developed systems concerning driving, mass excavation, trenching, and landscaping sorted by research projects and their publications. The goal of this thesis is to answer all columns with yes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0050-3.1-o01-4de9876c">
+<img alt="원문 Figure 3.1, PDF 50쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/14d526c57e707bb14a81258d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.1 · PDF p.50</b> — Figure 3.1: Translated ﬂowchart of the excavation process [G¨unthner 11] extended by the four phases environment, displacement, excavation, and ﬁnish.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0052-3.1-o01-31b3c2a8">
+<img alt="원문 Table 3.1, PDF 52쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/23a5cae44e0cae3b0ce46c58.webp" tabindex="0"/>
+<figcaption><b>원문 Table 3.1 · PDF p.52</b> — Table 3.1: Translation of the table listing the properties of multiple ground classes according to DIN18300 [Friedrich 13]. The larger the class number is, the harder is the excavation procedure.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0053-3.2-o01-4a0cd252">
+<img alt="원문 Figure 3.2, PDF 53쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d4a8a03d7b1c5c3d4ad964f8.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.2 · PDF p.53</b> — Figure 3.2: Diﬀerent common boom kinematic types [Lemser 04].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0055-3.3-o01-2bf3ff3a">
+<img alt="원문 Figure 3.3, PDF 55쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/badff9196868559418a37437.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.3 · PDF p.55</b> — Figure 3.3: Schematic cross section of the excavation area including dimensions and the relationship between height and length of the slope deﬁning its inclination [Heim 94] (redrawn).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0056-3.4-o01-578174a0">
+<img alt="원문 Figure 3.4, PDF 56쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b623e2f76a161974565630ad.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.4 · PDF p.56</b> — Figure 3.4: Model of the current (green plane) and desired (temperature colored mesh) state of an excavation pit visualized with Kubatura from AndroTec2.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0056-3.5-o01-f7983196">
+<img alt="원문 Figure 3.5, PDF 56쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1fbaa7dd0ca5542ed9cce568.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.5 · PDF p.56</b> — Figure 3.5: Structure of the four-dimensional site plan consisting of three-dimensional plans aligned along a time line t.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0058-3.6-o01-6ace590f">
+<img alt="원문 Figure 3.6, PDF 58쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/153b1ca9e2c4484c0e1064a0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.6 · PDF p.58</b> — Figure 3.6: Schematic view of the displacement plan for the excavation area containing multiple mount positions, depicted by green circles with an rectangular entry area for the excavator, displacement paths, and truck poses.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0059-3.7-o01-89b20adb">
+<img alt="원문 Figure 3.7, PDF 59쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/de7724c202b2f8a7c0238967.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.7 · PDF p.59</b> — Figure 3.7: Multi-level displacement function plan for working in sequential excavation layers, sorted along the time axis t.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0059-3.8a-o01-6859fd3e">
+<img alt="원문 Figure 3.8a, PDF 59쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1e1a572f0ccc237e81e8b06b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.8a · PDF p.59</b> — Figure 3.8a shows a rather standard mass excavation scenario. The main goal is to remove the material within the large pile in front of the machine and load it into the nearby truck as fast as possible.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0060-3.8-o01-7dd9905d">
+<img alt="원문 Figure 3.8, PDF 60쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/354a6c3f6b3916428cdd0385.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.8 · PDF p.60</b> — Figure 3.8: Truck loading scenarios for hydraulic excavators [Bauer 92].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0061-3.9-o01-e650b050">
+<img alt="원문 Figure 3.9, PDF 61쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7ca475cde8204f337d35d82d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.9 · PDF p.61</b> — Figure 3.9: Landscaping scenarios whereat a desired slope angle is created with an excavator (a) and the goal is creation of a complex surface shape (b).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0065-3.10-o01-76da60ef">
+<img alt="원문 Figure 3.10, PDF 65쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7d0e669e8f61cac0ae625737.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.10 · PDF p.65</b> — Figure 3.10: Comparison of excavation force of a skilled and a poorly skilled machine operator during trench excavation (a). The recorded excavation path of an expert approximately ﬁts a cubic polynomial (b) [Bernold 03].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0066-3.11-o01-69874209">
+<img alt="원문 Figure 3.11, PDF 66쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8b1bc2e5df1fea456598b865.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.11 · PDF p.66</b> — Figure 3.11: Abstract cooperation between the excavator and the transport truck during the material handling task on the excavation site [G¨unthner 09] (redrawn).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0067-3.12-o01-4c550750">
+<img alt="원문 Figure 3.12, PDF 67쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/78f5f74f878a74f0ad58042d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.12 · PDF p.67</b> — Figure 3.12: Chronological steps of the excavation including the truck loading cycle in pic- tures [Rowe 99].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0068-3.13-o01-f19afd22">
+<img alt="원문 Figure 3.13, PDF 68쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ae01cc691e20f17291eae3d1.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.13 · PDF p.68</b> — Figure 3.13: The six elements of a digging cycle swing back, lowering, ﬁlling, lifting, swinging, and dumping, their execution times t1 till t6, the full cycle time tC, and the three overlapping times o1 till o3 taken and translated [Bauer 07] (redrawn).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0069-3.14-o01-9084bcc2">
+<img alt="원문 Figure 3.14, PDF 69쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/509795238111dfab8bb3ed34.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.14 · PDF p.69</b> — Figure 3.14: Excavation trajectories for soft (a) and hard soil (b) [Lee 08].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0069-3.15-o01-f7e878ed">
+<img alt="원문 Figure 3.15, PDF 69쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/10edd63f414123441f889dbe.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.15 · PDF p.69</b> — Figure 3.15 shows a series of digging trajectories of an expert operator [Shao 08], to create a trapezoid trench with a slope angle of 45°, a depth of 1 m, and a bottom length of 2 m.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0070-3.15-o02-662b863a">
+<img alt="원문 Figure 3.15, PDF 70쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ae9d58d2f59b190fa086ddf6.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.15 · PDF p.70</b> — Figure 3.15: Series of digging trajectories of an expert operator to create a trapezoid trench with a slope angle of 45°, a depth of 1 m, and a bottom length of 2 m excavated from 7 m to 3 m in front of the machine [Shao 08]. The GL is around −1 m concerning the internal excavator coordinate system.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0071-3.16-o01-9cc97ec1">
+<img alt="원문 Figure 3.16, PDF 71쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d4bb25d179dab0a35cf92b66.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.16 · PDF p.71</b> — Figure 3.16: Series of trajectories to excavate a footing with vertical walls [Singh 95]</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0073-3.17-o01-1ea8c868">
+<img alt="원문 Figure 3.17, PDF 73쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5bd16ee3598a7af62b6a126d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.17 · PDF p.73</b> — Figure 3.17: Bucket angle parameters for the spilling spillθbk (a) and dumping dumpθbk (b) at a distinct point [Rowe 99].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0074-3.18-o01-5ccf1960">
+<img alt="원문 Figure 3.18, PDF 74쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/83a3c2db96b0748159bdcf81.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3.18 · PDF p.74</b> — Figure 3.18: Visualization of the three operation constraint classes spatial, uncertainty, and quality for the landscaping operation and their related inﬂuence factors.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0083-4.1-o01-6f97f1f6">
+<img alt="원문 Figure 4.1, PDF 83쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d82dbaaeac68af6f3ebf231f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.1 · PDF p.83</b> — Figure 4.1: Depiction of the planning process of a linear operating system creating a chain of actions transforming the current state into the goal state.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0084-4.2-o01-d6eed23a">
+<img alt="원문 Figure 4.2, PDF 84쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3aa834bdb171f93f19750164.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.2 · PDF p.84</b> — Figure 4.2: Depiction of the planning process of a cyclic operating system choosing an appro- priate cycle transforming the current state into the goal state and deﬁning its parameters.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0088-4.3-o01-89c63edc">
+<img alt="원문 Figure 4.3, PDF 88쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/22d0de2951498790f3dec6da.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.3 · PDF p.88</b> — Figure 4.3: Statechart for the example action cycle from deﬁnition 4.4.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0089-4.4-o01-b94d6002">
+<img alt="원문 Figure 4.4, PDF 89쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9de47ff66d8983747dd647a4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.4 · PDF p.89</b> — Figure 4.4: Abstract system structure and data exchange relationships of the six main system parts Global Decision, Environment, Displacement, Excavation, Safety, and Hardware Ab- straction. Red arrows represent information exchange and blue ones stand for control ﬂow. The Safety layer ﬁlters all control values towards the Hardware Abstraction. Three knowledge sources for General, Global and Local knowledge are added to the Environment part.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0094-4.6-o01-9a6fe73f">
+<img alt="원문 Figure 4.6, PDF 94쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/648efee793705ead6c0006ad.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.6 · PDF p.94</b> — Figure 4.6: Global displacement states starting with determination of the next mounting position, travel Path determination and Driving there.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0095-4.7-o01-702f7411">
+<img alt="원문 Figure 4.7, PDF 95쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/eb14f93edbb81fcc511a8843.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.7 · PDF p.95</b> — Figure 4.7: Most abstract visualization of the excavation process containing the two states Goal Surface Reached and Excavation Cycle. Yellow nodes stand for direct interaction with the Environment part of the system while red ones also execute operations with the machine.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0096-4.9-o01-72595f58">
+<img alt="원문 Figure 4.9, PDF 96쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/404fa5753426d1a602302208.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.9 · PDF p.96</b> — Figure 4.9: Further extended version of the initial state machine adding the four perception states taking speciﬁc decisions based on the environmental data Excavation Pose, Excavation Strategy, Dump Pose, and Dump Strategy.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0099-4.10-o01-d86e7482">
+<img alt="원문 Figure 4.10, PDF 99쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/dfd9f9b0f2b1487d1adaf067.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.10 · PDF p.99</b> — Figure 4.10: The state machine of the inverse kinematic solver starts operating, when a new pose is set, and tries to ﬁnd better solutions based on initially gathered sensor data. Should the internal iteration counter i be larger than the maximum number of iterations imax, or a new pose be set during this process, the so far best solution is delivered. Otherwise the found solution is set.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0100-4.11-o01-5767b831">
+<img alt="원문 Figure 4.11, PDF 100쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/66e658373207725e0efa0a9a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.11 · PDF p.100</b> — Figure 4.11: Schematic view of the local solving decision for a joint behavior per cycle. The questions to solve are in which direction the joint needs to be turned (±) and which delta (∆) is required to move the current TCP pose closer to the desired one.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0102-4.12-o01-c11272d2">
+<img alt="원문 Figure 4.12, PDF 102쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/66ad33a2fc23074ea8b113ae.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.12 · PDF p.102</b> — Figure 4.12: Visualized state machine of the global process including driving and excavation.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0103-4.13-o01-5230281b">
+<img alt="원문 Figure 4.13, PDF 103쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a35e9ae6960a97e86a0dd55a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4.13 · PDF p.103</b> — Figure 4.13: Status of the system development after the architecture is designed. The process cycle is implemented but no speciﬁc planners exist which solve the complex problems and take decisions within each state.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0105-5.1-o01-0ded6494">
+<img alt="원문 Figure 5.1, PDF 105쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6b7a7a86bf87abb1622144e2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.1 · PDF p.105</b> — Figure 5.1: Visualization of the three-dimensional voxel space (a) and an angular range circle for one dimension of the possible orientations roll, pitch, and yaw (b). The reachability is color coded as reachable (green) and not reachable (red).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0106-5.2-o01-20857eaf">
+<img alt="원문 Figure 5.2, PDF 106쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/35423a63ccad9fa2cbfd7016.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.2 · PDF p.106</b> — Figure 5.2: Visualization of the excavator workspace as a two-dimensional grid with a quadratic safety area around the center of the machine (a) and within a simulation environment as a red point cloud representing the reachable cells (b).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0107-5.3-o01-c344f155">
+<img alt="원문 Figure 5.3, PDF 107쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/93a35157733cb91f8a488487.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.3 · PDF p.107</b> — Figure 5.3: Three-dimensional view of the current surface grid map (red) and the desired surface map (green) visualized in one coordinate system.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0108-5.4-o01-9556b910">
+<img alt="원문 Figure 5.4, PDF 108쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f6310b68f3329955ebb2f0c1.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.4 · PDF p.108</b> — Figure 5.4: Visualized structure of a hierarchical hybrid map consisting of a higher topological graph layer and locally precise metrical maps [Braun 09].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0113-5.5-o01-1b1faf4e">
+<img alt="원문 Figure 5.5, PDF 113쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6f641006c8eede9621d5581d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.5 · PDF p.113</b> — Figure 5.5: Visualization of the currently reachable surface with one peak showing the current excavator pose (a), the border rated map (b), and the ﬁnal rated map including distance rating (c). The warmer the colors are, the higher the cell is rated.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0114-5.6-o01-37c8149b">
+<img alt="원문 Figure 5.6, PDF 114쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/54b69ccc941901020bcb836a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.6 · PDF p.114</b> — Figure 5.6: Possible child states from a given state. Forward driving is colored with blue arrows and backward driving with red ones [Schank 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0115-5.7-o01-afa0c124">
+<img alt="원문 Figure 5.7, PDF 115쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c5af88492e8b5e6103c3776a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.7 · PDF p.115</b> — Figure 5.7: Visualization of the region growing algorithm executed with one iteration. Orange cells are set to be occupied based on the previously occupied black cells [Schank 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0116-5.8-o01-0736b94a">
+<img alt="원문 Figure 5.8, PDF 116쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a59b828e0c9aeb55e90f4c1b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.8 · PDF p.116</b> — Figure 5.8: (a) The target position (red circle) lies within an occupied block of the coarse map. (b) Analyzing the underlying cells shows that the target cell is free. The block is divided into sectors (delimited by the blue lines), which are used to determine which neighboring blocks should be set to occupied. (c) The block containing the target is now unoccupied, the obstacles from the grid cells are moved to the neighboring blocks [Schank 13]</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0116-5.9-o01-66d41dfb">
+<img alt="원문 Figure 5.9, PDF 116쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2f468c319713e5ac3886730a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.9 · PDF p.116</b> — Figure 5.9: Illustration of the alternate target poses used to reduce the orientation error at the arrival. The dots in front and behind the arrow are alternate targets [Schank 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0117-5.10-o01-caf85e91">
+<img alt="원문 Figure 5.10, PDF 117쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a375b3d63fe6fe06b43e69ca.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.10 · PDF p.117</b> — Figure 5.10: A sequence of forward (blue) and backward (red) states after running the A∗path ﬁnding (a) and the path after the reduction process (b) [Schank 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0117-5.11-o01-4525ebb6">
+<img alt="원문 Figure 5.11, PDF 117쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5065e806c1cf1eaf89a26a27.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.11 · PDF p.117</b> — Figure 5.11: Determining the tangent direction Vk of a way point based on neighboring way points Qk−1 and Qk+1 [Arney 07]</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0119-5.12-o01-d8514f7f">
+<img alt="원문 Figure 5.12, PDF 119쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f18a68b76c757f4be6269343.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.12 · PDF p.119</b> — Figure 5.12: Parameters of the lateral controller [Fleischmann 13] with the look-ahead point l(t), constructed from the communication delay lb, the velocity factor lv, the velocity v(t), the heading distance error de(t), and the heading orientation error θe(t).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0120-5.13-o01-b6f1d370">
+<img alt="원문 Figure 5.13, PDF 120쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1c6bf247712353703982b641.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.13 · PDF p.120</b> — Figure 5.13: Results of simulated test runs performing almost linear driving (a) and parallel displacement (b) [Schank 13]. The cell size is 1 m and black and green cells represent obstacles. Planned trajectories are either blue (forward) or ocher (backward). Recorded trajectories are visualized in a dark green.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0121-5.14-o01-ed11b60d">
+<img alt="원문 Figure 5.14, PDF 121쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e980ac7754fbcdda5744fc58.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.14 · PDF p.121</b> — Figure 5.14: Path of a simulated long-distance driving in a complex environment [Schank 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0122-5.15-o01-747113bd">
+<img alt="원문 Figure 5.15, PDF 122쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/921cefe20e7c5ab37b5e3c75.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.15 · PDF p.122</b> — Figure 5.15: Depiction of the quadratic surface rating grid. It is deﬁned by the cell side length lc and the number of cells nc per dimension. To guarantee that cells lie within the workspace of the machine, lc · nc has to be larger then twice the maximum boom elongation lmax.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0123-5.16-o01-c3918622">
+<img alt="원문 Figure 5.16, PDF 123쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e97b8e13cf8790fb8a23e706.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.16 · PDF p.123</b> — Figure 5.16: Temperature visualization of the current 5.16a, desired 5.16b, and rated 5.16c surface maps. The warmer the colors are, the higher the cell is rated.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0124-5.17-o01-3bb4b7e1">
+<img alt="원문 Figure 5.17, PDF 124쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2af818e6b88e46b736a49a07.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.17 · PDF p.124</b> — Figure 5.17: Depiction of the distance rating function md, depending on the distance d with parameters for the minimum dmin and the maximum distance dmax.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0125-5.18-o01-77fd3cec">
+<img alt="원문 Figure 5.18, PDF 125쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7587cb2d01c6c089267cae11.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.18 · PDF p.125</b> — Figure 5.18: Schematic view of the cell-based evaluation of the excavation area with cells containing the current surface (red), the desired surface (green), high rated cells (blue), and the highest rated cell (orange) which is ﬁnally chosen.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0126-5.19-o01-46426827">
+<img alt="원문 Figure 5.19, PDF 126쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/60a6d9d2334f82259dadb79c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.19 · PDF p.126</b> — Figure 5.19: Depiction of the dump vicinity rating function mv depending on the distance d with parameters for minimum dmin, maximum dmax, and peak distance dpeak.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0128-5.21-o01-57396a70">
+<img alt="원문 Figure 5.21, PDF 128쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b6accb40dfdcfddfd3a03089.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.21 · PDF p.128</b> — Figure 5.21: Schematic depiction of the rake angle ρ setting the orientation while the smaller angle α deﬁnes the path of the bucket [Singh 95].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0128-5.22-o01-2b9d1b8f">
+<img alt="원문 Figure 5.22, PDF 128쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5f493cf3088eb77820c086b7.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.22 · PDF p.128</b> — Figure 5.22: Visualization of an ellipse deﬁned by four parameters a, b, x0, and y0.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0131-5.24-o01-f94b3eba">
+<img alt="원문 Figure 5.24, PDF 131쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/44905bff47540baef6156f24.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.24 · PDF p.131</b> — Figure 5.24: Two-dimensional grid containing the measured and approximated volume of material inside the truck [Schmidt 14].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0132-5.25-o01-63bbbe53">
+<img alt="원문 Figure 5.25, PDF 132쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/886e35af3dc8eab944288618.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.25 · PDF p.132</b> — Figure 5.25: Visualized rating functions for the width (a) and length (b) axis of the sidewall rating.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0134-5.26-o01-08c629e6">
+<img alt="원문 Figure 5.26, PDF 134쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d16a0f012c6dace2cc3a1f49.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.26 · PDF p.134</b> — Figure 5.26: Behavior module of the iB2C [Proetzsch 07] architecture with its speciﬁc behavior ports for stimulation (s), inhibition (⃗i), activity (a), target rating (r), normal input (⃗e) and normal output (⃗u) ports, and its transfer function F.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0135-5.27-o01-9a863bd3">
+<img alt="원문 Figure 5.27, PDF 135쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4a9ecc1d416dca794ddda72b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.27 · PDF p.135</b> — Figure 5.27: Small behavior network containing one fusion behavior (blue) and three coordinated behaviors with their activities ai, target ratings ri, and their output vectors ⃗ui, to the fusion behavior [Proetzsch 10b]</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0137-5.28-o01-aeb23736">
+<img alt="원문 Figure 5.28, PDF 137쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5f71925848f36073450fbc0c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.28 · PDF p.137</b> — Figure 5.28: Schematic cylinder coordinate system including the length l, the height h, and the azimuth angle ϕ for positioning the bucket.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0138-5.29-o01-0823d2f3">
+<img alt="원문 Figure 5.29, PDF 138쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fc68f4caa36d594403f823b3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.29 · PDF p.138</b> — Figure 5.29: Structure of the behavior-based network for autonomous excavation comprising the behavior groups ApproachDumpPose, ExcavationEllipses, ApproachExcavationPose, and DumpMaterial that realize the states of the of the FSM presented in ﬁgure 4.7.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0140-5.30-o01-e971516b">
+<img alt="원문 Figure 5.30, PDF 140쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2921c64f71b167ae8e1a6206.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.30 · PDF p.140</b> — Figure 5.30: Structure of the InitialScanning group containing mbbTurnTorso per- forming the initial turning and three Keep-value behaviors for each other dimension to inﬂuence.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0140-5.31-o01-4a2827cd">
+<img alt="원문 Figure 5.31, PDF 140쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/4b04ebeb42add657f1d36bc2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.31 · PDF p.140</b> — Figure 5.31: Schematic structure of the ApproachTargetPose group.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0142-5.34-o01-70270d5a">
+<img alt="원문 Figure 5.34, PDF 142쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/24554aab4ff7d6baed8d7a7f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.34 · PDF p.142</b> — Figure 5.34: Modular structure of the inverse kinematic solver. It contains four elements which deliver their sensor values (yellow) and control values (red) via speciﬁc interface channels. The horizontal bars in the BoomJointSolver module visualize the activation (yellow), the activity (green), and the target rating (red) of the behavior-based group.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0143-5.35-o01-4248053a">
+<img alt="원문 Figure 5.35, PDF 143쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/bb454a269b77b411461677b3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.35 · PDF p.143</b> — Figure 5.35: Internal structure of the decrease joint part of a joint controller containing one module for position and one for orientation adjustment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0146-5.36-o01-9b325752">
+<img alt="원문 Figure 5.36, PDF 146쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fb7c3a8ea04d9502f361f536.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.36 · PDF p.146</b> — Figure 5.36: Visualized octree before the subdivision (a), after the ﬁrst subdivision, (b), and after the second subdivision (c). Each dimension is bisected, while the dotted lines visualize the cuts [G¨ockel 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0147-5.37-o01-ff49c346">
+<img alt="원문 Figure 5.37, PDF 147쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/473cdbfd521bceb1d1364982.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.37 · PDF p.147</b> — Figure 5.37: Diﬀerent visualizations of the octree structure.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0147-5.1-o01-38caf347">
+<img alt="원문 Table 5.1, PDF 147쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/d09c8ef666fd6ba0fafec3df.webp" tabindex="0"/>
+<figcaption><b>원문 Table 5.1 · PDF p.147</b> — Table 5.1: Port deﬁnitions of the ObstacleOctree module.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0148-5.38-o01-fe788956">
+<img alt="원문 Figure 5.38, PDF 148쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/53487e65c0de5c6ed7f0d14f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.38 · PDF p.148</b> — Figure 5.38: Visualization of the function for calculating the inhibition i. The inhibition is fully active below a minimum distance at dmin and shrinks linearly to zero at dmax.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0148-5.2-o01-eedad065">
+<img alt="원문 Table 5.2, PDF 148쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/be032eb3418f885cc4b6e2b2.webp" tabindex="0"/>
+<figcaption><b>원문 Table 5.2 · PDF p.148</b> — Table 5.2: Port deﬁnitions of the Restriction module supervising a system element like the boom, the cabin, or the bucket position.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0149-5.39-o01-a9bf195b">
+<img alt="원문 Figure 5.39, PDF 149쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ec893d933c1253e86b20e1b0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.39 · PDF p.149</b> — Figure 5.39: Visualization of the history smoother preventing the inhibition state to fall below 1 in case the input value drops below full inhibition for only a few cycles [G¨ockel 13].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0150-5.40-o01-6b75b69e">
+<img alt="원문 Figure 5.40, PDF 150쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/08ac67812a1c8152dd574a5d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5.40 · PDF p.150</b> — Figure 5.40: Status of the system after the crucial algorithms have been developed. The process is controlled by the architecture while speciﬁc decisions are taken by the planners.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0154-6.2-o01-b0d77e75">
+<img alt="원문 Figure 6.2, PDF 154쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5bb5f9e9bdd31dc99663dfb4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.2 · PDF p.154</b> — Figure 6.2: Dimensions of the 18 t excavator test platform with M = 2.92 m, L = 8.72 m, C = 3.17 m, and E = 1.29 m [VolvoCE 05].</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0155-6.3-o01-01ca61b8">
+<img alt="원문 Figure 6.3, PDF 155쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/294adcac1f0092601771983a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.3 · PDF p.155</b> — Figure 6.3: Graphical representation of the boom deviation caused by the propagation of the sensor errors for the boom, the dipper, the stick, and the bucket pitch joint for a speciﬁc arm pose, concerning zero error ezero = (x, z), positive error epos = (x −∆x, z + ∆z), and negative error eneg = (x + ∆x, z −∆z) at all joints.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0157-6.1-o01-d760dbc8">
+<img alt="원문 Table 6.1, PDF 157쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b53dce0d7cf90c2a63ff589d.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.1 · PDF p.157</b> — Table 6.1: Table with the parameters of the four boom joints and the angular deviation ∆αi calculated via formula 6.6.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0160-6.5-o01-a6d00d8e">
+<img alt="원문 Figure 6.5, PDF 160쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/64b0a23acf0e210754235fab.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.5 · PDF p.160</b> — Figure 6.5: The reachable supporting points of the two trajectory scenarios and a visualization as points (green) inside the simulation environment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0161-6.6-o01-d8c9f313">
+<img alt="원문 Figure 6.6, PDF 161쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b66e328ed7e5d996de6b27a9.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.6 · PDF p.161</b> — Figure 6.6: Visualization of the position diﬀerence ∆(m) of trajectory I for diﬀerent velocities 0.1 m</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0162-6.7-o01-93550af6">
+<img alt="원문 Figure 6.7, PDF 162쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e4324d1ebe94f59269b2df48.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.7 · PDF p.162</b> — Figure 6.7: Visualization of the position diﬀerence of trajectory II for diﬀerent velocities 0.1 m</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0162-6.8-o01-a02bf50f">
+<img alt="원문 Figure 6.8, PDF 162쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/84f2358cf3c6d2b3f50aa39f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.8 · PDF p.162</b> — Figure 6.8: Visualization of the position diﬀerence ∆(m) of trajectory I for diﬀerent velocities 0.1 m</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0163-6.9-o01-e92744dd">
+<img alt="원문 Figure 6.9, PDF 163쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1c2b552fe0e416a027d57f40.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.9 · PDF p.163</b> — Figure 6.9: The desired (green) and the recorded (red) trajectory points while running trajectory I on the real test platform at diﬀerent velocities 0.1 m</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0164-6.10-o01-13f706ef">
+<img alt="원문 Figure 6.10, PDF 164쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/a80f48e38238171c90ebab32.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.10 · PDF p.164</b> — Figure 6.10: Visualization of the position diﬀerence ∆(m) of trajectory II for the diﬀerent velocities 0.1 m</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0166-6.11-o01-8f182ded">
+<img alt="원문 Figure 6.11, PDF 166쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6c2d2be8264c1afd64e0543d.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.11 · PDF p.166</b> — Figure 6.11: Depiction of the truck loading scenario including a loading area (L) and the truck to ﬁll (T) close to the excavator (E).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0167-6.12-o01-75103563">
+<img alt="원문 Figure 6.12, PDF 167쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c0eeec24101fdee2ca3cc679.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.12 · PDF p.167</b> — Figure 6.12: Pictures of the initial piles of the autonomous truck loading test for operator one (a) and operator two (b) marked by red boxes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0167-6.13-o01-64693725">
+<img alt="원문 Figure 6.13, PDF 167쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/136b0431d57491cffe2e702f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.13 · PDF p.167</b> — Figure 6.13: The piles of operator I (a) and operator II (b) after the truck loading, marked by red boxes.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0168-6.14-o01-52950647">
+<img alt="원문 Figure 6.14, PDF 168쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7f5e6cdf9a519143e07f2f28.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.14 · PDF p.168</b> — Figure 6.14: Required times for each cycle of the operation for operator I (red) and operator II (blue).</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0168-6.2-o01-38a48cc5">
+<img alt="원문 Table 6.2, PDF 168쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0a44405debf0c33eb616a12f.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.2 · PDF p.168</b> — Table 6.2: A table showing the recorded values for the two machine operators, including the required cycles, the minimum time tcmin, the maximum time tcmax, the average cycle time tcaverage, and the full time tfull required until the operation is ﬁnished.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0169-6.15-o01-c6c87ed8">
+<img alt="원문 Figure 6.15, PDF 169쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b1da41ed464a8cfdccd5d441.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.15 · PDF p.169</b> — Figure 6.15: Recorded trajectories from the real driver visualized inside the simulation envi- ronment for the two operators showing a front (a, c) and a top view (b, d).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0170-6.16-o02-e1ee3962">
+<img alt="원문 Figure 6.16, PDF 170쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5674a3c8d4b6c74ef4d4ebe0.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.16 · PDF p.170</b> — Figure 6.16: The diﬀerent truck loading scenarios with pile volumes of (a) 15.1 m3, (b) 21.4 m3, (c) 25.3 m3, and (d) 30.43 m3 to remove inside the simulation environment.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0170-6.3-o01-8eff9ab7">
+<img alt="원문 Table 6.3, PDF 170쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/99fac865d8013c4904b070cb.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.3 · PDF p.170</b> — Table 6.3: The parameters of the four pile scenarios concerning their relative center position, their length, their width, their height at the center, and the resulting volume.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0171-6.4-o01-44a07d65">
+<img alt="원문 Table 6.4, PDF 171쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/65b08b25523544108cedcc0a.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.4 · PDF p.171</b> — Table 6.4: Parameters for the behavior execution of the autonomous control in delta (∆) values per cycle time. The initial scanning delta deﬁnes how fast the torso is turned during this phase.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0171-6.5-o01-39c6deae">
+<img alt="원문 Table 6.5, PDF 171쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/72b44647c6e9d90b21902c2d.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.5 · PDF p.171</b> — Table 6.5: Results of the test runs in the simulation for each scenario, including the required cycles, the initial time tcinitial, the minimum tcmin, the maximum tcmax, the average cycle time tcaverage, and the full time tfull required to complete the task.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0172-6.6-o01-29cd346d">
+<img alt="원문 Table 6.6, PDF 172쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e1cf864d186b985428d78dcf.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.6 · PDF p.172</b> — Table 6.6: Parameters for the behavior execution of the autonomous control in delta (∆) values per cycle time on the real machine. The initial scanning delta deﬁnes how fast the torso is turned during this phase.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0173-6.18-o01-0bbea89b">
+<img alt="원문 Figure 6.18, PDF 173쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/cf11ed58bafce21c61d5c32c.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.18 · PDF p.173</b> — Figure 6.18: The four truck loading piles for the real excavator with diﬀerent materials, shapes, and volumes, marked by red boxes.</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p075-table-p0173-6.7-o01-9df69728">
+<img alt="원문 Table 6.7, PDF 173쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7bcbede20fc6559f9afd6bd9.webp" tabindex="0"/>
+<figcaption><b>원문 Table 6.7 · PDF p.173</b> — Table 6.7: Results of the test runs executed on the real machine, including the required cycles, the initial tcinitial, the minimum tcmin, the maximum tcmax, and the average tcaverage cycle times as well as the full time tfull required to complete the task.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0175-6.20-o01-bf4ee550">
+<img alt="원문 Figure 6.20, PDF 175쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/12b21660d6b572f4fc75aa4f.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.20 · PDF p.175</b> — Figure 6.20: Recorded trajectories from the autonomous mass excavation operation visualized inside the simulation environment, showing a top view (a) and a front view (b) of the execution inside the simulation and a top view (c) and a front view (d) of the execution on the real test platform.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0176-6.21-o01-6e4d332e">
+<img alt="원문 Figure 6.21, PDF 176쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/7459ebeffd54883dcff6745b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.21 · PDF p.176</b> — Figure 6.21: Depiction of the landscaping scenario including the excavator pose (E), the dumping pose (D), and the landscaping area (L).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0177-6.22-o01-1b8feac7">
+<img alt="원문 Figure 6.22, PDF 177쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/3c155f5d154ec311ce51e4bc.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.22 · PDF p.177</b> — Figure 6.22: Visualization of the diﬀerent horizontal leveling scenarios with planes at the desired heights of (a) 1.0 m, (b) 0.75 m, (c) 0.5 m, and (d) 0.25 m.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0179-6.24-o01-349d3635">
+<img alt="원문 Figure 6.24, PDF 179쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/85fe69db3925690f51ece407.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.24 · PDF p.179</b> — Figure 6.24: Initial pile for the leveling operation executed on the test platform, marked by a red box.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0180-6.26-o01-83041a28">
+<img alt="원문 Figure 6.26, PDF 180쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/5b48eae9cdb90f898e75ac24.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.26 · PDF p.180</b> — Figure 6.26: The two desired trenches to excavate with a height of −0.5 m (a) and −1.0 m (b).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0181-6.27-o01-d77c6cb5">
+<img alt="원문 Figure 6.27, PDF 181쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f2fd66d4c0ea3ca75e341a30.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.27 · PDF p.181</b> — Figure 6.27: The resulting trenches created inside the simulation with a depth of −0.5 m (a) and −1.0 m (b).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0181-6.28-o01-094d4294">
+<img alt="원문 Figure 6.28, PDF 181쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2c4a0005cfe8123d22c04550.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.28 · PDF p.181</b> — Figure 6.28: The diﬀerent slope generation scenarios with (a) heights from 0.0 m to 1.5 m and (b) heights from 0.5 m to 2.0 m.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0182-6.29-o01-10dc7f00">
+<img alt="원문 Figure 6.29, PDF 182쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/1fc9f727aabcce74f69f3e93.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.29 · PDF p.182</b> — Figure 6.29: The results of the two slope creation scenarios I (a) and II (b).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0183-6.30-o01-8f6580e2">
+<img alt="원문 Figure 6.30, PDF 183쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/83fd6aa1e2a11fa1e63ae1cb.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.30 · PDF p.183</b> — Figure 6.30: The diﬀerent complex surface scenarios with a horizontal plane at 1.5 m and a slope to 0 m in the front (a), and a wider pile with the maximum height at 1.0 m (a).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p075-figure-p0183-6.31-o01-eb3d2541">
+<img alt="원문 Figure 6.31, PDF 183쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2316375044361c2de9a4c1bd.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6.31 · PDF p.183</b> — Figure 6.31: Initial state of the complex shaping scenario including a pile of 23.84 m3.</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.8, p.9, p.12, p.14, p.17</li><li><b>방법론</b>: p.82, p.85, p.88, p.92, p.95, p.99, p.122, p.127, p.133, p.145</li><li><b>실험</b>: p.152, p.153, p.154, p.157, p.159, p.166, p.170, p.177</li><li><b>결과</b>: p.161, p.163, p.168, p.171, p.173, p.178, p.179, p.181, p.183, p.184</li><li><b>한계</b>: p.184, p.185, p.189, p.190</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2016 Shaping the future - a control architecture for autonmous landscaping with an excavator(박사논문).pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-074.html"><span class="lbl">← 이전 #74</span>토공 장비 자동화의 핵심 과제</a><a class="next" href="paper-076.html"><span class="lbl">다음 #76 →</span>토공 장비 자동화 서베이</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

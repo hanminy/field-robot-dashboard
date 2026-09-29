@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2026 Actor Labs - A VLA Policy for an Excavator_요약</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2026 Actor Labs - A VLA Policy for an Excavator_요약</h1><h1 id="a-vla-policy-for-an-excavator-actor-labs">A VLA Policy for an Excavator — Actor Labs</h1>
+<blockquote>
+<p>[!abstract] 한 문장 요약
+실험실 로봇이 아닌 <strong>실제 굴착기</strong>에 Physical Intelligence의 <strong>π0.5</strong>를 LoRA 파인튜닝해 얹고, 관절 엔코더 없이 <strong>조이스틱 4D 상태를 행동 공간으로 삼아</strong> VLA가 중장비를 직접 조종하도록 만든 과정 보고서. 데이터·인터페이스·모델 세 가지 장벽을 각각 어떻게 넘었는지가 핵심.</p>
+<p>[!note] 문서 성격
+동료평가 논문이 아니라 스타트업 기술 블로그다. 정량적 성공률·벤치마크 수치는 제시되지 않고, 방법론과 엔지니어링 의사결정 위주다. 읽을 때 이 점을 감안할 것.</p>
+</blockquote>
+<hr/>
+<h2 id="1-vla">1. 문제의식 — VLA는 왜 실험실 밖으로 못 나갔나</h2>
+<p>VLA(Vision-Language-Action) 모델은 물건 분류, 빨래 개기 같은 일상 작업에서 범용 로봇 정책의 가능성을 입증했다. 그런데 <strong>왜 실험실 밖에서는 거의 쓰이지 않는가?</strong> 저자들은 세 가지를 지목한다.</p>
+<table>
+<thead>
+<tr>
+<th>장벽</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data</strong></td>
+<td>제대로 라벨링된 고품질 로봇 데이터는 LLM/VLM용 텍스트·이미지 코퍼스보다 수 자릿수 적다. 통제된 실험실에서는 수집이 쉽지만, 건설 현장·농경지 같은 거친 실환경은 완전히 다른 게임이다.</td>
+</tr>
+<tr>
+<td><strong>Interface</strong></td>
+<td>깨끗한 데이터와 좋은 모델이 있어도 <strong>5톤짜리 남의 기계를 어떻게 제어할 것인가</strong>. 진동을 견디며 고주파로 스트리밍하는 센서 스택, 수십억 파라미터 모델을 저지연 추론할 엣지 컴퓨트, 기계 컴퓨터로 제어값을 보낼 하드웨어가 모두 필요하다.</td>
+</tr>
+<tr>
+<td><strong>Model</strong></td>
+<td>안전이 최대 리스크다. 잘못 학습된 모델의 예측은 환경 파손과 인명 피해로 이어진다. 통제되지 않은 무한한 실외 공간은 RGB 입력만으로는 부족한, 훨씬 미묘한 환경 이해와 높은 반응성을 요구한다.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="vs">핵심 기술적 불일치: 관절 상태 vs 제어값</h3>
+<blockquote>
+<p>[!important] 이 글의 출발점
+오늘날 성능 좋은 VLA는 <strong>n차원 관절 상태 벡터</strong>를 예측하는 action head를 쓴다. 지금까지 VLA로 제어된 모든 로봇은 <strong>내장 관절 엔코더</strong>를 갖고 있었기에, 예측된 관절값을 엔코더로 흘려보내면 그만이었다.
+그런데 실제 중장비는 <strong>관절 상태가 아니라 제어값(control value)으로만 움직인다.</strong> 게다가 상당수는 내장 엔코더 자체가 없다. 관절 상태를 정확히 기록하려는 시도는 극도로 침습적이고, 애초에 관절을 직접 제어할 수 없으니 무의미하다.</p>
+</blockquote>
+<h3 id="untapped-robots">관점 전환 — "untapped robots"</h3>
+<p>저자들의 미션은 <strong>"실험실 모델과 실세계 기계 사이의 간극을 메우는 것"</strong>. 중장비 산업에 이미 깔려 있는 방대한 기계 재고를 범용 로봇 모델의 서사로 끌어들이자는 발상이다. 이 기계들은 이미 <strong>미개척 로봇(untapped robots)</strong> — 반복 작업, 배포 플랫폼, 비정형 공간 일반화 수요라는 범용 로봇 모델의 완벽한 재료를 갖췄다.</p>
+<ul>
+<li>파운데이션 모델 선택: <strong>Physical Intelligence π0.5</strong> (<a href="https://www.physicalintelligence.company/blog/pi05">블로그</a>)</li>
+</ul>
+<hr/>
+<h2 id="2-1">2. 허들 1 — 데이터 수집</h2>
+<h3 id="actor-collector-node">Actor Collector Node</h3>
+<p>중장비 조작 데이터 중 <strong>액션 레이어 + 라벨링된 궤적 + 시각 데이터가 동기 수집된</strong> 데이터셋은 사실상 존재하지 않는다. 그래서 자체 수집 장비를 만들어 현업 기계에 부착했다.</p>
+<p><strong>설계 원칙: 센서 모달리티 수 최소화</strong> (LiDAR·IMU 등 배제)</p>
+<ul>
+<li>최종 스택은 <strong>단안 카메라만</strong> 사용 — 120° FOV, 기계 사방을 향하도록 배치</li>
+<li>가장 유용한 것은 <strong>운전자를 향한 카메라</strong></li>
+<li>중장비는 보편적으로 조이스틱으로 조종되므로, 경량 <strong>YOLOv8</strong> 모델로 운전자의 조이스틱 조작을 <strong>시각적으로 관측 → 2개 조이스틱을 나타내는 4D 액션 공간으로 전사(transpose)</strong></li>
+</ul>
+<blockquote>
+<p>[!tip] 이 부분이 이 글에서 가장 영리한 대목
+기계에 어떤 계측 장비도 침습적으로 달지 않고, <strong>운전자의 손을 카메라로 보는 것만으로 액션 라벨을 만든다.</strong> 데이터 수집 비용과 설치 난이도를 동시에 무너뜨리는 접근.</p>
+</blockquote>
+<h3 id="_1">배포 및 태스크 다양성</h3>
+<ul>
+<li>미 전역 다수 기계에 수집 스택 배포. <strong>유사한 반복 작업 × 다양한 작업 환경</strong>에 집중</li>
+<li>예: 참호 굴착(trenching)을 캘리포니아 Castro Valley와 캔자스 Hill City 양쪽에서 수집</li>
+</ul>
+<h3 id="_2">태스크 분해 — 반복성을 확보하는 방법</h3>
+<p>현업 운전자는 매번 커스텀 작업을 한다. 반복 작업이라 해도 정확히 같은 작업은 아니다. <strong>환경 자체가 상호작용하는 순간 변하기</strong> 때문이다. 저자들은 짧은 시간 지평에서 태스크를 서브태스크로 쪼개면 훨씬 세밀한 반복성을 찾을 수 있음을 관찰했다.</p>
+<pre><code>Mission Task: "농경지에 배수관을 묻을 참호선을 파라"
+        ↓
+Subtasks:  굴착 지점으로 이동  →  굴착 시작  →  선회 &amp; 덤프 사이클
+</code></pre>
+<p>큰 미션 태스크라도 서브태스크 수준에서는 상당히 반복적·중복적이며, 역량이 확장되면 점차 더 큰 미션 태스크로 사다리를 올라가겠다는 구상.</p>
+<h3 id="_3">자체 수집</h3>
+<p>현장 데이터 외에, 보유 기계에서 <strong>VR 원격조작(teleoperation)</strong> 과 <strong>가시선(line-of-sight) 제어</strong>로도 궤적을 수집. 둘을 합쳐 VLA 친화적 형식의 대규모 중장비 데이터 코퍼스를 축적했다고 밝힌다.</p>
+<hr/>
+<h2 id="3-2">3. 허들 2 — 인터페이스 (기계를 로봇으로 만들기)</h2>
+<blockquote>
+<p>[!success] 좋은 공통점: 모든 중장비는 drive-by-wire다
+즉 전기 신호가 기계의 거의 모든 부분을 제어하며, 통상 <strong>CANBUS</strong> 같은 인터페이스를 통한다.</p>
+</blockquote>
+<ul>
+<li>트랙터에서 시작 — <strong>두 가닥 전선</strong>으로 스로틀과 브레이크를 제어</li>
+<li><strong>NVIDIA Jetson Thor</strong> 엣지 컴퓨트 + CANBUS 제어 인터페이스를 설치하면 <strong>사실상 그 기계가 로봇이 된다</strong></li>
+<li>전 과정이 <strong>비침습적</strong> — 기계 전기계통을 절단하거나 영구적으로 변경하지 않음</li>
+<li>저자 표현: <em>"로봇 부분을 만드는 건 사실 꽤 사소한(trivial) 일"</em></li>
+</ul>
+<blockquote>
+<p>[!warning] 데모 영상 관련 주의
+원문 각주: 블로그 상단 데모 기계는 <strong>렌탈 장비라 조이스틱을 직접 로봇으로 제어</strong>하고 있다. 즉 상단 데모는 CANBUS 직결이 아닌 조이스틱 물리 조작 방식이다.</p>
+</blockquote>
+<hr/>
+<h2 id="4-3-vla">4. 허들 3 — VLA 조이스틱 제어 (핵심 기여)</h2>
+<h3 id="imu">왜 엔코더도 IMU도 안 되는가</h3>
+<ul>
+<li>엔코더: 오늘날 모든 로봇팔·휴머노이드의 모터에 기본 탑재. 하지만 <strong>저자들이 다루는 기계 상당수는 엔코더가 없다.</strong> 엔코더가 없으면 기계 관절이 공간상 어디에 있는지 알 방법이 없다.</li>
+<li>IMU 시도 → 실패: 이동하는 붐/암에 IMU를 부착해봤으나 <strong>진동과 노이즈가 너무 심해 좋은 필터를 써도 사용 불가</strong>. 게다가 계측 장비가 현장에서 파손되지 않게 하려면 기계에 영구 개조가 필요해진다.</li>
+</ul>
+<p><strong>→ 차선의 행동 공간은? 조이스틱.</strong></p>
+<h3 id="the-zero-point-problem">The Zero-Point Problem</h3>
+<p>저자들은 처음에 VLA가 조이스틱으로 로봇을 제어할 수 있다고 생각하지 않았다.</p>
+<ul>
+<li>이산적 관절값과 달리, 조이스틱의 임의 위치 (x, y)는 <strong>무한히 많은 기계 자세에 대응</strong>될 수 있다</li>
+<li>모든 조이스틱에는 <strong>영점(zero-point)</strong> 이 있다 — 조작이 끝나면 스틱은 0으로 복귀하지만, <strong>팔의 위치는 누적되어 절대 0으로 돌아오지 않는다.</strong> 즉 조이스틱 위치와 팔 위치는 <strong>비선형</strong> 관계다</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>조이스틱 위치</th>
+<th>팔(암) 위치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>거동</td>
+<td>매 조작 후 0으로 복귀</td>
+<td>누적됨 — 0으로 결코 복귀 안 함</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">해법 — 다음 조이스틱 상태를 직접 예측</h3>
+<p>관절 위치를 예측하는 대신, <strong>다음 조이스틱 상태를 직접 예측하도록 학습</strong>시킨다.</p>
+<p>$$\mathbf{a}_t = [l_x, l_y, r_x, r_y], \quad \text{각 값} \in [-1.0,\ +1.0]$$</p>
+<p><strong>액션 컨벤션 (현재 관측으로부터 다음 조이스틱 상태 예측):</strong></p>
+<p>$$\mathbf{a}<em>t = \mathbf{s}</em>{t+1}$$</p>
+<p><strong>전처리 파이프라인:</strong></p>
+<ol>
+<li><strong>데드존 필터</strong> — 스틱 드리프트 제거, $d = 0.12$</li>
+</ol>
+<p>$$f(v) = \text{sign}(v) \cdot \frac{|v| - d}{1 - d}$$</p>
+<ol start="2">
+<li><strong>분위수 정규화(Quantile Norm)</strong> — 데이터셋 통계로 $[-1, 1]$ 범위 정규화. 운전자마다 다른 조작 스타일 전반에서 학습을 안정화</li>
+</ol>
+<p>$$\hat{x} = \frac{2(x - q_{01})}{q_{99} - q_{01}} - 1$$</p>
+<h3 id="_5">모델 구성</h3>
+<pre><code>Model Input
+├── Vision    : 단안 카메라 × N대 (전방 뷰 + 외부 뷰)
+├── Language  : 자연어 태스크  예) "remove dirt and place in pile"
+└── Action    : 4D 조이스틱 상태 [lx, ly, rx, ry]
+                        ↓
+              π0.5  ·  LoRA fine-tuned  ·  flow matching
+</code></pre>
+<p>원문에는 실제 수집된 조이스틱 데이터(<code>joystick-data.csv</code>)를 좌/우 스틱 궤적으로 재생하는 <strong>인터랙티브 4D 액션 공간 리플레이</strong> 시각화가 포함되어 있다.</p>
+<hr/>
+<h2 id="5">5. 결론과 다음 단계</h2>
+<ul>
+<li>π0.5를 로봇 굴착기에 성공적으로 이식. 중장비 산업의 실세계 작업에서 대량의 데이터를 수집해 VLA 학습용 포맷으로 변환한 것이 그 방법이었다</li>
+<li>모델 역량은 이제 시작이라고 봄. 범용 로봇 모델에 대한 낙관·비관이 갈리지만, <strong>승자는 이 모델들을 실제로 "쓸모 있게 배포(usefully deployed)"하는 쪽</strong>일 것이라는 입장</li>
+<li><strong>단기 목표(향후 1개월)</strong>: 실세계 실용성을 갖춘 정책 — 여러 종류의 중장비에서, 다양한 환경과 작업에 걸쳐 데이터를 모아 <strong>전부에 일반화되는 하나의 정책</strong>을 학습</li>
+</ul>
+<h3 id="_6">팀</h3>
+<p>Lane(20세), Shashi(19세), Feras(18세), Raza(19세) — 전원 10대 후반~20세.</p>
+<hr/>
+<h2 id="6">6. 후속 포스트</h2>
+<p>같은 연구 페이지에 후속 글이 있다.</p>
+<blockquote>
+<p><strong>Excavator In The Wild</strong> (2026-05-25)
+"숙련 운전자의 작업을 <strong>단 2.5시간</strong> 관찰한 뒤, 우리 굴착기가 실제 현장에서 토공 작업을 자율 수행했다."</p>
+</blockquote>
+<p>이 요약본의 후속으로 별도 정리 필요. → 위 4장 조이스틱 액션 공간이 실제로 얼마나 통했는지에 대한 답이 여기에 있을 가능성이 크다.</p>
+<hr/>
+<h2 id="7">7. 평가 및 우리 관점에서의 시사점</h2>
+<blockquote>
+<p>[!question] 참고할 만한 지점
+- <strong>액션 공간 설계</strong>: 관절 상태 대신 조이스틱 4D를 행동 공간으로 잡는 발상은, 엔코더 레트로핏이 어려운 상용 굴착기에 그대로 적용 가능한 우회로다. <a href="46a41b718e4013cf.html">2025 Towards Fully Integrated Autonomous Excavation-서울대_요약</a> 계열의 관절/실린더 상태 기반 접근과 정반대 극단이라 비교 가치가 있다.
+- <strong>데이터 라벨링</strong>: 운전자 손을 YOLOv8로 관측해 액션 라벨을 만드는 방식은, 현장 데이터 수집 비용 문제에 대한 실용적 답. 국내 현장에서도 동일 방식 적용 가능성 검토할 만함.
+- <strong>비침습 CANBUS + 엣지 컴퓨트</strong>: 기존 상용 장비를 개조 없이 로봇화하는 경로. 실증 시 인증·안전 이슈 부담이 크게 줄어든다.</p>
+<p>[!caution] 한계 및 유보
+- <strong>정량 결과 전무</strong> — 성공률, 사이클 타임, 정밀도, 비교 베이스라인 어느 것도 제시되지 않는다. "잘 됐다"는 서술과 데모 영상뿐.
+- <strong>안전을 3대 장벽으로 지목해놓고 해법은 제시하지 않음</strong> — 서론에서 안전이 중대 리스크라 했으나, 본문에 안전 계층·개입 메커니즘·페일세이프 논의가 없다.
+- <strong>조이스틱 상태 예측의 근본 문제 미해결</strong> — 영점 문제를 "다음 스틱 상태를 직접 예측"으로 우회했지만, 이는 위치 제어가 아니라 속도 제어에 가까운 개루프이며 <strong>누적 오차 보정 메커니즘이 없다.</strong>
+- <strong>액션 라벨 정밀도</strong> — YOLO 비전 추정의 오차 구조는 아래 7.1 참조.
+- <strong>상태 관측의 충분성</strong> — 단안 카메라만으로 굴착 상태가 관측되는가는 아래 7.2 참조. 이 글의 가장 큰 취약점.
+- 데모 기계가 렌탈이라 조이스틱을 물리적으로 로봇 제어했다는 각주는, CANBUS 직결 파이프라인이 아직 완전 검증되지 않았을 가능성을 시사한다.</p>
+</blockquote>
+<hr/>
+<h3 id="71-yolo">7.1 액션 라벨의 정밀도 — YOLO 비전 추정은 충분한가</h3>
+<blockquote>
+<p>[!note] 먼저 정정
+검출 대상은 <strong>운전자의 손이 아니라 조이스틱</strong>이다. 원문은 "기계가 보편적으로 조이스틱으로 조종되므로 그 <em>움직임</em>을 시각적으로 4D 액션 공간에 전사한다"고 쓴다. 운전자 방향 카메라는 그걸 보기 위한 것이고, <strong>손은 오히려 폐색(occlusion) 요인</strong>이다.</p>
+</blockquote>
+<p>원문은 이 부분을 한 문장으로 처리한다. 아래는 자체 분석.</p>
+<p><strong>오차원 (1) 투영 축소 — 가장 큰 문제</strong></p>
+<p>단안이므로 3D 틸트가 2D로 눌린다. 광축과 대략 직교하는 축(좌우 틸트)은 픽셀로 잘 잡히지만, <strong>광축 방향 축(전후 틸트)은 이미지상 이동량이 크게 압축</strong>되고 원근 때문에 그 압축이 비선형이다. 결과적으로 <strong>두 축의 라벨 품질이 비대칭</strong>해진다.</p>
+<p>개략 감각 (추정치 — 원문에 카메라 사양·설치 거리 언급 없음):</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>조이스틱 축당 전체 스트로크</td>
+<td>약 120~150 mm</td>
+</tr>
+<tr>
+<td>카메라 120° FOV / 1920px, 거리 1 m</td>
+<td>약 1 px/mm</td>
+</tr>
+<tr>
+<td>BBox 중심 지터 ±2 px</td>
+<td>풀스케일 대비 약 ±1.5%</td>
+</tr>
+<tr>
+<td>광축 방향 축</td>
+<td>위 값의 <strong>3~5배 악화</strong>로 추정</td>
+</tr>
+</tbody>
+</table>
+<p><strong>오차원 (2) 폐색</strong> — 손이 노브를 감싸므로 검출 대상이 상시 부분 가림. 조작 없이 손만 올려둔 구간도 다수.
+<strong>오차원 (3) 설치별 캘리브레이션 편차</strong> — 캡 형상·마운트 자세가 기계마다 다른데, 픽셀→<code>[-1,1]</code> 사상의 캘리브레이션 절차 언급이 전혀 없다.
+<strong>오차원 (4) 진동·모션블러·롤링셔터</strong> — IMU를 폐기하게 만든 그 진동이 카메라에도 동일하게 걸린다.</p>
+<blockquote>
+<p>[!tip] 데드존 <code>d = 0.12</code>는 노이즈의 자백
+풀스케일 ±12%를 통째로 0으로 누르는 건 매우 큰 데드존이다. 물리 조이스틱의 실제 기계적 데드존은 통상 이보다 훨씬 작다. 분위수 정규화(<code>q01</code>/<code>q99</code> 클리핑)와 함께, "우리 라벨에는 노이즈가 있다"는 설계상의 인정으로 읽힌다.</p>
+</blockquote>
+<p><strong>그럼에도 성립할 수 있는 이유</strong></p>
+<ul>
+<li><strong>flow matching + 액션 청크</strong> — 단일 스텝 회귀가 아니라 액션 <em>시퀀스</em>에 대한 생성 모델. 프레임별 독립적 영평균 노이즈는 청크 전체에서 상당히 상쇄된다</li>
+<li><strong>유압계 자체가 저역통과 필터</strong> — 굴착기 유압 밸브는 데드밴드가 크고 응답이 비선형이라 스틱 값 수 % 오차는 기계가 뭉갠다</li>
+<li><strong>모방학습의 관용도</strong> — 정확한 스틱 값 재현이 아니라 유사한 기계 거동을 만드는 값이면 된다</li>
+<li><strong>정밀도 대신 규모에 건 베팅</strong> — 침습적 계측으로 깨끗한 소량 vs. 스티커식 카메라로 지저분한 대량</li>
+</ul>
+<blockquote>
+<p>[!warning] 진짜 문제는 랜덤 노이즈가 아니라 계통 편향
+위 상쇄 논리는 오차가 <strong>영평균일 때만</strong> 성립한다. 그런데 비전 라벨 오차는 그렇지 않다.
+- 투영 왜곡 → <strong>스틱 위치에 상관된</strong> 편향 (중앙과 끝단의 게인이 다름)
+- 마운트 편차 → <strong>설치마다 고정된</strong> 편향
+- 조명·먼지 → <strong>환경마다 고정된</strong> 편향</p>
+<p>계통 편향은 평균으로 사라지지 않고 <strong>왜곡된 제어 사상을 그대로 학습시킨다.</strong> 여러 기계 데이터를 합칠 때 상충 신호로 들어가 성능 상한을 깎는다.</p>
+</blockquote>
+<p><strong>미해결 역설: 이미 CANBUS에 올라타 있으면서 왜 조이스틱 신호를 직접 안 읽나</strong></p>
+<p>허들 2에서 저자들은 CANBUS에 붙어 스로틀·브레이크를 제어했다고 쓴다. 전자식 조이스틱이면 스틱 명령값이 <strong>버스 위에 정확한 숫자로 이미 흐른다.</strong> 읽으면 완벽한 그라운드 트루스가 공짜다. 원문은 이 모순을 다루지 않는다. 추정되는 답:</p>
+<ol>
+<li><strong>소유권·설치 마찰</strong> — 수집 노드는 <em>남의 기계</em>에 붙이는 물건. 캡 안 카메라는 5분과 구두 동의면 되지만, 남의 장비 버스 배선은 보험·보증·책임이 따라온다. 플릿 확산에는 무배선이 필수</li>
+<li><strong>파일럿 유압식 기계엔 전기 신호가 없음</strong> — 구형·중형기는 조이스틱이 유압 파일럿 압력을 직접 만든다. 전자식이어도 OEM CAN 메시지는 비공개라 제조사별 리버스 엔지니어링 필요</li>
+</ol>
+<p>→ <strong>정밀도를 버리고 배포 가능성을 산 의도적 거래</strong>로 보이나, 원문이 근거를 밝히지 않아 독자에겐 그냥 허술해 보인다.</p>
+<p><strong>4D로는 아예 못 잡는 축</strong></p>
+<p>원문 자체에 불일치가 있다. 서브태스크 예시는 <code>굴착 지점으로 이동 → 굴착 시작 → 선회 &amp; 덤프 사이클</code>인데, <strong>"이동"은 조이스틱이 아니라 주행 페달·레버</strong>(좌우 트랙 각 1자유도)로 한다. 4D 조이스틱 공간에는 이 축이 없다. 보조 유압(틸트로테이터·썸), 엔진 RPM 다이얼도 빠져 있다. 실제로는 주행 구간을 데이터에서 제외했거나 아직 안 다룬다는 뜻일 것이다.</p>
+<hr/>
+<h3 id="72">7.2 상태 관측의 충분성 — 단안 카메라만으로 굴착이 되는가</h3>
+<blockquote>
+<p>[!danger] 이 글의 가장 큰 취약점
+굴착은 지형 기복과 토질이 제어를 좌우하는 작업인데, 이 정책이 받는 상태는 <strong>RGB 이미지 + 자연어 + 조이스틱 위치</strong>뿐이다. 그리고 그 조이스틱 위치조차 <strong>명령값이지 측정값이 아니다.</strong></p>
+</blockquote>
+<p><strong>굴착이 상태로서 실제로 요구하는 것</strong></p>
+<table>
+<thead>
+<tr>
+<th>요구 상태</th>
+<th>이 구성에서 관측되는가</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>굴착면 프로파일, 설계 고도 대비 깊이</td>
+<td>✗ (계량적 깊이 없음)</td>
+</tr>
+<tr>
+<td>토사더미 위치·높이</td>
+<td>△ (시각 단서만)</td>
+</tr>
+<tr>
+<td>버킷 적재량</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>굴착 저항 — 절삭깊이·레이크각·토질(점착력, 내부마찰각, 밀도, 함수비)의 함수</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>버킷의 계량적 자세</td>
+<td>✗ (엔코더 없음)</td>
+</tr>
+<tr>
+<td>기체 안정성·트랙 슬립</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>설계 기준면 (실시공은 측량 모델에서 취득)</td>
+<td>✗</td>
+</tr>
+</tbody>
+</table>
+<p><strong>단안 RGB를 변호하면 — 생각보다 절망적이진 않다</strong></p>
+<ul>
+<li><strong>자기 붐·암·버킷이 화각에 들어온다.</strong> 치수를 아는 기준물이 항상 프레임 안에 있으므로 학습 모델이 스케일 앵커로 쓸 수 있다</li>
+<li><strong>선회가 큰 베이스라인 패럴랙스를 만든다.</strong> 원리적으로는 구조 복원이 가능하다 (다만 π0.5는 SfM 파이프라인이 아니라 소수 프레임 관측이다)</li>
+<li><strong>그림자·음영이 기복을 드러낸다.</strong> 사람이 실제로 쓰는 단서다</li>
+<li><strong>사람도 대체로 단안이다.</strong> 5~15 m 작업 거리에서 65 mm 안폭의 인간 입체시는 사실상 무력하다. 운전자도 단안 단서 + 선회 패럴랙스 + 자기 기계 치수에 의존한다</li>
+</ul>
+<p>여기까지는 저자들 편이다. 그런데—</p>
+<blockquote>
+<p>[!important] 사람에게 있고 이 정책에는 없는 것 — 깊이보다 큰 구멍
+<strong>힘/부하 피드백.</strong> 운전자는 엔진 러그음, 릴리프 밸브 블로우오프, 스틱 스톨, 시트 진동으로 버킷이 찼는지·예상보다 단단한지·바위를 쳤는지를 안다.</p>
+<p>이 정책의 상태 입력에는 <strong>고유수용성 감각이 전혀 없다.</strong> 조이스틱 위치는 자기가 내린 명령이지 기계의 응답이 아니다. 즉 <strong>기계와 토양이 무엇을 하고 있는지에 대한 피드백 채널이 구조적으로 존재하지 않는다.</strong> 유일한 폐루프는 픽셀을 통한 것뿐이다.</p>
+<p>깊이 부재는 두 번째 문제다. 첫 번째는 이것이다.</p>
+</blockquote>
+<p><strong>결정적 폐색</strong> — 굴착의 임계 구간에서 <strong>버킷은 흙 속에 있다.</strong> 절삭 깊이도 적재량도, 관측이 가장 필요한 순간에 관측 대상이 안 보인다.</p>
+<p><strong>토질은 원리적으로 비전 관측 불가</strong> — 젖은 점토와 마른 점토는 시각적으로 유사할 수 있으나 굴착 저항은 크게 다르다. <strong>시각적으로 동일한 두 장면이 서로 다른 제어를 요구</strong>하므로, 학습 데이터에 모순 라벨로 들어간다. 규모를 키워도 해소되지 않는 종류의 모호성이다.</p>
+<p><strong>정밀도 스펙 문제</strong> — 관로·기초처럼 설계 고도 준수가 필요한 시공은 cm급을 요구한다. 실무 자동화는 GNSS-RTK + IMU + 머신컨트롤 모델로 푼다. 비전 온리로는 도달 불가. → 이 접근이 겨냥할 수 있는 건 <strong>"대충 흙을 옮기는" 등급의 작업</strong>이다.</p>
+<p><strong>필드 표준과의 대조</strong></p>
+<table>
+<thead>
+<tr>
+<th>접근</th>
+<th>지각</th>
+<th>고유수용성</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ETH Boulder Excavation</td>
+<td>암석당 LiDAR 20점 (최소하지만 <strong>계량적</strong>)</td>
+<td>암 상태 피드백</td>
+</tr>
+<tr>
+<td>SNU (이동준 그룹)</td>
+<td>전 상태 관측</td>
+<td>실린더 수준 제어 + MPC</td>
+</tr>
+<tr>
+<td><strong>Actor Labs</strong></td>
+<td>단안 RGB만</td>
+<td><strong>없음</strong></td>
+</tr>
+</tbody>
+</table>
+<p>→ 이 분야에서 확연한 아웃라이어다.</p>
+<p><strong>값싸게 메울 수 있었는데 언급조차 없는 것들</strong></p>
+<ul>
+<li><strong>다중 카메라 스테레오</strong> — 이미 사방에 N대를 달아놨다. 시야가 겹치면 계량적 깊이가 공짜다</li>
+<li><strong>선회 패럴랙스 SfM</strong> — 선회각만 알면 큰 베이스라인 호가 공짜</li>
+<li><strong>오디오</strong> — 엔진 러그음은 부하의 훌륭한 대리 지표이고, <strong>마이크는 카메라만큼 비침습적이다.</strong> 가장 값싼 누락</li>
+<li><strong>단안 계량 깊이 파운데이션 모델</strong>을 전처리로 삽입</li>
+</ul>
+<p>→ 수단이 가용한데 안 썼다는 건 "원리적 한계"보다 <strong>"아직 안 함"</strong> 일 가능성이 높다. 이 점이 이 접근의 향후 개선 여지이자, 현 시점 결과를 신뢰하기 어려운 이유다.</p>
+<blockquote>
+<p>[!failure] 판정 — 후속 글 확인 완료, 여전히 미해결 (2026-08-17 갱신)
+후속 글 <a href="c9389b0db3971391.html"><em>Excavator in the Wild</em></a>(2026-05-25)를 확인한 결과, <strong>공차 스펙·성공률·사이클 타임·실패 사례·베이스라인이 전부 없다.</strong> 제품 발표 + 파트너 모집 글이라 기술적으로 확인할 것이 없었다.</p>
+<p>다만 <strong>간접 증거는 나왔다.</strong> 회사의 <code>/hiring</code> 하드웨어 채용 요건에 센서 스위트가 <strong>"Cameras, LiDAR, Radar, GNSS, and IMUs"</strong> 로 명시되어 있고, 모델 포지션에는 <strong>강화학습·시뮬레이션·평가 프레임워크</strong>가 요구된다.</p>
+<p>→ <strong>단안 온리와 순수 모방학습은 현재 상태이지 종착점이 아니다.</strong> 위 7.2에서 지적한 계량적 깊이·절대 측위·고유수용성의 부재를 회사도 인식하고 있다고 보는 것이 타당하다. 상세는 후속 노트 3장 참조.</p>
+</blockquote>
+<hr/>
+<h2 id="_7">참고 링크</h2>
+<ul>
+<li>원문: https://labs.actor/research/vla-excavator</li>
+<li>Physical Intelligence π0.5: https://www.physicalintelligence.company/blog/pi05</li>
+<li>YOLOv8: https://docs.ultralytics.com/models/yolov8/</li>
+<li>NVIDIA Jetson Thor: https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-thor/</li>
+<li>CAN bus: https://en.wikipedia.org/wiki/CAN_bus</li>
+<li>후속 글: https://labs.actor/research/excavator-in-the-wild</li>
+</ul>
+<h2 id="_8">관련 노트</h2>
+<ul>
+<li><span title="Obsidian 볼트에서 확인할 수 있는 자료">Chelsea Finn  The End of SinglePurpose Robots YC 강연 대화 정리</span> — π0.5 계열 모델과 cross-embodiment, 액션 공간 설계 논의</li>
+<li><a href="fff876bc5fe6eec6.html">2026 Towards Learning Boulder Excavation with Hydraulic Excavators_요약</a> — 강화학습 기반 굴착 (대조군)</li>
+<li><a href="9327a9eeb4edd75a.html">2025 Advancements and challenges in earthmoving equipment automation using core technologies_요약</a> — 토공 장비 자동화 기술 전반</li>
+</ul></main><script src="../assets/live.js"></script></body></html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>ETH 자율굴착 최신 연구 동향 2026</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>ETH 자율굴착 최신 연구 동향 2026</h1><h1 id="eth">ETH 자율굴착 최신 연구 동향</h1>
+<blockquote>
+<p>[!summary] 결론
+- <strong>최신 직접 논문:</strong> <span title="Obsidian 볼트에서 확인할 수 있는 자료">High Precision Hydraulic Excavator Control for Heavy-Duty Grading</span> · 2026-05-10 공개 · RSS 2026
+- <strong>연구 지속:</strong> HEAP 단일 플랫폼은 2016–2025, ETH RSL의 <strong>Earthwork and Excavation</strong> 연구축은 2026년에도 유지
+- <strong>방향 전환:</strong> 작업계획·토질 적응 굴착 → 힘·적재량 추정, 장비 독립 제어, 온라인 학습
+- <strong>위치추정 기반:</strong> Holistic Fusion의 다중 기준좌표계 자동 정렬과 GNSS 음영·LiDAR 퇴화 대응
+- <strong>상용화:</strong> 2022년 분사한 Gravis Robotics를 통한 다제조사 장비·실제 건설현장 확장</p>
+<p>[!info] 이번에 추가한 7편
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">RL 버킷 채움</span> — 토질 적응 굴착의 연속 trench 작업 연결
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">유압장비 적응형 제어</span> — 짧은 데이터 기반 장비별 유압 특성 적응
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">ETHcavation</span> — 동적 건설현장 의미지도·주행 통합
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">힘·적재량 추정</span> — 압력·관성센서 기반 접촉력·버킷 적재량 계산
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">온라인 모델기반 RL</span> — 실차 동역학·정책 동시 온라인 갱신
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">고정밀 정지작업</span> — 유압 구조가 다른 두 장비에 공통 상위 MPC 적용
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">Holistic Fusion</span> — GNSS·LiDAR·IMU·odometry의 다중 기준좌표계 factor-graph 융합</p>
+<p>[!tip] 🧪 재현 추천
+구현 자료 공개성·시스템 핵심성·실기 확장성 기준의 추천
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">힘 기반 굴착 계획·제어</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">자율 자유형 트렌칭</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">데이터 기반 유압 RL 제어</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">범용 유압 굴착기 팔 RL</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">토질 적응형 굴착 RL</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">대규모 자율굴착 작업계획</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">RL 버킷 채움·연속 굴착</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">온라인 모델기반 RL 제어</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">ExT 다중작업 굴착 사전학습</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">표준 버킷 암석 굴착 RL</span>
+- <span title="Obsidian 볼트에서 확인할 수 있는 자료">대형 굴착기 고정밀 정지작업</span></p>
+<p>[!question] 연구가 끊겨 보이는 이유
+- <strong>확인된 사실:</strong> ETH HEAP 소개 페이지의 프로젝트 기간 2016–2025
+- <strong>확인된 사실:</strong> Construction Robotics의 Earthwork and Excavation·Online Learning 유지, Lorenzo Terenzi·Lennart Werner 등 담당
+- <strong>확인된 사실:</strong> 2026년 Gravis 기술의 다제조사 장비·수십 개 상용 현장 적용 발표
+- <strong>해석:</strong> 단일 연구장비 HEAP 이후 범용 제어·학습으로 확장, 성숙 기술은 spin-off 상용화</p>
+<p>[!note] 범위
+- material handling·throwing·forestry·rock breaking은 굴착/토공 핵심 범위 밖이므로 신규 카드 제외; 기존 Harveri·석재 시공·외부 의미지도는 성격 표시 후 유지
+- ROS 전체 편저서·박사논문 발표 슬라이드 제외; 독립 기술내용이 있는 박사논문 2편은 <code>종합/학위논문</code> 카드 유지</p>
+</blockquote>
+<h2 id="_1">확인 자료</h2>
+<ul>
+<li><a href="https://rsl.ethz.ch/robots-media/heap.html">ETH RSL — HEAP (2016–2025)</a></li>
+<li><a href="https://rsl.ethz.ch/research/researchtopics/dfab.html">ETH RSL — Construction Robotics</a></li>
+<li><a href="https://ethz.ch/en/news-and-events/eth-news/news/2026/08/200-million-for-autonomous-excavators.html">ETH — 200 million for autonomous excavators</a></li>
+<li><a href="https://www.gravisrobotics.com/press-release">Gravis Robotics — 2025 현장 확장 발표</a></li>
+<li><a href="https://arxiv.org/abs/2605.09465">High Precision Hydraulic Excavator Control — arXiv</a></li>
+<li><a href="https://arxiv.org/abs/2510.11574">Calibrated Dynamic Modeling — arXiv</a></li>
+<li><a href="https://arxiv.org/abs/2510.18518">Efficient Model-Based RL — arXiv</a></li>
+<li><a href="https://arxiv.org/abs/2410.04250">ETHcavation — arXiv</a></li>
+</ul></main><script src="../assets/live.js"></script></body></html>

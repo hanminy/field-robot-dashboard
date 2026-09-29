@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes</h1><h1 id="high-accuracy-autonomous-excavation-of-free-form-shapes">High-Accuracy Autonomous Excavation Of Free-Form Shapes</h1>
+<blockquote>
+<p>Dominic Jud, ETH Zürich (Dr. sc. ETH Zürich, 2021)
+Supervisor: Prof. Dr. Marco Hutter
+Co-examiners: Prof. Dr. Karsten Berns (TU Kaiserslautern), Dr. Sean Costello (Hexagon Technology Center GmbH)
+Funding: NCCR Digital Fabrication (Swiss National Science Foundation), Hexagon Geosystems, armasuisse Science and Technology</p>
+</blockquote>
+<hr/>
+<h2 id="abstract">Abstract</h2>
+<p>건설 부문의 생산성은 지난 20년간 1%밖에 성장하지 않았다(세계 경제 평균 2.8% 대비). 이 논문은 굴착 작업의 자동화를 목표로 한다. 자동화를 통해 현장 재료 활용으로 지속가능성을 높이고, 로봇 공정으로 단순 직선뿐 아니라 자유곡면(free-form curved shapes)도 동일한 고정밀도로 굴착할 수 있음을 보인다.</p>
+<p><strong>핵심 성과:</strong>
+- 굴착 중 토양-버킷 상호작용력은 토질에 따라 크게 다름 → 엔드이펙터 force-torque 궤적 기반의 토양-독립적(soil-independent) 단일 굴착 사이클(single dig cycle) 정의
+- 세계 최초 자율 보행 굴착기 <strong>HEAP</strong> (Hydraulic Excavator for an Autonomous Purpose) 구축
+- 자유 곡면 트렌치(free-form trenches) 굴착 실험: 시뮬레이션과 실기계 동일 정확도 달성
+- 드론 측량 + 설계(Docofossor/Rhino) + 제작(HEAP) 통합 디지털 공정으로 S자형 성토(s-curved embankment, 20m, 30m³) 고정밀 자율 시공</p>
+<hr/>
+<h2 id="_1">목차 구조</h2>
+<table>
+<thead>
+<tr>
+<th>챕터</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Introduction</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Autonomous Trenching In Simulation</td>
+</tr>
+<tr>
+<td>3</td>
+<td>HEAP - The Autonomous Walking Excavator</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Free-Form Trenching With HEAP</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Robotic Embankments</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Conclusion and Outlook</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="notation">약어 정리 (Notation)</h2>
+<table>
+<thead>
+<tr>
+<th>약어</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DoF</td>
+<td>degrees of freedom</td>
+</tr>
+<tr>
+<td>LiDAR</td>
+<td>light detection and ranging</td>
+</tr>
+<tr>
+<td>ICP</td>
+<td>iterative closest point</td>
+</tr>
+<tr>
+<td>LOAM</td>
+<td>LiDAR odometry and mapping</td>
+</tr>
+<tr>
+<td>RTK</td>
+<td>real-time kinematic</td>
+</tr>
+<tr>
+<td>IMU</td>
+<td>inertial measurement unit</td>
+</tr>
+<tr>
+<td>GNSS</td>
+<td>Global Navigation Satellite System</td>
+</tr>
+<tr>
+<td>ROS</td>
+<td>Robot Operating System</td>
+</tr>
+<tr>
+<td>CAD</td>
+<td>computer-aided design</td>
+</tr>
+<tr>
+<td>IF</td>
+<td>In-Situ Fabricator</td>
+</tr>
+<tr>
+<td>ICM</td>
+<td>Integrated Control Module</td>
+</tr>
+<tr>
+<td>PoA</td>
+<td>point of attack</td>
+</tr>
+<tr>
+<td>LUCIE</td>
+<td>Lancaster University Computerised Intelligent Excavator</td>
+</tr>
+<tr>
+<td>THOR</td>
+<td>Terraforming Heavy Outdoor Robot</td>
+</tr>
+<tr>
+<td>ALS</td>
+<td>Autonomous Loading System</td>
+</tr>
+<tr>
+<td>FEE</td>
+<td>fundamental earthmoving equations</td>
+</tr>
+<tr>
+<td>SQP</td>
+<td>sequential quadratic program</td>
+</tr>
+<tr>
+<td>SDF</td>
+<td>signed distance field</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="chapter-1-introduction">Chapter 1: Introduction</h2>
+<h3 id="11">1.1 동기 및 배경</h3>
+<ul>
+<li>건설 부문: 세계 인구의 7% 고용, 생산성 성장 정체(1% vs 세계 2.8%)</li>
+<li>자동화 수준이 낮음에도 자동화 수요/잠재성은 가장 높은 분야</li>
+<li>과거~현재: 측량 → 설계 → 제작이 순차적·분리된 프로세스</li>
+<li><strong>미래 비전</strong>: 세 단계가 실시간 데이터 공유로 긴밀하게 통합된 삼각형 순환 프로세스</li>
+</ul>
+<p>==&gt; picture [Figure 1.1: 과거/현재/미래의 측량-설계-제작 프로세스 진화 다이어그램] intentionally omitted &lt;==</p>
+<h3 id="12-state-of-the-art">1.2 State of the Art</h3>
+<p><strong>자율 굴착기 역사:</strong>
+- <strong>LUCIE</strong> (1988, Lancaster University): 트렌칭 제어
+- <strong>ALS</strong> (Carnegie Mellon): 최초의 외부 센서(레이저) 탑재, 트럭 적재용 대형 굴착
+- <strong>THOR</strong> (TU Kaiserslautern): behavior-based 제어
+- Australian Centre for Field Robotics: force+position 결합 1.5t 굴착기
+- <strong>Built Robotics AX-162</strong>, <strong>ASI Robots</strong>: 산업계 자율 굴착기</p>
+<p><strong>보행 굴착기의 특징:</strong>
+- 4개 휠-다리 → wheeled-legged 모바일 매니퓰레이터
+- 험지 이동성 + 굴착용 고 payload-to-weight ratio
+- 이 논문의 기반: <strong>Menzi Muck M545</strong> 보행 굴착기</p>
+<p><strong>굴착 자동화 세 가지 접근법:</strong>
+1. 모든 밸브를 고성능 서보 밸브로 교체
+2. 기존 메인 밸브에 전동 파일럿 스테이지 추가
+3. 조이스틱 액추에이터 구동</p>
+<h3 id="13-key-contributions">1.3 논문의 기여 (Key Contributions)</h3>
+<ul>
+<li><strong>토양-독립적 단일 굴착 사이클</strong>: 엔드이펙터 force-torque 궤적으로 정의</li>
+<li><strong>HEAP</strong>: 세계 최초 자율 보행 굴착기 (감지, 액추에이션, 제어)</li>
+<li><strong>휠-레그 로봇 상태 추정</strong> 범용 접근법</li>
+<li><strong>굴착 매핑</strong>: proprioceptive + exteroceptive 센서 융합</li>
+<li><strong>굴착 플래너</strong>: 자유 곡면 트렌치 및 대형 3D 성토용</li>
+<li><strong>통합 디지털 공정</strong>: 드론 측량 + 조경 설계 + 자율 굴착</li>
+<li><strong>다양한 자유 곡면 고정밀 굴착</strong>: 평균 오차 ~0.03m 수준</li>
+</ul>
+<hr/>
+<h2 id="chapter-2-autonomous-trenching-in-simulation">Chapter 2: Autonomous Trenching In Simulation</h2>
+<blockquote>
+<p>관련 논문: Jud et al., <em>Planning and Control for Autonomous Excavation</em>, IEEE RA-L 2, 2151 (Oct. 2017)</p>
+</blockquote>
+<h3 id="21">2.1 핵심 아이디어</h3>
+<ul>
+<li>굴착 사이클을 <strong>위치 궤적이 아닌 force-torque 궤적</strong>으로 정의</li>
+<li>위치 궤적: 예측 불가 지반력 → 과도한 보수적 설계 필요</li>
+<li>force-torque 궤적: 다양한 토양에서 자연스럽게 다른 운동 창출 → 토양-독립적</li>
+<li>시뮬레이션 환경: Vortex (CM Labs)</li>
+</ul>
+<h3 id="22-excavator-control">2.2 굴착기 제어 (Excavator Control)</h3>
+<p><strong>2.2.1 굴착기 기구학 (Kinematics)</strong></p>
+<p>Menzi Muck M545의 5-DoF 암:
+$$\mathbf{q} = [\psi, \theta_1, \theta_2, x_{telescope}, \theta_3]^T \in \mathbb{R}^n, \mathbf{u} = \dot{\mathbf{q}} \in \mathbb{R}^n, n=5$$</p>
+<p>작업 공간 좌표:
+$$\mathbf{r} = [x_t, z_t, \theta_t, \psi_t]^T \in \mathbb{R}^m, m=4$$</p>
+<p><strong>2.2.2 계층적 최적화 암 컨트롤러 (Hierarchical Optimization)</strong></p>
+<p>우선순위 (내림차순):
+1. 운동 방정식 (EoM)
+2. 실린더 force/torque 한계
+3. 실린더 속도 한계
+4. 실린더 위치 한계
+5. 엔드이펙터 운동
+6. 방향성 force manipulability</p>
+<h3 id="23-force-controlled">2.3 Force-Controlled 단일 굴착 사이클</h3>
+<p>3단계로 구성:
+1. <strong>Penetration (관입)</strong>: 버킷을 지면에 수직으로 관입
+2. <strong>Drag (끌기)</strong>: 지면을 따라 수평으로 끌어 버킷 채움
+3. <strong>Close (닫기)</strong>: 버킷 닫아 토사 확보 후 들어올림</p>
+<p>==&gt; picture [Figure 2.3: 굴착 단계별 force/torque 플롯] intentionally omitted &lt;==</p>
+<p><strong>토양별 적응 동작:</strong>
+- 단단한 토양: 버킷이 깊이 관입 불가 → drag 방식으로 채움
+- 부드러운 토양: 깊은 관입 → rotate/curl로 채움 (drag 최소화)</p>
+<h3 id="24">2.4 다중 굴착 사이클 계획</h3>
+<p><strong>2.4.1 굴착 상태 기계 (Excavation State Machine)</strong></p>
+<p>반복적 플래너: 매 굴착 사이클 후 현재 지형과 목표 지형을 비교 → 다음 공격 지점(PoA) 결정</p>
+<p><strong>2.4.2 계획 단계 (Planning Step)</strong></p>
+<p>2D 트렌치용 공격 지점:
+$$\arg\max_{x_i, z_j} Z_{act}(x_i, z_j) \cdot S^+(x_i, z_j) \cdot \mu \cos(\alpha) x_i + \sin(\alpha) z_j$$</p>
+<h3 id="25">2.5 결과</h3>
+<p>시뮬레이션 트렌치 굴착 정확도:</p>
+<table>
+<thead>
+<tr>
+<th>트렌치 형태</th>
+<th>평균 오차</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>곡선 바닥 (Curved Bottom)</td>
+<td>0.035m</td>
+</tr>
+<tr>
+<td>직선 구간 (Linear Segments)</td>
+<td>0.044m</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="chapter-3-heap-the-autonomous-walking-excavator">Chapter 3: HEAP - The Autonomous Walking Excavator</h2>
+<h3 id="31">3.1 시스템 개요</h3>
+<p><strong>기반 플랫폼</strong>: Menzi Muck M545 보행 굴착기 + Armano 상부 구조</p>
+<p>==&gt; picture [Figure 3.1: HEAP과 Armano 외관] intentionally omitted &lt;==</p>
+<h3 id="32">3.2 시스템 기술</h3>
+<p><strong>3.2.1 센서 구성 (Sensing)</strong></p>
+<table>
+<thead>
+<tr>
+<th>센서</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Velodyne VLP-16 LiDAR (지붕)</td>
+<td>환경 인식, 매핑</td>
+</tr>
+<tr>
+<td>Robosense RS-Bpearl LiDAR (지붕)</td>
+<td>근거리 인식</td>
+</tr>
+<tr>
+<td>GNSS-RTK</td>
+<td>절대 위치 측정</td>
+</tr>
+<tr>
+<td>IMU</td>
+<td>자세 추정</td>
+</tr>
+<tr>
+<td>유압 실린더 센서</td>
+<td>관절 상태 추정</td>
+</tr>
+<tr>
+<td>관절 각도 센서</td>
+<td>암 상태</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3.2.4 암 액추에이션 (Arm Actuation) - 세 가지 방식</strong></p>
+<ol>
+<li><strong>전동 파일럿 스테이지 (Electric Pilot Stage)</strong>: 기존 밸브 활용, 비교적 낮은 force control 성능</li>
+<li><strong>액추에이터 조이스틱 (Actuated Joystick)</strong>: 소형화, 운전자 입실 가능 유지, 더 나은 성능</li>
+<li><strong>고성능 서보 밸브 (High-Performance Servo Valves)</strong>: 최고 성능, 약 1자릿수 더 나은 force control</li>
+</ol>
+<p>==&gt; picture [Figure 3.4: 세 가지 암 액추에이션 원리 비교] intentionally omitted &lt;==</p>
+<p><strong>서보 밸브 성능이 시뮬레이션→실기계 전이에 핵심</strong>: force-torque 궤적을 변경 없이 그대로 적용 가능</p>
+<h3 id="33-">3.3 휠-레그 로봇 상태 추정</h3>
+<p>4가지 잔차(residual) 기반 Extended Kalman Filter:
+1. <strong>IMU 예측</strong>: 선형 가속도, 각속도 적분
+2. <strong>GNSS 업데이트</strong>: RTK 절대 위치
+3. <strong>롤링 예측 (Rolling Prediction)</strong>: 휠 운동학적 구속
+4. <strong>Legged Odometry 업데이트</strong>: 다리 기구학 기반 오도메트리</p>
+<p>실제 적용: IMU+GNSS 조합이 aggressive 운동에서 가장 우수 → 이 설정으로 배포</p>
+<h3 id="34-control">3.4 제어 (Control)</h3>
+<p>HEAP: 31 DoF (4다리 × 8 + 1암 × 7 = 32... 실질 제어 31)</p>
+<p><strong>세 개의 독립 컨트롤러:</strong></p>
+<p>==&gt; picture [Figure 3.12: 암/샤시/구동 컨트롤러 블록 다이어그램] intentionally omitted &lt;==</p>
+<p><strong>3.4.1 구동 컨트롤러 (Driving Controller)</strong>
+- 입력: 목표 속도, 조향각, 조향 모드
+- 4가지 조향 모드: crab(게걸음), front-wheel, rear-wheel, four-wheel
+- Ackermann 조향 원리 기반</p>
+<p><strong>3.4.2 샤시 컨트롤러 (Chassis Controller)</strong>
+- flexion/extension 관절로 높이, roll, pitch 제어
+- 력 최적화로 균등한 지면 접촉력 유지
+- 경사도 100%에서도 안정적 작동 검증</p>
+<p><strong>3.4.3 암 컨트롤러 (Arm Controller)</strong></p>
+<p><em>역동역학 계층적 최적화 (Inverse Dynamic):</em> 9개 우선순위 태스크
+1. 운동 방정식
+2. 펌프 유량 한계
+3. 실린더 force 한계
+4. 실린더 속도 한계
+5. 실린더 위치 한계
+6. 자가 충돌 회피
+7. 엔드이펙터 방향
+8. 엔드이펙터 위치
+9. 관절 운동 감쇠</p>
+<p><em>역기구학 계층적 최적화 (Inverse Kinematic):</em> 7개 우선순위 태스크 (공중 이동용)</p>
+<h3 id="35">3.5 응용 사례</h3>
+<table>
+<thead>
+<tr>
+<th>응용</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>자율 굴착</td>
+<td>자유 곡면 트렌치 및 성토</td>
+</tr>
+<tr>
+<td>건식 돌담 자율 조립</td>
+<td>4m 높이, 10m 길이 담장 (109개 돌, 평균 오차 0.128m)</td>
+</tr>
+<tr>
+<td>자율 임업 작업</td>
+<td>100m×30m 숲에서 나무 수확</td>
+</tr>
+<tr>
+<td>반자율 원격조종</td>
+<td>2차 세계대전 탄약 발굴, 낙석 청소</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="chapter-4-free-form-trenching-with-heap">Chapter 4: Free-Form Trenching With HEAP</h2>
+<blockquote>
+<p>관련 논문: Jud et al., <em>Autonomous Free-Form Trenching Using a Walking Excavator</em>, IEEE RA-L 4, 3208 (Oct. 2019)</p>
+</blockquote>
+<h3 id="41">4.1 핵심 과제</h3>
+<ul>
+<li>시뮬레이션 → 실기계 전이 시 불확실성 증가</li>
+<li>실기계에서 2.5D 고도 지도를 LiDAR로 실시간 생성 필요</li>
+<li>굴착기가 환경을 능동적으로 변경 → 빠른 지도 갱신 필수</li>
+</ul>
+<h3 id="42-elevation-mapping-for-excavation">4.2 굴착용 고도 매핑 (Elevation Mapping For Excavation)</h3>
+<p><strong>두 가지 센서 융합:</strong>
+- <strong>Exteroceptive</strong>: 지붕 LiDAR (Velodyne VLP-16 + Robosense RS-Bpearl)
+- <strong>Proprioceptive</strong>: 버킷 엣지 위치 추적 (버킷이 토사 속에서 이동 → LiDAR 가림 문제 해결)</p>
+<p>주요 필터링:
+- 버킷 아래 낙하 토사 제거
+- 기계 자체를 hit하는 LiDAR 반사 제거</p>
+<h3 id="43-sqp">4.3 SQP 기반 스플라인 궤적 최적화</h3>
+<p>엔드이펙터의 terrain-collision-free 경로를 SQP로 계획:
+- 입력: 현재 고도 지도의 SDF (Signed Distance Field)
+- 출력: 공격 지점까지의 충돌 없는 궤적</p>
+<h3 id="44">4.4 암 제어</h3>
+<p><strong>4.4.1 역기구학 제어 (IK Control)</strong>: 공중 이동, 덤핑 동작
+<strong>4.4.2 굴착 force 컨트롤러</strong>: 단일 굴착 사이클 (Ch.2와 동일, 시뮬레이션에서 변경 없이 이식)</p>
+<h3 id="45">4.5 자율 굴착 상태 기계 확장</h3>
+<p>실기계 환경에 맞게 추가 상태:
+- 버킷 조기 지면 접촉
+- 목표 표면 미추적
+- 임박한 자가 충돌</p>
+<h3 id="46">4.6 결과</h3>
+<table>
+<thead>
+<tr>
+<th>트렌치 형태</th>
+<th>HEAP 평균 오차</th>
+<th>(참고: Vortex 시뮬레이션)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>곡선 바닥</td>
+<td><strong>0.024m</strong></td>
+<td>0.035m</td>
+</tr>
+<tr>
+<td>직선 구간</td>
+<td><strong>0.027m</strong></td>
+<td>0.044m</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>실기계가 오히려 시뮬레이션보다 더 정확: 서보 밸브의 우수한 force control 덕분</li>
+<li>비교: Shao et al. "0.1m 미만", Maeda et al. 0.025m (but: 외부 센서 없이 버킷 엣지만 사용)</li>
+<li><strong>자유 곡면 트렌치 고정밀 자율 굴착 최초 달성</strong></li>
+</ul>
+<hr/>
+<h2 id="chapter-5-robotic-embankments">Chapter 5: Robotic Embankments</h2>
+<h3 id="51">5.1 개요</h3>
+<p>드론 측량 + 조경 설계 + HEAP 굴착이 실시간으로 통합된 디지털 공정으로 자유 곡면 성토(embankment) 자율 시공.</p>
+<p>==&gt; picture [Figure 5.1: Drone Survey - Design - Fabrication 통합 시스템 블록 다이어그램] intentionally omitted &lt;==</p>
+<h3 id="52-robotic-landscape-system">5.2 로보틱 조경 시스템 (Robotic Landscape System)</h3>
+<p><strong>5.2.1 초기 측량 - 조경 매핑 드론</strong></p>
+<p>센서 패키지 (DJI M210 RTK 탑재):
+- Ouster OS1 LiDAR + IMU
+- RGB 카메라
+- 멀티스펙트럴 카메라
+- Jetson TX2 (데이터 수집/처리)
+- 3D 프린팅 프레임, 드론 전원 공급</p>
+<p>==&gt; picture [Figure 5.2: DJI M210 RTK에 장착된 센서 패키지] intentionally omitted &lt;==</p>
+<p>드론 비행 → 17백만 점 3D 포인트 클라우드 수집 → <code>grid_map_pcl</code> 패키지로 2.5D 고도 지도 변환</p>
+<p>==&gt; picture [Figure 5.3: 실험 현장의 3D 포인트 클라우드 및 2.5D 고도 지도] intentionally omitted &lt;==</p>
+<p><strong>5.2.2 설계 환경 - Docofossor</strong></p>
+<ul>
+<li>Rhino + Docofossor 플러그인 (Ilmar Hurkxkens 구현)</li>
+<li>Cut &amp; fill 연산으로 재료 중립적(material-neutral) 설계</li>
+<li>설계 라인(초록선) → S자 곡선 성토 형태 생성</li>
+<li>Cut/fill 균형, swell factor, 최대 경사각 고려</li>
+<li><strong>Compas fab</strong> + ros_bridge (Windows ↔ Linux) → 드론/HEAP과 네트워크 연결</li>
+<li>실시간 피드백: 굴착 진행 상황 반영하여 설계 on-the-fly 수정 가능</li>
+</ul>
+<p>==&gt; picture [Figure 5.4: 드론 고도 지도에서 생성된 성토 설계 (cut/fill 표시)] intentionally omitted &lt;==</p>
+<p><strong>5.2.3 제작 환경 - HEAP</strong></p>
+<p>단일 굴착 사이클 흐름 (Figure 5.5의 번호 순서):
+1. WiFi로 설계 환경과 연결, 목표 고도 지도 + 설계 라인 수신
+2. GNSS-RTK 기반 상태 추정으로 설계와 위치 정합
+3. 차량 LiDAR로 2.5D 고도 지도 실시간 생성
+4. 굴착 플래너가 다음 공격 지점 탐색
+5. SQP로 terrain-collision-free 궤적 계획 → 공격/덤프 지점으로 이동
+6. 단일 굴착 사이클 실행 (force control)
+7. 덤프 지점 탐색 후 투기
+8. 다음 공격 지점으로 드라이빙
+9. Active 샤시 밸런싱 (굴착 중 비활성화로 기계 중량 활용)</p>
+<p>==&gt; picture [Figure 5.5: 단일 굴착-덤프 사이클 전체 흐름도] intentionally omitted &lt;==</p>
+<h3 id="53-3d">5.3 3D 성토 굴착 계획</h3>
+<p><strong>구동 경로 (Driving Path)</strong>: 설계 라인의 일정 거리 오프셋 → 모든 설계 지점이 암 도달 범위 내</p>
+<p>작업 방향: 암이 설계 라인에 직교하도록 → 버킷 엣지가 성토 break line과 평행</p>
+<p>==&gt; picture [Figure 5.6: 설계 라인(점선)에서 유도된 구동 경로(파선)] intentionally omitted &lt;==
+==&gt; picture [Figure 5.7: 명확한 break line을 위해 버킷 엣지가 설계 라인에 수직으로 작동] intentionally omitted &lt;==</p>
+<p><strong>5.3.1 굴착 지점 플래너 (Excavation Point Planner)</strong></p>
+<p>오차 행렬:
+$$Z_e = Z_{act} - Z_{des}$$</p>
+<p>선택 행렬 (임계값 이상 오차 셀만):
+$$S^+(x_i, y_j) = \begin{cases} 1, &amp; \text{if } Z_e(x_i, y_j) &gt; \theta^+ \ \text{NaN,} &amp; \text{else} \end{cases}$$</p>
+<p>다음 공격 지점 (진행 라인 정규화 포함):
+$$\arg\max_{x_i, y_i} S_{lb}(x_i, y_j) S^+(x_i, y_j) (Z_{act}(x_i, y_j) + \mu(\cos(\beta)x_i + \sin(\beta)y_i))$$</p>
+<ul>
+<li>진행 각도 β로 왼쪽→오른쪽 작업 순서 유도 (토사 흘러내림 방지)</li>
+<li><code>S_lb</code> 마스크: 가장 큰 오차 blob만 선택 (OpenCV <code>findContour</code>) → 효율성 향상</li>
+</ul>
+<p>==&gt; picture [Figure 5.8: 진행 라인과 biggest blob 기반 공격 지점 선택 시각화] intentionally omitted &lt;==</p>
+<p><strong>5.3.2 덤프 지점 플래너 (Dump Point Planner)</strong></p>
+<p>음의 오차(fill 필요 셀) 선택:
+$$S^-(x_i, y_j) = \begin{cases} 1, &amp; \text{if } Z_e(x_i, y_j) &lt; \theta^- \ \text{NaN,} &amp; \text{else} \end{cases}$$</p>
+<p>덤프 지점 선택:
+$$\arg\min_{\tilde{x}<em>i, y_i} S</em>{lv}(x_i, y_j) S^-(x_i, y_j) (Z_{act}(x_i, y_j) + \mu d(x_i, y_j))$$</p>
+<ul>
+<li><code>S_lv</code> 마스크: 너무 작은 부피(&lt;0.1m³) 제거 → 과도한 덤핑으로 인한 정밀도 저하 방지</li>
+<li>버킷 위치까지의 거리 d와 지형 높이로 스코어링</li>
+</ul>
+<p>==&gt; picture [Figure 5.9: 덤프 지점 선택 시각화] intentionally omitted &lt;==</p>
+<h3 id="54">5.4 결과</h3>
+<p><strong>5.4.1 S자 성토 (S-curved Embankment)</strong></p>
+<ul>
+<li>경사도: 33.7°, 총 변위 부피: 30m³</li>
+<li>기계 운영 시간: 6시간 (cut 30.60m³, fill 32.20m³)</li>
+<li>swell factor: 1.05</li>
+</ul>
+<p>오차 결과:
+| 구간 | 평균 셀 오차 |
+|------|------------|
+| 북쪽 구간 (오목, 큰 반경) | <strong>0.038m</strong> |
+| 전체 평균 | <strong>0.056m</strong> |</p>
+<ul>
+<li>북쪽 오목 구간: 이전 자유 곡면 트렌치(0.027m, 0.024m)와 동일 범위</li>
+<li>남쪽 볼록 구간: 평면 버킷으로 접근 어려운 기하학 → 오차 증가</li>
+<li><strong>설계 적응</strong>: 제작 2/3 시점에 cut/fill 균형을 위해 능선 높이 낮춤 (설계-제작 통합 공정의 강점 시연)</li>
+</ul>
+<p>==&gt; picture [Figure 5.10: 완성된 S자 성토 상공 사진] intentionally omitted &lt;==
+==&gt; picture [Figure 5.12: S자 성토 최종 고도 지도] intentionally omitted &lt;==
+==&gt; picture [Figure 5.13: S자 성토 오차 지도 (yellow: 부족, dark blue: 과잉)] intentionally omitted &lt;==</p>
+<p><strong>5.4.2 모서리 있는 이면 성토 (Two-faced Embankment with a Corner)</strong></p>
+<ul>
+<li>설계: Blender CAD 모델 (두 개의 독립 평면)</li>
+<li>역방향 운동학(IK) 제어 + 파일럿 스테이지 밸브 (그레이딩 사이클만 필요)</li>
+<li>데모: 사람이 성토 파괴 → 굴착기가 자율 복원</li>
+</ul>
+<p>결과:
+- 평균 셀 오차: <strong>0.032m</strong>
+- 선명한 모서리 + 매끄러운 표면 달성</p>
+<p>==&gt; picture [Figure 5.16: 완성된 이면 성토 사진] intentionally omitted &lt;==
+==&gt; picture [Figure 5.17: 이면 성토 오차 지도 (평균 0.032m)] intentionally omitted &lt;==</p>
+<h3 id="55">5.5 요약</h3>
+<ul>
+<li>드론 측량-설계-제작이 실시간으로 통합된 디지털 공정 최초 구현</li>
+<li>재료 중립적 설계 + 현장 변화 적응(대형 돌, 토질 변화, cut/fill 재균형)</li>
+<li>HEAP으로 3D 성토 굴착 플래너 개발 (굴착+덤핑 모두 계획)</li>
+<li>고정밀 자유 곡면 성토 자율 시공 (이전에 미보고)</li>
+</ul>
+<hr/>
+<h2 id="chapter-6-conclusion-and-outlook">Chapter 6: Conclusion and Outlook</h2>
+<h3 id="61">6.1 결론</h3>
+<p>전체 굴착 오차 비교 (Table 6.1):</p>
+<table>
+<thead>
+<tr>
+<th>설계</th>
+<th>Vortex 시뮬레이션</th>
+<th>HEAP 실기계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Curved Bottom 트렌치</td>
+<td>0.035m</td>
+<td><strong>0.024m</strong></td>
+</tr>
+<tr>
+<td>Linear Segments 트렌치</td>
+<td>0.044m</td>
+<td><strong>0.027m</strong></td>
+</tr>
+<tr>
+<td>S-curve 성토 (오목 부분)</td>
+<td>-</td>
+<td><strong>0.038m</strong></td>
+</tr>
+<tr>
+<td>S-curve 성토 (전체)</td>
+<td>-</td>
+<td><strong>0.056m</strong></td>
+</tr>
+<tr>
+<td>이면 성토 (모서리)</td>
+<td>-</td>
+<td><strong>0.032m</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>시뮬레이션 결과가 실기계에서도 동일하거나 더 나은 정확도로 재현됨</li>
+<li>HEAP은 Melenbrink et al. 분류에서 <strong>Level 4 자율성</strong> 달성 (Built Robotics, THOR와 함께 단 3개 프로젝트)</li>
+<li>세계 최초 자유 곡면 성토 자율 고정밀 시공</li>
+</ul>
+<h3 id="62">6.2 향후 연구</h3>
+<ol>
+<li>
+<p><strong>생산성 향상</strong>:
+   - 관절 수준 유압 제어에 학습 기반 방법 적용 (비선형 동특성 처리)
+   - 굴착 플래너에 머신러닝 도입 (덤프 위치 결정 등 고수준 계획)</p>
+</li>
+<li>
+<p><strong>다중 기계 협업</strong>:
+   - 동종/이종 기계 간 협업 문제 해결
+   - 인간-기계 협업 포함</p>
+</li>
+<li>
+<p><strong>상태 추정 개선</strong>:
+   - 시각 오도메트리 추가
+   - GNSS + 잔차 기반 필터로 절대 위치 유지</p>
+</li>
+</ol>
+<hr/>
+<h2 id="_2">핵심 인사이트 요약</h2>
+<blockquote>
+<p>[!tip] 연구의 핵심 메시지
+1. <strong>Force control = soil-independent excavation</strong>: 위치 궤적 대신 force-torque 궤적으로 다양한 토양에 자동 적응
+2. <strong>서보 밸브가 핵심</strong>: 시뮬레이션-실기계 간 전이 없이 직접 이식 가능케 하는 요소
+3. <strong>Proprioceptive + Exteroceptive 융합</strong>: 버킷 가림 문제를 극복하는 굴착 매핑
+4. <strong>디지털 통합 공정</strong>: 측량-설계-제작이 순차적이 아닌 실시간 피드백 루프로 연결</p>
+<p>[!info] 원본 참조
+그림/표/수식이 필요하면 원본 파일을 확인하세요: <span title="Obsidian 볼트에서 확인할 수 있는 자료">2021 High-Accuracy Autonomous Excavation Of Free-Form Shapes</span></p>
+</blockquote></main><script src="../assets/live.js"></script></body></html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2021 Real-time motion planning of a hydraulic excavator using trajectory optimization and model predictive control - 서울대</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2021 Real-time motion planning of a hydraulic excavator using trajectory optimization and model predictive control - 서울대</h1><h1 id="2021-real-time-motion-planning-of-a-hydraulic-excavator-using-trajectory-optimization-and-model-predictive-control-">2021 Real-time motion planning of a hydraulic excavator using trajectory optimization and model predictive control - 서울대</h1>
+<h1 id="real-time-motion-planning-of-a-hydraulic-excavator-using-trajectory-optimization-and-model-predictive-control"><strong>Real-Time Motion Planning of a Hydraulic Excavator using Trajectory Optimization and Model Predictive Control</strong></h1>
+<p>Dongjae Lee <em>[∗]</em> , Inkyu Jang <em>[∗]</em> , Jeonghyun Byun, Hoseong Seo, and H. Jin Kim </p>
+<p><em><strong>Abstract</strong></em> <strong>— Automation of excavation tasks requires real-time trajectory planning satisfying various constraints. To guarantee both constraint feasibility and real-time trajectory replannability, we present an integrated framework for realtime optimization-based trajectory planning of a hydraulic excavator. The proposed framework is composed of two main modules: a global planner and a real-time local planner. The global planner computes the entire global trajectory considering excavation volume and energy minimization while the local counterpart tracks the global trajectory in a receding horizon manner, satisfying dynamic feasibility, physical constraints, and disturbance-awareness. We validate the proposed planning algorithm in a simulation environment where two types of operations are conducted in the presence of emulated disturbance from hydraulic friction and soil-bucket interaction: shallow and deep excavation. The optimized global trajectories are obtained in an order of a second, which is tracked by the local planner at faster than 30 Hz. To the best of our knowledge, this work presents the first real-time motion planning framework that satisfies constraints of a hydraulic excavator, such as force/torque, power, cylinder displacement, and flow rate limits.</strong> </p>
+<h2 id="i-introduction">I. INTRODUCTION</h2>
+<p>Automation of heavy machinery, especially hydraulic excavators for its versatility, has been a steady research topic over a few decades. Various types of tasks, for example, soil digging [1, 2], rock moving [3, 4], and truck loading [5], are studied for excavator automation. To perform one of the most fundamental operation among such tasks, soil excavation, trajectory planning complying to <em>operational constraints</em> (e.g. swept volume constraint during digging or bucket tip pose constraint during grading) and <em>physical constraints</em> (e.g. actuator force/torque limit, pump flow rate limit, or power limit) is essential. To achieve such objective of planning a constrained reference trajectory, trajectory optimization has been widely applied [6–9]. However, since most existing works via trajectory optimization optimize the entire trajectory at once offline, they are vulnerable to instantaneous disturbance during operation. Furthermore, external disturbances to hydraulic excavators such as soilbucket interaction and hydraulic friction are usually intractable and unignorable; accordingly, such unmodelable dynamics could result in sub-optimality and even constraint violation. Therefore, a new trajectory planning approach to </p>
+<p>*The first two authors contributed equally to this work. This research was supported by a research grant from Hyundai Construction Equipment. </p>
+<p>The authors are with the Department of Aerospace Engineering, Seoul National University (SNU), and Automation and Systems Research Institute (ASRI), Seoul 08826, South Korea <em>{</em> ehdwo713, leplusbon, quswjdgus97, hosung37, hjinkim <em>}</em> @snu.ac.kr </p>
+<p><strong>==&gt; picture [197 x 146] intentionally omitted &lt;==</strong></p>
+<p>Fig. 1: Excavator configuration of Hyundai HX300L. An excavator not in drive consists of four rotating rigid bodies: <em>⃝</em> 1 Cabin, <em>⃝</em> 2 Boom, <em>⃝</em> 3 Arm, and <em>⃝</em> 4 Bucket. The configuration can be defined either with four joint angles <strong>q</strong> <em>θ</em> = [ <em>ψU θB θA θK</em> ] <em>[⊤]</em> or with one joint angle and three hydraulic cylinder displacements <strong>q</strong> <em>L</em> = [ <em>ψU LB LA LK</em> ] <em>[⊤]</em> . </p>
+<p>consider constraints and compensate real-time disturbance is required. </p>
+<h2 id="a-related-work"><em>A. Related work</em></h2>
+<p>We classify studies on excavator trajectory planning into three classes: 1) trajectory-optimization-based approach, 2) receding horizon optimization-based approach, and 3) nonoptimization-based approach. </p>
+<p>Given a specified cost function, constraints, and system dynamics, trajectory optimization generates an optimized trajectory in the defined state and input space which satisfies a set of constraints and system dynamics. Thanks to this property of explicit satisfaction of constraints, [6, 7, 9] successfully reflect the system dynamics with force/torque input, <em>operational constraints</em> , and <em>physical constraints</em> while minimizing overall effort or operation time. However, considering that optimization over the entire trajectory entails burdensome computation in general, the trajectories are usually parameterized using relatively simple kernel functions [7, 8]. Additionally, although soil model is employed to consider soil-bucket interaction forces [7, 9], the actual soilbucket interaction may not be suitably addressed. There also exist studies regarding trajectory optimization of a new platform, e.g. a walking excavator [10, 11]. Nevertheless, unlike other studies for conventional hydraulic excavator, they focus on planning and control of locomotion using newly added degrees of freedom (DoF) which is out of our scope. </p>
+<p>As a variation of trajectory optimization, receding horizon trajectory optimization or model predictive control (MPC), </p>
+<p>©2021 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works. </p>
+<p><strong>==&gt; picture [245 x 69] intentionally omitted &lt;==</strong></p>
+<p>Fig. 2: Flow chart for algorithm overview. Feedback signals are drawn with dashed lines. </p>
+<p>which optimizes trajectory in a receding horizon manner, is introduced [12, 13]. [12] applies offset-free MPC to track the reference trajectory even in the presence of soil interaction disturbance while satisfying input box constraints. However, only decoupled dynamics, each with single input and no state constraints, are considered in MPC. In [13], MPC is implemented for trajectory planning of an excavator, but system dynamics is modeled only with a double integrator, and the computation time seems to be insufficient for realtime application ( <em>≈</em> 3.3 Hz). </p>
+<p>Different from trajectory optimization, [14] computes a kinematically feasible reachability map of the bucket pose and linear movements offline. In [1], the authors apply dynamic motion primitives (DMP) to plan a trajectory which emulates experts’ operation while being robust to various soil conditions. However, since these approaches cannot explicitly consider constraints, violation of constraints, especially <em>physical constraints</em> , can occur. To handle such physical constraints, studies with a walking excavator [15, 16] present a hierarchical optimization-based controller. Nevertheless, feasibility cannot be always guaranteed due to the imposed hierarchy among constraints, and nonlinear constraints such as power constraint may not be directly considered in the optimization. In [15], additional force controller tracking a force reference instead of a position reference is implemented in simulation to adjust to unknown soil conditions. </p>
+<h2 id="b-algorithm-overview"><em>B. Algorithm overview</em></h2>
+<p>To address both <em>operational constraints</em> and <em>physical constraints</em> in the presence of external disturbance during excavation, we present an integrated planner consisting of an online global planner and a real-time local planner as in Fig. 2. Considering that the global planning does not require any measurement feedback, the integrated planner can be executed in real-time if the global planner is computed within the trajectory run time. </p>
+<p>In the global planning phase, a small-sized nonlinear optimization problem with a reduced number of constraints is solved. The obtained global trajectory is tracked by the model-predictive-control-based local planner, which plans high-fidelity local trajectories. The local planner runs alongside with a disturbance estimator, and takes the estimation results into consideration. To the best of our knowledge, this work is the first real-time trajectory planning framework for autonomous excavation with guarantee of dynamic feasibility, physical constraint satisfaction, and disturbanceawareness. We summarize our main contributions as follows: </p>
+<ul>
+<li>
+<p>Integration of global planner and local planner for considering both operational and physical constraints. </p>
+</li>
+<li>
+<p>Formulation of the global trajectory optimization problem of the reduced dimension, which permits computation time shorter than a few seconds. </p>
+</li>
+<li>
+<p>Real-time constrained trajectory generation considering external disturbance. </p>
+</li>
+</ul>
+<h2 id="ii-equations-of-motion">II. EQUATIONS OF MOTION</h2>
+<h2 id="a-kinematics"><em>A. Kinematics</em></h2>
+<p>Let <em>FB</em> and <em>FC</em> be the base frame and cabin frame where the base frame’s relative orientation is defined by the ground slope, and the orientation of <em>FC</em> differs from that of <em>FB</em> by the amount of swing rotation. The origin and <em>x, z</em> -axis of <em>FC</em> are illustrated in Fig. 3. The configuration of the mechanical system of a hydraulic excavator can be either defined with <strong>q</strong> <em>θ</em> = [ <em>ψU θB θA θK</em> ] <em>[⊤] ∈</em> R[4] or <strong>q</strong> <em>L</em> = [ <em>ψU LB LA LK</em> ] <em>[⊤] ∈</em> R[4] where <em>ψU , θB, θA, θK</em> are swing angle, rotation angles of boom, arm, and bucket, and <em>LB, LA, LK</em> are cylinder displacements of boom, arm, and bucket as shown in Fig. 1. The nonlinear, bijective[1] mapping between <strong>q</strong> <em>θ</em> and <strong>q</strong> <em>L</em> can be derived by solving closed-chain kinematics, denoted by </p>
+<p><strong>==&gt; picture [199 x 26] intentionally omitted &lt;==</strong></p>
+<p>where <em>JL, Jθ</em> are corresponding Jacobian matrices. </p>
+<p>In some parts of this paper, the <strong>q</strong> <em>L</em> -configuration with fixed <em>ψU</em> is used. For the sake of notational simplicity, we denote this subconfiguration by <strong>L</strong> = [ <em>LB LA LK</em> ] <em>[⊤] ∈</em> R[3] . We also denote the pose of the bucket tip with respect to the <em>FC</em> frame by <strong>E</strong> = [ <em>Ex Ez θ</em> ] <em>[⊤] ∈</em> R[3] where <em>Ex, Ez</em> are the bucket tip’s <em>x</em> , <em>z</em> -directional positions, and <em>θ</em> is its orientation, i.e., <em>θ</em> = <em>θB</em> + <em>θA</em> + <em>θK</em> . The components of <strong>E</strong> can be computed from <strong>L</strong> using the forward kinematics. We write them as <strong>E</strong> = [ <em>Ex</em> ( <strong>L</strong> ) <em>Ez</em> ( <strong>L</strong> ) <em>θ</em> ( <strong>L</strong> )] <em>[⊤]</em> . </p>
+<h2 id="b-dynamics"><em>B. Dynamics</em></h2>
+<p>˙ By defining the system state <strong>x</strong> <em>θ</em> = [ <strong>q</strong> <em>[⊤] θ</em> <strong>q</strong> <em>[⊤] θ</em>[]] <em>[⊤][∈]</em>[R][8] and control input <strong>u</strong> = [ <em>TU FB FA FK</em> ] <em>[⊤] ∈</em> R[4] where <em>TU , FB, FA, FK</em> are swing torque, hydraulic forces of boom, arm, and bucket cylinder, the system dynamics can be derived with the Euler-Lagrange equation: </p>
+<p><strong>==&gt; picture [242 x 39] intentionally omitted &lt;==</strong></p>
+<p>where <em>Mθ</em> ( <strong>q</strong> <em>θ</em> ) <em>∈</em> R[4] <em>[×]</em>[4] , <em>hθ</em> ( <strong>q</strong> <em>θ,</em> <strong>q</strong> ˙ <em>θ</em> ) <em>∈</em> R[4] are the mass matrix and combined term for the Coriolis-centrifugal and gravitational effects. ∆ <em>∈</em> R[4] is a lumped disturbance describing unmodeled dynamics, e.g. friction in hydraulic cylinders, soil-bucket interaction, and model uncertainties. </p>
+<p>As explained in section III and IV, since several state constraints considered in global and local planning can be expressed as linear constraints with respect to the hydraulic cylinder’s motion, we further modify the system dynamics (2) with the newly defined system state <strong>x</strong> <em>L</em> = [ <strong>q</strong> <em>[⊤] L</em> <strong>[q]</strong>[˙] <em>[⊤] L</em>[]] <em>[⊤]</em>[.] </p>
+<blockquote>
+<p>1This is true within a physically feasible region, and the region is considered in the local planning as a cylinder displacement constraint. </p>
+</blockquote>
+<p><strong>==&gt; picture [152 x 99] intentionally omitted &lt;==</strong></p>
+<p>Fig. 3: Illustration of the trace of the bucket tip during each phase of a single digging task. The origin of the base frame <em>FC</em> , which is used for the phase 2 global planning, is also depicted. </p>
+<p>The equations of motion (2) can be rewritten with respect to <strong>x</strong> <em>L</em> and <strong>u</strong> as follows: </p>
+<p><strong>==&gt; picture [244 x 39] intentionally omitted &lt;==</strong></p>
+<p>˙ where <em>hL</em> ( <strong>q</strong> <em>L,</em> <strong>q</strong> <em>L</em> ) = <em>JL[⊤]</em>[(] <em>M</em>[˜] <em>LJ</em>[˙] <em>L</em> ˙ <strong>q</strong> <em>L</em> + <em>h</em>[˜] <em>L</em> ), ∆ <em>L</em> = <em>JL[⊤]</em>[∆][,] and <em>ML</em> ( <strong>q</strong> <em>L</em> ) = <em>JL[⊤] M</em>[˜] <em>LJL</em> . Here, by inserting the results of kinematics (1) into the <em>Mθ</em> ( <strong>q</strong> <em>θ</em> ) and <em>hθ</em> ( <strong>q</strong> <em>θ,</em> <strong>q</strong> ˙ <em>θ</em> ), <em>M</em>[˜] <em>L</em> and <em>h</em>[˜] <em>L</em> are defined as <em>M</em>[˜] <em>L</em> ( <strong>q</strong> <em>L</em> ) := <em>Mθ</em> ( <em>gL</em> ( <strong>q</strong> <em>L</em> )) and <em>h</em>[˜] <em>L</em> ( <strong>q</strong> <em>L,</em> <strong>q</strong> ˙ <em>L</em> ) := <em>hθ</em> ( <em>gL</em> ( <strong>q</strong> <em>L</em> ) <em>, JL</em> ( <strong>q</strong> <em>L</em> ) ˙ <strong>q</strong> <em>L</em> ). </p>
+<h2 id="iii-global-planning">III. GLOBAL PLANNING</h2>
+<p>A single excavation task of an excavator consists of three phases as follows: </p>
+<ul>
+<li>
+<p><strong>Phase 1</strong> : The excavator tip moves from its initial position to the point where it enters the earth surface. </p>
+</li>
+<li>
+<p><strong>Phase 2</strong> : The bucket tip cuts through the soil. </p>
+</li>
+<li>
+<p><strong>Phase 3</strong> : The bucket conveys removed soil to the goal position, e.g., right above the dump box of a truck, without spilling the soil. </p>
+</li>
+</ul>
+<p>Details regarding each phase are described in Fig. 3. Between consecutive phases, to guarantee continuity of control, configuration and its derivative must be matched. </p>
+<h2 id="a-global-planning-for-phase-2"><em>A. Global planning for phase 2</em></h2>
+<p>In this subsection, we set up the trajectory optimization problem for phase 2. For phase 2, we constrain the cabin part of the excavator from moving, in order to prevent the side plates of the bucket from pushing against the soil. The goal of phase 2 global planning is to minimize the length travelled by the hydraulic cylinders during the excavation task. Unlike phases 1 and 3, the excavator faces large and unpredictable external disturbance which originates from the direct contact between the earth and the bucket. Traditional torque- or force-minimizing strategies are therefore not suitable, since their optimality would be degraded due to external forces. The travelled distance of the hydraulic cylinders should preferably serve as a cost measure, as the earth shall always resist the bucket’s motion while in phase 2. At the same time, we should prefer large excavation volume, because digging more volume will naturally reduce the number of repetitive excavation tasks needed to complete a mission. To take the aforementioned considerations into account, we first </p>
+<p><strong>==&gt; picture [127 x 80] intentionally omitted &lt;==</strong></p>
+<p>Fig. 4: The capacity of the bucket <em>V</em> cap with respect to its rotation angle <em>θ</em> . If <em>θ ≥ π</em> , the bucket might spill its contents in the wrist direction, which is forbidden. The bucket is emptied when <em>θ</em> is smaller than a threshold determined by the bucket’s geometry. </p>
+<p>discretize the phase 2 trajectory using <em>n</em> 2 +1 waypoints, <strong>L</strong> 0, <strong>L</strong> 1, <em>· · ·</em> , <strong>L</strong> <em>n</em> 2 and propose the following cost function: </p>
+<p><strong>==&gt; picture [209 x 29] intentionally omitted &lt;==</strong></p>
+<p>where <em>V</em> is the volume of the removed soil, <em>wd &gt;</em> 0 and <em>wv &gt;</em> 0 are weights associated with the distance travelled by the cylinder and <em>V</em> , respectively. <em>W</em> is a positive-definite weight matrix, where <em>∥x∥Y</em> ( <em>Y &gt;</em> 0) denotes a weighted 2-norm of a vector <em>x</em> with a matrix <em>Y</em> . </p>
+<p>In phase 2, earth surface <em>z</em> surf and target shape <em>z</em> target are described using polynomials over <em>x</em> , where <em>x</em> and <em>z</em> are given with respect to the frame <em>FC</em> (Fig. 3): </p>
+<p><strong>==&gt; picture [234 x 30] intentionally omitted &lt;==</strong></p>
+<p>Within the region of interest <em>x ∈</em> [ <em>x</em> min <em>, x</em> max], the earth surface should be above the target, i.e., <em>z</em> target( <em>x</em> ) <em>≤ z</em> surf ( <em>x</em> ). Now, we consider the following constraints for the bucket tip. </p>
+<ul>
+<li>
+<p>1) The bucket tip should always be located within the region of interest, above the target surface and below the earth. At initial and final conditions, it must be located on the earth surface. </p>
+</li>
+<li>
+<p>2) The rotation angle <em>θ</em> of the bucket tip must be monotonically increasing; otherwise, the bucket plate pushes the dirt out of the bucket, which is energy-inefficient. </p>
+</li>
+<li>
+<p>3) The bucket must maintain positive clearance angle ( <em>α &gt;</em> 0) while digging. This ensures that the bucket parts other than the tip do not push against the ground. </p>
+</li>
+<li>
+<p>4) In the similar sense, the whole bucket body must move above the tip path. </p>
+</li>
+<li>
+<p>5) The bucket rotation <em>θ</em> must be smaller than <em>π</em> : otherwise, the excavator will spill the dirt onto its wrist, which will escalate the risk of equipment malfunctioning. (Fig. 4) </p>
+</li>
+</ul>
+<p>The mentioned constraints are explained in Fig. 5. </p>
+<p>Basically, the volume of the removed dirt is geometrically determined using the <em>swept volume</em> between the earth surface and the bucket tip trajectory. However, if the swept volume is greater than the bucket capacity, the excavator shall spill the excess dirt, thus <em>V</em> = min � <em>V</em> swept <em>, V</em> cap( <em>θ</em> ( <strong>L</strong> <em>n</em> 2))�, where </p>
+<p><strong>==&gt; picture [239 x 51] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [203 x 106] intentionally omitted &lt;==</strong></p>
+<p>Fig. 5: (left) A bucket trajectory that satisfies the constraints in phase 2. The current ground measurement and the target ground shape are denoted using solid and dashed black lines, respectively. (right) The bucket shape should not penetrate through the bucket tip trajectory. We use a triangular collision box to check this. The bucket rotation angle <em>θ</em> and the clearance angle <em>α</em> are denoted. <em>α</em> is mearsured with respect to the bucket tip velocity direction, <em>vE</em> = ( <em>E</em>[˙] <em>x, E</em>[˙] <em>z</em> ), which is denoted by a red arrow. </p>
+<p>is the (approximate) swept volume calculated using the trapezoidal integration rule, <em>xi</em> = <em>Ex</em> ( <strong>L</strong> <em>i</em> ), <em>zi</em> = <em>Ez</em> ( <strong>L</strong> <em>i</em> ), and <em>θi</em> = <em>θ</em> ( <strong>L</strong> <em>i</em> ). The maximum capacity of the bucket, which is a function of <em>θn</em> 2, is modeled as described in Fig. 4. </p>
+<h2 id="b-global-planning-for-phases-1-and-3"><em>B. Global planning for phases 1 and 3</em></h2>
+<p>Unlike phase 2, in phases 1 and 3, the bucket travels a long distance while influenced by fewer constraints. Therefore, in order to reduce the computation burden, we parameterize the trajectory using a pre-selected set of bases. In this paper, Bernstein polynomials are used to parameterize the <strong>q</strong> <em>L</em> trajectory. Bernstein polynomial is written as </p>
+<p><strong>==&gt; picture [195 x 29] intentionally omitted &lt;==</strong></p>
+<p>where <em>s ∈</em> [0 <em>,</em> 1]. Bernstein bases are used because the convex hull property of the bases allows to incorporate the box constraint for <strong>q</strong> <em>L</em> and linear inequality constraints for <strong>q</strong> ˙ <em>L</em> easily. Furthermore, their time-derivatives can be easily calculated, so faster computation speed can be achieved. For phases 1 and 3, we minimize the force cost during travel. </p>
+<p><strong>==&gt; picture [240 x 127] intentionally omitted &lt;==</strong></p>
+<p>where <em>βk</em> is the <em>k</em> -th control point for the Bernstein polynomial representation of <strong>q</strong> <em>L</em> , and <em>T</em> is the time cost for complete traversal. Superscripts ( <em>·</em> ) <em>[l]</em> and ( <em>·</em> ) <em>[u]</em> denote lower and upper bounds for the state variables, respectively. The boundary values <strong>q</strong> <em>L·</em> 0, <strong>q</strong> <em>L·T</em> , <strong>q</strong> ˙ <em>L·</em> 0, <strong>q</strong> ˙ <em>L·T</em> are chosen such that the transition between any two consecutive phases is smooth. <em>Wu</em> is a positive-definite weighting matrix. The middle term in the third constraint is the control points for <strong>q</strong> ˙ <em>L</em> and was </p>
+<p>derived from the properties of Bernstein bases. For phase 3, to keep the excavator from spilling the dirt, we introduce one additional constraint: </p>
+<p><strong>==&gt; picture [158 x 11] intentionally omitted &lt;==</strong></p>
+<p>where <em>θ</em> 0 is the bucket rotation angle at which phase 2 ended. </p>
+<h2 id="iv-local-planning">IV. LOCAL PLANNING</h2>
+<p>This section describes how local reference trajectory is computed using MPC, which has been widely adopted in robotics as a real-time planner [17–19] thanks to its optimality and constraint-satisfying nature. The objective of this local receding-horizon planning is the following three: 1) physical constraint satisfaction, 2) disturbance-awareness, and 3) real-time computation. In addition to state constraints, actuation-related constraints are explicitly considered in the MPC problem formulation. Furthermore, to handle uncertainties in the dynamical model (3), disturbance estimation is appended to the local planning for disturbance-awareness. Lastly, to guarantee real-time applicability of the proposed local planning, we re-formulate the MPC problem using feedback linearization as in [20]. </p>
+<h2 id="a-constraints"><em>A. Constraints</em></h2>
+<p>Similar to other existing researches for trajectory optimization of a hydraulic excavator [6, 7], we consider four types of physical constraints in the local planning: 1) actuation (force/torque) limit, 2) power limit, 3) cylinder displacement limit, and 4) pump flow rate limit. They are modeled as </p>
+<p><strong>==&gt; picture [157 x 27] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [151 x 11] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [214 x 13] intentionally omitted &lt;==</strong></p>
+<p>where <strong>u</strong> <em>[l] ,</em> <strong>u</strong> <em>[u] ∈</em> R[4] in (10a) are the lower and upper bounds of the control input <strong>u</strong> , and <em>p[u] ∈</em> R in (10b) is the upper bound of the overall power generated by the hydraulic pump. It is required to impose this overall power limit because of the actuation mechanism of the hydraulic excavator where all four control inputs are powered by the same actuation source. <strong>L</strong> <em>[l] ,</em> <strong>L</strong> <em>[u] ∈</em> R[3] in (10c) are the lower and upper bounds of the hydraulic cylinder displacement <strong>L</strong> . Lastly, <em>fi[u] ∈</em> R and <em>Ai</em> = [ <em>AU,i AB,i AA,i AK,i</em> ] <em>[⊤] ∈</em> R[4] in (10d) are the upper bound of the pump flow rate and crosssection areas corresponding to swing motion, boom, arm, and bucket cylinder displacement, respectively. Because the cross-section area differs depending on the motion of a hydraulic cylinder, either contraction or expansion, <em>Ai</em> is defined to include such effect and modeled as a function ˙ of sign of <strong>q</strong> <em>L</em> [6]. ( <em>·</em> )[abs] is used to denote an element-wise absolute-valued vector mapped from a vector ( <em>·</em> ). To consider the flow rates of two hydraulic pumps, the subscript <em>i</em> is used. </p>
+<h2 id="b-disturbance-estimation"><em>B. Disturbance estimation</em></h2>
+<p>As mentioned in [21, 22], if disturbance is not properly considered in the system dynamics of MPC, constraints, especially state constraints, can be violated even if they were satisfied in the predicted trajectory computed with nominal dynamics. To alleviate such feasibility issue, inspired by successful demonstrations of integration between model predictive control and disturbance estimation in robotics [23, 24], we combined disturbance estimation and model predictive control for disturbance-awareness of the computed local reference trajectory. </p>
+<p>We design a real-time disturbance estimation algorithm based on momentum-based disturbance estimation [1, 25]. Considering the system dynamics based on the joint angles of the excavator (2), the momentum-based disturbance estimation algorithm is formulated as follows: </p>
+<p><strong>==&gt; picture [245 x 44] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [17 x 9] intentionally omitted &lt;==</strong></p>
+<p>where <em>Cθ ∈</em> R[4] <em>[×]</em>[4] <em>, Gθ ∈</em> R[4] are Coriolis matrix and gravity vector computed from the Euler-Lagrange equation. Utilizing˙ the fact that <em>Mθ</em> = <em>Cθ</em> + <em>Cθ[⊤]</em>[,][the][estimation][algorithm][can] be analyzed to operate as a low pass filter of the actual disturbance ∆ as ∆=[˙ˆ] <em>KE</em> (∆ <em>−</em> ∆)[ˆ] <em>.</em> The disturbance estimate of the cylinder displacement-based dynamics (3) then can be computed as ∆[ˆ] <em>L</em> = <em>JL[⊤]</em>[ˆ∆=: [ ˆ∆] <em>[U]</em>[ˆ∆] <em>[B]</em>[ˆ∆] <em>[A]</em>[ˆ∆] <em>[K]</em>[]] <em>[⊤][.]</em> </p>
+<h2 id="c-model-predictive-control"><em>C. Model predictive control</em></h2>
+<p>Based on the system dynamics (3) and constraints (10), the MPC problem is formulated as follows: </p>
+<p><strong>==&gt; picture [239 x 77] intentionally omitted &lt;==</strong></p>
+<p>where <em>N</em> is the number of the prediction horizon, <em>fd</em> is the discretized dynamics of (3), <em>ck,i, cN,i</em> are the inequality constraints (10), and <em>mk, mN</em> are the number of inequality constraints. <em>P</em> , <em>Q</em> , <em>R</em> are positive-definite weighting matrices. Here, the subscript <em>L</em> is omitted in the state <strong>x</strong> , dynamics <em>fd</em> , and disturbance estimate ∆[ˆ] for brevity. A quadratic objective function is designed to allow the excavator to track the global reference trajectory <strong>x</strong> <em>r</em> while minimizing the overall effort[�] <em>∥</em> <strong>u</strong> <em>∥R</em> . Lastly, similar to the widely adopted assumptions in papers on disturbance-aware model predictive control [22–24], we assume that the disturbance does not vary significantly over a short time horizon, i.e. ∆[ˆ] <em>k</em> +1 = ∆[ˆ] <em>k</em> . </p>
+<p>To solve the formulated MPC problem (12), most optimal control solvers require partial derivatives, either numerical or analytic, of the dynamics (3) and constraints (10) with respect to the state <strong>x</strong> and the input <strong>u</strong> . However, due to the high nonlinearity of the system dynamics (3), especially </p>
+<p>the matrix inverse of the mass matrix <em>ML</em> which inheres in the closed-chain kinematics, it is difficult to obtain an optimized solution in real-time. Therefore, we simplify the MPC problem by introducing a virtual input <strong>v</strong> <em>∈</em> R[4] and a feedback-linearization-based control law <strong>u</strong> = FL( <strong>x</strong> <em>,</em> <strong>v</strong> ) := <em>hL</em> + <em>ML</em> <strong>v</strong> <em>−</em> ∆[ˆ] <em>L</em> through which the original nonlinear dynamics (3) is transformed into a linear dynamics as </p>
+<p><strong>==&gt; picture [196 x 39] intentionally omitted &lt;==</strong></p>
+<p>where 04 <em>×</em> 4 <em>, I</em> 4 <em>∈</em> R[4] <em>[×]</em>[4] are zero and identity matrices. The feedback-linearization-based MPC problem is then formulated as follows: </p>
+<p><strong>==&gt; picture [239 x 76] intentionally omitted &lt;==</strong></p>
+<p>where <em>P</em>[˜] , <em>Q</em>[˜] , <em>R</em>[˜] are positive-definite weight matrices, and <em>Ad, Bd</em> are constant matrices in the discretized dynamics, corresponding to <em>Ac</em> and <em>Bc</em> in the continuous counterpart (13). </p>
+<h2 id="v-simulation">V. SIMULATION</h2>
+<h2 id="a-setup"><em>A. Setup</em></h2>
+<p>We validate the proposed planning algorithms in simulation. The overall flow chart during simulation is illustrated in Fig. 2. All modules in Fig. 2 are individually implemented in Robot Operating System (ROS) using C++. Excavator dynamics simulator (PLANT in Fig. 2) is based on the derived system dynamics (2) where the external disturbance ∆ is modeled with a steady-state modified LuGre friction model [26] for cylinder friction and modified Fundamental Earthmoving Equation (FEE) [7, 27] for soil-bucket interaction. Note that friction and soil-bucket interaction models are introduced only to construct a realistic simulation environment and are unknown to the planning algorithms. Parameters in the system dynamics and physical constraints are from the Hyundai HX300L model in Fig. 1. </p>
+<p>As a motion controller, which computes the control input <strong>u</strong> based on the reference trajectory <strong>x</strong> <em>d</em> generated from the local planning module, we adopt a feedback linearizationbased PID controller: <strong>u</strong> = <em>Jθ[−⊤]</em> ( <em>hθ −</em> ∆+[ˆ] <em>Mθ</em> <strong>u</strong> PID). Applying the control input <strong>u</strong> to the system equation (2), input-output stability of the closed-loop system can be derived [28, Ch. 5] where the input is the estimation error of the external disturbance ∆=[˜] ∆ <em>−</em> ∆[ˆ] multiplied by the inverse of the mass matrix <em>Mθ</em> , and the output is the state <strong>x</strong> . </p>
+<p>The global planner is implemented using ALGLIB [29], an open-source nonlinear optimization solver. We use 9 Bernstein control points for phases 1 and 3, respectively, and 20 via points for phase 2. Next, to solve the formulated model predictive control problem (14), we implement differential </p>
+<p>dynamic programming (DDP) with augmented Lagrangian method [30], which is an algorithm widely exploited in various robotic application for real-time trajectory optimization [17–19]. It transforms the original constrained MPC problem into an unconstrained problem using the Lagrangian and quadratic penalty function, which is then solved with the conventional DDP algorithm. For MPC implementation, we employ the time horizon of 1000 ms, control discretization and integration rate of 20 ms. Except for the results of cylinder displacements <strong>L</strong> , which are normalized with constant bias and constant normalization factors, the other results related to physical limits of Hyundai HX300L displayed in Fig. 7 and Fig. 8 are normalized with constant normalization factors, denoted with ([¯] <em>·</em> ). Each element of control inputs and the corresponding channel of disturbance estimates are normalized with the same factor for comparison. </p>
+<p>To validate the proposed framework, we conducted two simulation scenarios on a desktop computer equipped with an Intel Core i7-9750 CPU at 2.6 GHz, by varying the target excavation depth: 1) shallow excavation and 2) deep excavation. As depicted in Fig. 2, we assume prior knowledge of the environment, i.e. the ground shape, which can be obtained either from onboard sensors like lidars and cameras, or from external sensors like total station in real experiment. </p>
+<h2 id="b-results"><em>B. Results</em></h2>
+<p><em>1) Scenario 1 - shallow excavation:</em> Fig. 6a and Fig. 7 describe the simulation result for shallow excavation. In the first scenario, not to penetrate through the target shape, the global planner plans a trajectory that stretches out in a relatively large region in phase 2. The bucket tip well tracks the target shape, and tip-grading-like motion is generated. The global trajectory was generated in 2.1 seconds. As in Fig. 7a and Fig. 7c, even if the global trajectory is intentionally generated to exceed the physical limit of some variables that are not considered in the global planning, physical constraints are still satisfied during local planning phase. The control input trajectory computed from the local planning is displayed in Fig. 7b where all the input limits are satisfied. In Fig. 7d, the hydraulic cylinder friction model can be clearly found at the bucket cylinder (bottom-left subfigure), whereas the effect by the friction model is found to be smaller at the boom cylinder (top-right subfigure) and the arm cylinder (bottom-left) due to larger disturbance from the soil-bucket interaction. Still, the disturbance estimate (black line) follows the modeled disturbance (red line) in all directions. The average computation time of the local planning is 21.7 ms ( <em>≈</em> 46 Hz) which we believe is sufficient for real-time application. </p>
+<p><em>2) Scenario 2 - deep excavation:</em> Simulation results of the second scenario can be found in Fig. 8 and Fig. 6b. In contrast to the first scenario, if the target ground is located deep below the earth surface, the excavator tip does not aim to reach the target shape in phase 2. Instead, it maximizes the excavation volume by generating a triangleshaped phase 2 trajectory. Since the phase 2 trajectory is constrained not to exceed the target shape, such deep target </p>
+<p>shape can be finally reached by repeating this target-shapeaware excavation-volume-maximizing strategy. The global trajectory was generated in 1.6 seconds. As in the subfigure Fig. 8d, larger disturbance than that in the first scenario was applied due to deeper penetration of the bucket into the soil. Even in the presence of such larger disturbance, similar to the results of the first scenario, the global reference is well tracked by the local planning as can be found in the subfigure Fig. 8a. While tracking the global reference, the computed local trajectory is shown to satisfy all the physical constraints as in the subfigures Fig. 8a, Fig. 8b, and Fig. 8c. It took 30.2 ms ( <em>≈</em> 33 Hz) for local planning computation on average. </p>
+<h2 id="vi-conclusion">VI. CONCLUSION</h2>
+<p>In this paper, we presented a real-time planning algorithm for a single digging task of a hydraulic excavator. The algorithm consists of a global and a local planner. In the global planning phase, the trajectory that maximizes excavation volume and minimizes energy cost under the <em>operational constraints</em> is generated online using Bernstein parameterization. The high-fidelity local planner tracks the generated global trajectory while satisfying the <em>physical constraints</em> in real-time. The proposed algorithm was validated through a realistic simulation environment with two different operation objectives: deep and shallow soil excavation. The simulation results showed that the proposed online global planner generates an optimized bucket tip trajectory in a few seconds, and the local planner plans disturbance-aware, physically feasible receding horizon trajectories in realtime. Future work may include validation of the proposed algorithm in actual excavators. </p>
+<h2 id="acknowledgment">ACKNOWLEDGMENT</h2>
+<p>The authors would like to appreciate Young Bum Kim (Hyundai Construction Equipment) for his kind support in the simulation setup. </p>
+<h2 id="references">REFERENCES</h2>
+<ul>
+<li>
+<p>[1] B. Son, C. Kim, C. Kim, and D. Lee, “Expert-emulating excavation trajectory planning for autonomous robotic industrial excavator,” in <em>2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em> . IEEE, 2020, pp. 2656–2662. </p>
+</li>
+<li>
+<p>[2] R. J. Sandzimier and H. H. Asada, “A data-driven approach to prediction and optimal bucket-filling control for autonomous excavators,” <em>IEEE Robotics and Automation Letters</em> , vol. 5, no. 2, pp. 2682–2689, 2020. </p>
+</li>
+<li>
+<p>[3] F. E. Sotiropoulos and H. H. Asada, “Autonomous excavation of rocks using a gaussian process model and unscented kalman filter,” <em>IEEE Robotics and Automation Letters</em> , vol. 5, no. 2, pp. 2491–2497, 2020. </p>
+</li>
+<li>
+<p>[4] R. Mascaro, M. Wermelinger, M. Hutter, and M. Chli, “Towards automating construction tasks: Large-scale object mapping, segmentation, and manipulation,” <em>Journal of Field Robotics</em> , 2020. </p>
+</li>
+<li>
+<p>[5] A. Stentz, J. Bares, S. Singh, and P. Rowe, “A robotic excavator for autonomous truck loading,” <em>Autonomous Robots</em> , vol. 7, no. 2, pp. 175–186, 1999. </p>
+</li>
+<li>
+<p>[6] S. Yoo, C. Park, S. You, and B. Lim, “A dynamics-based optimal trajectory generation for controlling an automated excavator,” <em>Proceedings of the Institution of Mechanical Engineers, Part C: Journal of Mechanical Engineering Science</em> , vol. 224, no. 10, pp. 2109–2119, 2010. </p>
+</li>
+<li>
+<p>[7] Y. B. Kim, J. Ha, H. Kang, P. Y. Kim, J. Park, and F. Park, “Dynamically optimal trajectories for earthmoving excavators,” <em>Automation in Construction</em> , vol. 35, pp. 568–578, 2013. </p>
+</li>
+</ul>
+<p><strong>==&gt; picture [354 x 137] intentionally omitted &lt;==</strong></p>
+<p>Fig. 6: Global planning results for the two scenarios. </p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [237 x 201] intentionally omitted &lt;==</strong></p>
+<p><strong>----- Start of picture text -----</strong><br/>
+(a) local planning result: global reference tracking<br/>(c) local planning result: normalized power and pump flow rate<br/><strong>----- End of picture text -----</strong><br/></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [238 x 201] intentionally omitted &lt;==</strong></p>
+<p><strong>----- Start of picture text -----</strong><br/>
+(b) local planning result: normalized control input trajectory<br/>(d) local planning result: normalized estimated disturbance<br/><strong>----- End of picture text -----</strong><br/></p>
+<p>Fig. 7: Scenario 1 - shallow excavation. In the subfigures (a), (b), and (c), red dashed lines denote the corresponding physical limits. LP and GP in the subfigure (a) stand for the trajectory computed from local planning and that from global planning. Each variable with a bar in the subfigures (b), (c), (d) is the corresponding constant normalization factor. </p>
+<ul>
+<li>
+<p>[8] Y. Yang, P. Long, X. Song, J. Pan, and L. Zhang, “Optimization-based framework for excavation trajectory generation,” <em>IEEE Robotics and Automation Letters</em> , vol. 6, no. 2, pp. 1479–1486, 2021. </p>
+</li>
+<li>
+<p>[9] Y. Yang, J. Pan, P. Long, X. Song, and L. Zhang, “Time variable minimum torque trajectory optimization for autonomous excavator,” <em>arXiv preprint arXiv:2006.00811</em> , 2020. </p>
+</li>
+<li>
+<p>[10] E. Jelavic and M. Hutter, “Whole-body motion planning for walking excavators,” in <em>2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em> . IEEE, 2019, pp. 2292–2299. </p>
+</li>
+<li>
+<p>[11] E. Jelavic, Y. Berdou, D. Jud, S. Kerscher, and M. Hutter, “Terrainadaptive planning and control of complex motions for walking ex- </p>
+</li>
+</ul>
+<p>cavators,” in <em>2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em> . IEEE, 2020, pp. 2684–2691. </p>
+<ul>
+<li>
+<p>[12] F. A. Bender, S. G¨oltz, T. Br¨aunl, and O. Sawodny, “Modeling and offset-free model predictive control of a hydraulic mini excavator,” <em>IEEE Transactions on Automation Science and Engineering</em> , vol. 14, no. 4, pp. 1682–1694, 2017. </p>
+</li>
+<li>
+<p>[13] H. Wind, A. Renner, F. A. Bender, and O. Sawodny, “Trajectory generation for a hydraulic mini excavator using nonlinear model predictive control,” in <em>2020 IEEE International Conference on Industrial Technology (ICIT)</em> . IEEE, 2020, pp. 107–112. </p>
+</li>
+<li>
+<p>[14] Y. Yang, L. Zhang, X. Cheng, J. Pan, and R. Yang, “Compact </p>
+</li>
+</ul>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [165 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>----- Start of picture text -----</strong><br/>
+(a) local planning result: global reference tracking<br/><strong>----- End of picture text -----</strong><br/></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [10 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [209 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>----- Start of picture text -----</strong><br/>
+(c) local planning result: normalized power and pump flow rate<br/><strong>----- End of picture text -----</strong><br/></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [199 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>----- Start of picture text -----</strong><br/>
+(b) local planning result: normalized control input trajectory<br/><strong>----- End of picture text -----</strong><br/></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 36] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [47 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [46 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [11 x 35] intentionally omitted &lt;==</strong></p>
+<p><strong>==&gt; picture [193 x 8] intentionally omitted &lt;==</strong></p>
+<p><strong>----- Start of picture text -----</strong><br/>
+(d) local planning result: normalized estimated disturbance<br/><strong>----- End of picture text -----</strong><br/></p>
+<p>Fig. 8: Scenario 2 - deep excavation. In the subfigures (a), (b), and (c), red dashed lines denote the corresponding physical limits. LP and GP in the subfigure (a) stand for the trajectory computed from local planning and that from global planning. Each variable with a bar in the subfigures (b), (c), (d) is the corresponding constant normalization factor. </p>
+<p>reachability map for excavator motion planning,” in <em>2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em> . IEEE, 2019, pp. 2308–2313. </p>
+<ul>
+<li>
+<p>[15] D. Jud, G. Hottiger, P. Leemann, and M. Hutter, “Planning and control for autonomous excavation,” <em>IEEE Robotics and Automation Letters</em> , vol. 2, no. 4, pp. 2151–2158, 2017. </p>
+</li>
+<li>
+<p>[16] D. Jud, P. Leemann, S. Kerscher, and M. Hutter, “Autonomous free-form trenching using a walking excavator,” <em>IEEE Robotics and Automation Letters</em> , vol. 4, no. 4, pp. 3208–3215, 2019. </p>
+</li>
+<li>
+<p>[17] F. Farshidian, E. Jelavic, A. Satapathy, M. Giftthaler, and J. Buchli, “Real-time motion planning of legged robots: A model predictive control approach,” in <em>2017 IEEE-RAS 17th International Conference on Humanoid Robotics (Humanoids)</em> . IEEE, 2017, pp. 577–584. </p>
+</li>
+<li>
+<p>[18] D. Lee, H. Seo, D. Kim, and H. J. Kim, “Aerial manipulation using model predictive control for opening a hinged door,” in <em>2020 IEEE International Conference on Robotics and Automation (ICRA)</em> . IEEE, 2020, pp. 1237–1242. </p>
+</li>
+<li>
+<p>[19] C. Y. Son, H. Seo, D. Jang, and H. J. Kim, “Real-time optimal trajectory generation and control of a multi-rotor with a suspended load for obstacle avoidance,” <em>IEEE Robotics and Automation Letters</em> , vol. 5, no. 2, pp. 1915–1922, 2020. </p>
+</li>
+<li>
+<p>[20] W. Van Soest, Q. Chu, and J. Mulder, “Combined feedback linearization and constrained model predictive control for entry flight,” <em>Journal of guidance, control, and dynamics</em> , vol. 29, no. 2, pp. 427–434, 2006. </p>
+</li>
+<li>
+<p>[21] D. Q. Mayne, J. B. Rawlings, C. V. Rao, and P. O. Scokaert, “Constrained model predictive control: Stability and optimality,” <em>Automatica</em> , vol. 36, no. 6, pp. 789–814, 2000. </p>
+</li>
+<li>
+<p>[22] Z. Li and J. Sun, “Disturbance compensating model predictive control </p>
+</li>
+<li>
+<p>with application to ship heading control,” <em>IEEE transactions on control systems technology</em> , vol. 20, no. 1, pp. 257–265, 2011. </p>
+</li>
+<li>
+<p>[23] D. Hentzen, T. Stastny, R. Siegwart, and R. Brockers, “Disturbance estimation and rejection for high-precision multirotor position control,” in <em>2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em> . IEEE, 2019, pp. 2797–2804. </p>
+</li>
+<li>
+<p>[24] B. B. Kocer, T. Tjahjowidodo, and G. G. L. Seet, “Model predictive uav-tool interaction control enhanced by external forces,” <em>Mechatronics</em> , vol. 58, pp. 47–57, 2019. </p>
+</li>
+<li>
+<p>[25] T. Tomi´c, C. Ott, and S. Haddadin, “External wrench estimation, collision detection, and reflex reaction for flying robots,” <em>IEEE Transactions on Robotics</em> , vol. 33, no. 6, pp. 1467–1482, 2017. </p>
+</li>
+<li>
+<p>[26] X. B. Tran, N. Hafizah, and H. Yanada, “Modeling of dynamic friction behaviors of hydraulic cylinders,” <em>Mechatronics</em> , vol. 22, no. 1, pp. 65–75, 2012. </p>
+</li>
+<li>
+<p>[27] O. Luengo, S. Singh, and H. Cannon, “Modeling and identification of soil-tool interaction in automated excavation,” in <em>Proceedings. 1998 IEEE/RSJ International Conference on Intelligent Robots and Systems. Innovations in Theory, Practice and Applications (Cat. No. 98CH36190)</em> , vol. 3. IEEE, 1998, pp. 1900–1906. </p>
+</li>
+<li>
+<p>[28] H. K. Khalil and J. W. Grizzle, <em>Nonlinear systems</em> . Prentice hall Upper Saddle River, NJ, 2002, vol. 3. </p>
+</li>
+<li>
+<p>[29] S. Bochkanov and V. Bystritsky, “Alglib,” <em>Available from: www alglib net</em> , vol. 59, 2013. </p>
+</li>
+<li>
+<p>[30] B. Plancher, Z. Manchester, and S. Kuindersma, “Constrained unscented dynamic programming,” in <em>2017 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em> . IEEE, 2017, pp. 5674–5680. </p>
+</li>
+</ul>
+<blockquote>
+<p>[!info] 원본 참조
+그림/표/수식이 필요하면 원본 파일을 확인하세요: <span title="Obsidian 볼트에서 확인할 수 있는 자료">2021 Real-time motion planning of a hydraulic excavator using trajectory optimization and model predictive control - 서울대</span></p>
+</blockquote></main><script src="../assets/live.js"></script></body></html>

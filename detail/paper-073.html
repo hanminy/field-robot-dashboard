@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#73 거친 지형 계층형 주행계획 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #073</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2016</span><span class="badge">#073</span><span class="badge score">작업·궤적계획</span><span class="badge">논문 PDF</span></div>
+<h1>거친 지형 계층형 주행계획</h1>
+<p class="title-en" lang="en">Navigation planning for legged robots in challenging terrain</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 로봇 중심 고도지도에서 slope·roughness·step을 계산한 뒤 원·직사각형 footprint와 다족의 gap·step 극복 규칙을 계층적으로 적용하고, RRT*의 전역·단거리 재계획을 결합해 StarlETH가 미지 거친 지형과 좁은 통로에서 안전·경로 길이를 함께 최적화하도록 한 navigation framework다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>다족의 능력을 지우지 않는 거친 지형 경로계획</h3>
+<p>다족 로봇은 바퀴·궤도보다 큰 step과 gap을 넘고 옆걸음이나 제자리 회전을 할 수 있지만, 단순 2D obstacle map은 이 능력을 모두 '충돌'로 지워 버린다. 반대로 terrain cell 하나의 slope나 roughness만 보고 통과를 허용하면 로봇 몸체 전체가 놓였을 때의 기울기, 지지 영역, 좁은 통로 방향을 놓친다. 이 논문은 주행성을 terrain 자체의 속성이 아니라 특정 robot footprint와 capability의 결합으로 정의한다.</p><p>외부 센서로 만든 robot-centric elevation map의 각 셀은 height h와 variance를 가진다. 여기서 local slope, roughness, step height를 추출해 0~1 traversability map을 만들고, 실제 pose의 footprint 안에 든 셀을 다시 평가한다. 작은 gap·step이나 국소적인 거친 모서리는 다족이 넘을 수 있지만, 큰 경사·넓은 거친 영역·높은 step은 금지하는 이중 수준 해석이 핵심이다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p073-figure-p0004-1-o01-e8d3fd85">
+<img alt="원문 Figure 1, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/206fb2ccb8938b20694ddf90.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.4</b> — Fig. 1. The sample terrain used for parameter tuning consists of many different kinds of obstacles and terrains. (a) The elevation shows the different obstacles, and the cells are colored corresponding to their elevation values. (b) For each cell the footprint traversability, tf, of a circular footprint centered at this position is computed and represented with the following coloring: blue areas indicate full traversability, intermediate values are continuously decreasing from turquoise to green to yellow, and red areas are not traversable at all.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>D* Lite 기반 선행 방식은 robot을 point로 근사해 orientation과 실제 footprint를 고려하지 못했다.</li><li>BigDog의 2D costmap은 나무·바위가 놓인 대체로 평탄한 환경에 맞춰져 일반 rough terrain의 step·gap 능력을 활용하지 못했다.</li><li>정확한 polygon footprint만 항상 사용하면 넓은 환경에서 계획 시간이 늘고, 빠른 원형 근사만 쓰면 실제 통과 가능한 좁은 길을 막는다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>slope·roughness·step의 가중 결합으로 셀 주행성을 만들고 robot capability별 critical threshold를 구성했다.</li><li>footprint 내부의 gap width, 전체 inclination, 국소 rough/steep extent를 검사해 다족 특유의 통과 가능 obstacle을 구별했다.</li><li>circumscribed circle, inscribed circle, polygon footprint를 순차 적용하는 cascaded RRT* planner를 제안했다.</li><li>global·short-range replanning과 prior-map·exploration을 StarlETH simulation과 real hallway에서 검증했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>첫 단계는 elevation map과 같은 grid에서 slope s, roughness r, step height h를 주변 원형 영역으로 계산하고, 각 항을 critical value로 정규화해 traversability t를 만든다. 어느 한 특성이 임계값을 넘으면 t=0으로 강제한다. 두 번째 단계는 pose의 circular 또는 rectangular footprint가 덮는 셀의 평균 traversability와 기하 규칙을 검사해 footprint traversability t_f를 정한다.</p><p>planner는 OMPL RRT*의 collision checker를 footprint traversability 검사로 바꾸고, path length·낮은 traversability·옆걸음·후진 비용을 합산한다. global planner는 전체 경로를, short-range planner는 실행 구간을 갱신한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>확률 고도지도 입력</h4><p>Kinect, stereo, laser 등 외부 센서로 robot-centric elevation map을 만들고 각 셀의 height h와 variance를 유지한다. 이동과 새 관측에 따라 local map을 계속 갱신한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>셀 주행성 계산</h4><p>조절 가능한 원형 neighborhood에서 slope s, roughness r, step height h를 계산해 임계값과 weight로 t를 만든다. 한 특성이라도 critical value를 넘으면 해당 셀은 t=0이다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>footprint capability 검사</h4><p>직사각형 또는 원형 footprint 안의 평균 t를 구한 뒤, step과 gap을 분리하고 전체 inclination 및 위험 영역의 공간적 extent를 검사한다. 작은 gap·국소 모서리는 허용하고 넓은 steep/rough 영역은 거부한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>cascaded RRT*</h4><p>제한된 bounds에서 circumscribed circle로 먼저 계획하고, 실패하면 inscribed circle 경로를 polygon으로 검증한다. invalid segment만 polygon으로 재계획하고, 계속 실패하면 bounds를 전체 map으로 넓힌다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>short-range 실행 보정</h4><p>현재 pose부터 일정 길이의 global path segment를 최신 지도에서 검증한다. 새 obstacle로 invalid면 local bounds에서 같은 cascade를 실행하고, 실패하면 global planner를 강제 갱신한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>셀 주행성</h4><code>t=1-w_1\frac{s}{s_{crit}}-w_2\frac{r}{r_{crit}}-w_3\frac{h}{h_{crit}},\quad w_1+w_2+w_3=1</code><p>slope·roughness·step을 임계값으로 정규화한 0~1 score이며 어느 항이 임계를 넘으면 t를 0으로 둔다.</p></div><div class="eq"><h4>경로 구간 비용</h4><code>c=c_l+c_{trav}+c_{turn},\quad c_l=w_l l,\quad c_{trav}=w_{trav}l\left(\frac{1}{t_{f,segment}}\right)^p</code><p>RRT*가 짧고 높은 주행성을 가진 segment를 선호하고, 별도 c_turn으로 옆걸음과 후진을 벌점화한다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p073-figure-p0005-2-o01-e6c64a82">
+<img alt="원문 Figure 2, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/34c367a0dcf396067b0e72ce.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.5</b> — Fig. 2. Architecture of the path planning algorithm with the three main components mapping, global path planner, and short range planner.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p073-figure-p0006-3-o01-f9c3b42c">
+<img alt="원문 Figure 3, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/98703a42043254af7893b4c9.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.6</b> — Fig. 3. The global path planner employs different footprint representations in a cascaded structure to ﬁnd a global path between the start and goal pose.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>terrain cell에서 robot pose로 올라가는 2단계 주행성</h3><p>셀 단계의 t는 국소 경사·거칠기·단차를 간결하게 압축하지만, 최종 판단은 footprint 전체에서 한다. step의 상단 셀에서 step 방향에 수직인 길이 w_g 선을 따라 높이가 다시 임계 이내로 내려가는지 확인해 gap을 식별한다. footprint 전체의 평균 경사와 local bad-cell 비율도 검사해 한 점의 위험과 넓은 위험 지형을 구분한다.</p><ul><li>t=1은 평탄·매끈·무단차, t=0은 locally untraversable</li><li>gap width w_g까지 legged robot의 overstep 허용</li><li>parameter sample terrain으로 conservative/risky 설정 조정</li></ul></article><article class="tech-card"><h3>빠른 원형 근사와 정확한 polygon의 cascade</h3><p>circumscribed circle은 orientation을 제거해 셀별 t_f를 cache할 수 있고 경로 validity를 보장하지만 좁은 passage를 과도하게 막는다. inscribed circle은 좁은 길을 빨리 찾지만 실제 body보다 작아 사후 polygon 검증이 필요하다. 마지막 polygon planning은 x-y-heading 3차원 상태에서 옆걸음·제자리 회전을 포함해 복잡한 해를 찾는다.</p><ul><li>제한 bounds에서 시작해 실패 시 global bounds로 확대</li><li>inscribed path의 invalid 부분만 polygon 재계획</li><li>목표까지 실패하면 목표 주변에서 가장 가까운 valid partial path 사용</li></ul></article><article class="tech-card"><h3>global과 short-range replanning의 역할 분리</h3><p>global planner는 start-goal 전체 비용을 보고 prior와 누적 관측을 사용한다. short-range planner는 최신 map으로 실행 직전 segment의 validity를 보장한다. 전역 경로를 매 sensor update마다 다시 풀지 않고 local invalid segment만 교체함으로써 새 obstacle에 반응하면서도 RRT*의 큰 탐색 비용을 제한한다.</p><ul><li>미관측 영역은 낮은 traversability로 exploration 가능</li><li>already perceived region을 선호</li><li>계획 중에는 global map 갱신을 잠시 중단해 path consistency 유지</li></ul></article></div>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>4족 보행로봇 StarlETH에 Hokuyo UTM-30LX laser range sensor를 탑재하고 universal grid map library로 elevation·traversability를 구현했다.</li><li>simulation은 10×10 m S자 maze에 box, chair, table을 놓고 start와 goal을 반대 모서리에 배치했다.</li><li>real test는 약 20 m hallway에 다양한 obstacle과 narrow passage를 배치하고, 벽만 포함한 building blueprint를 initial map으로 사용했다.</li><li>slope·roughness·step filter와 local traversability mapping은 약 0.5 Hz로 실행됐다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>simulation에서 pure exploration, maze blueprint prior, prior에 없는 shortcut의 세 경우를 시험했다.</li><li>global path는 60 s마다, short-range path는 10 s마다 갱신하며 새 관측으로 obstacle·shortcut이 드러날 때 path adaptation을 확인했다.</li><li>real hallway에서도 같은 planner update rate를 유지하고 online 0.5 Hz traversability map으로 goal까지 자율 주행했다.</li></ul>
+<h3>비교 기준</h3><ul><li>세 planning condition 간 정성 비교: pure exploration / prior blueprint / prior+new shortcut</li><li>동일 task에서 다른 planner의 수치 비교는 원문에서 보고되지 않음</li></ul>
+<h3>평가 지표</h3><ul><li>goal 도달과 새 obstacle·shortcut 반영 여부</li><li>global·short-range update period</li><li>traversability mapping rate</li><li>maze·hallway 크기</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p073-figure-p0007-4-o01-7076627d">
+<img alt="원문 Figure 4, PDF 7쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/fd68981d56e92c8a79a68ab3.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.7</b> — Fig. 4. To evaluate the navigation framework in simulation a maze (a) is provided as terrain. The planner can either explore the environment(b) or load an initial map (c). It can also adapt to newly perceived shortcuts (d).</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p073-figure-p0006-5-o01-c9869736">
+<img alt="원문 Figure 5, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6e92ba589517487701977ab2.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.6</b> — Fig. 5. StarlETH navigates autonomously down a hallway, obstructed by different obstacles. On the right side, the planned path which the robot follows is shown together with the current traversability map.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>10×10 m simulation maze에서 세 조건 모두 solution을 찾아 실행 중 새 지형에 맞춰 경로를 바꿨다. pure exploration은 시야 밖을 goal까지 직선으로 가정하다 새 관측마다 수정했고, blueprint prior는 알려진 maze를 따르면서 표시되지 않은 obstacle을 우회했다. shortcut 조건에서는 처음 prior 경로를 따르다가 지름길이 지도에 들어오고 global path가 갱신되자 goal로 직접 향했다.</p><p>실제 약 20 m hallway에서는 벽만 든 prior map으로 시작해 laser가 새 obstacle과 좁은 passage를 관측했다. 0.5 Hz traversability mapping과 simulation과 같은 60 s global·10 s short-range 갱신으로 path가 obstacle을 피하도록 바뀌었고 StarlETH가 goal position까지 자율 주행했다. 이는 원형 근사의 속도와 polygon 검증의 좁은 통로 능력이 실제 platform에서 함께 동작했음을 보여준다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>simulation maze 크기</td><td>10×10 m</td><td>S자 maze, start-goal 반대 모서리, box·chair·table obstacle</td><td>PDF p.6</td></tr><tr><td>global path 갱신 주기</td><td>60 s</td><td>simulation 세 조건과 real hallway에서 동일</td><td>PDF p.6</td></tr><tr><td>short-range path 갱신 주기</td><td>10 s</td><td>실행 구간 validity 확인 및 local replan</td><td>PDF p.6</td></tr><tr><td>실제 hallway 길이</td><td>약 20 m</td><td>obstacle·narrow passage와 wall-only blueprint prior</td><td>PDF p.7</td></tr><tr><td>online traversability mapping rate</td><td>0.5 Hz</td><td>실제 StarlETH hallway 시험</td><td>PDF p.7</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>circumscribed circle만 사용하면 실제로 통과 가능한 narrow passage가 막힌 것으로 판단된다.</li><li>inscribed circle 경로는 실제 polygon footprint와 충돌할 수 있어 사후 검증·부분 재계획이 필요하다.</li><li>전체 cascade와 확장 bounds에서도 goal path를 못 찾으면 goal을 포함하지 않는 partial path로 대체된다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>planner 간 planning time·path length·success rate·clearance의 정량 benchmark가 없어 cascade의 효율 이득을 수치로 비교할 수 없다.</li><li>0.5 Hz terrain mapping, 10 s short-range, 60 s global update는 느린 StarlETH 환경에 맞춰져 빠른 장비나 동적 장애물에는 늦다.</li><li>실제 검증은 약 20 m 실내 hallway 한 종류이며, path는 body pose 수준이라 footstep과 gait를 최적화하지 않는다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>각 path segment의 terrain에 따라 빠른 trot과 느리지만 정교한 gait를 planner가 함께 선택한다.</li><li>계획한 body path를 따라 local footstep planner가 적절한 접촉점을 찾아 다족의 full capability를 활용한다.</li><li>실제 통과 성공·에너지·slip 데이터로 robot-specific traversability를 학습한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>고도지도에서 slope·roughness·step을 계산하고 다족 capability와 실제 footprint를 검사한 뒤, 원형·polygon cascade RRT*와 전역·국소 재계획을 결합한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>StarlETH가 10 m maze 세 조건과 약 20 m hallway에서 미지 obstacle·shortcut에 경로를 적응하며 goal에 도달했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>정량 planner 비교가 없고 0.5 Hz 지도·10/60초 계획 주기가 느리며, footstep·gait·slip dynamics는 body-level 기하 비용에 포함되지 않았다.</p></div></div>
+<div class="kw"><span>#작업·궤적계획</span><span>#환경인식</span><span>#주행성 지도</span><span>#계층형 RRT*</span><span>#발자국 모델</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>굴착기도 track footprint, 상부체 자세, 붐 방향과 적재 상태에 따라 통과 가능성이 달라진다. terrain-cell 다음 footprint-pose를 평가하는 구조는 rollover·ground-clearance·counterweight collision을 넣기 좋은 틀이다.</p><p>대형 장비에는 gap 대신 접지압, track slip과 차체 자세가 중요하다. 원형-다각형 cascade는 유지하되 footprint validity를 stability·sinkage risk로 교체해야 한다.</p><ul><li>track polygon 아래 셀의 slope·roughness뿐 아니라 soil bearing capacity와 sinkage uncertainty를 함께 검사할 수 있다.</li><li>굴착기의 heading state는 narrow access와 counterweight sweep, boom 작업 방향을 결정하므로 pose planning에 필수다.</li><li>prior blueprint와 online terrain update로 계획도와 실제 토공 형상의 차이를 주행 중 보정할 수 있다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.2, p.3</li><li><b>방법론</b>: p.3, p.4, p.5, p.6</li><li><b>실험</b>: p.6, p.7</li><li><b>결과</b>: p.6, p.7</li><li><b>한계</b>: p.4, p.5, p.6, p.7</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2016 Navigation planning for legged robots in challenging terrain.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-072.html"><span class="lbl">← 이전 #72</span>IBEX 굴착기 원격조작 플랫폼</a><a class="next" href="paper-074.html"><span class="lbl">다음 #74 →</span>토공 장비 자동화의 핵심 과제</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

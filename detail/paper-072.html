@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#72 IBEX 굴착기 원격조작 플랫폼 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · ETH Zurich · #072</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-exc">ETH Zurich</span><span class="badge">2016</span><span class="badge">#072</span><span class="badge score">안전·HRI</span><span class="badge">논문 PDF</span></div>
+<h1>IBEX 굴착기 원격조작 플랫폼</h1>
+<p class="title-en" lang="en">IBEX: A Tele-operation and Training Device for Walking Excavators</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/bad9437ab2c369c1.html">ETH 자율굴착 논문 카드 요약 2014-2026</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — 재난 현장의 보행 굴착기를 안전 구역에서 조종하도록, 두 편심 레버의 차동 roll·pitch와 대형 회전 베어링의 연속 yaw, 3면 영상·실제형 조작계·Vortex 토공 시뮬레이터를 결합한 3DOF 모션 플랫폼이다. 기구 요구치는 충족했으나 실기 teleoperation과 3D 상황인지의 정량 검증은 아직 없다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>위험 현장 중장비의 힘은 유지하고 운전자는 분리하기</h3>
+<p>재난 뒤 잔해 제거에는 큰 힘을 내는 건설기계가 필요하지만 운전자가 위험 구역에 들어가면 인명 위험이 생긴다. 일본의 무인 굴착기는 최대 100 km 원격 운용 사례가 있었으나 주로 영상과 일부 음향만 전달해, 불균일 지면의 차체 자세 감각이 사라졌다.</p><p>문제는 보행 굴착기에서 더 심하다. Menzi Muck M545는 바퀴와 지지대가 달린 네 다리를 각각 3자유도로 움직여 험지 접근성이 높지만, 원격 운전자는 카메라 방향의 두 다리만 볼 수 있고 작업기 조작과 네 다리 협응을 동시에 해야 한다. 실제 운전자도 네 바퀴의 접지를 시각만으로 판단하기 어려워 몸으로 느끼는 운동에 의존한다. 따라서 원격 조종석이 실제 cabin의 자세를 충분한 범위와 속도로 재현해야 한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p072-figure-p0001-1-o01-69cb971a">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2d008b289fb876214a4d1271.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1. Ibex: a teleoperation platform for walking excavators with precise motion feedback</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0002-2-o01-84c34bfc">
+<img alt="원문 Figure 2, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/8f1090642b281265e8cb1ee4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.2</b> — Fig. 2. Typical setup for teleoperation of construction machinery for disaster recovery work (picture THW)</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>THW의 보행 굴착기는 feedback이 없어 운전자가 line-of-sight에 서야 했고, 위험 구역과 운전자를 충분히 분리하지 못했다.</li><li>Stewart platform은 보행 굴착기가 요구하는 ±45° 자세와 빠른 연속 yaw에 맞지 않고, gimbal·산업용 robot arm은 trailer 배치에 너무 크다.</li><li>디지털 영상 압축·전송은 지연이 변동해 motion feedback과 영상의 동기 오차를 만들 수 있다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>두 편심 lever를 차동 구동해 ±45° roll·pitch를 작은 cone-shaped base에서 구현했다.</li><li>대형 four-point bearing, external gear, slip ring 조합으로 cockpit의 무한 yaw와 전원·CAN·Ethernet 전달을 동시에 구현했다.</li><li>3면 foldable display와 실제형 joystick·pedal을 통합하고, 동일 ROS 제어가 실기 원격모드와 Vortex 훈련모드를 지원하도록 구성했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>설계 요구치는 M545 숙련 운전자의 극한 기동 IMU 기록에서 도출했다. roll·pitch는 ±45°, 실제 최대 각속도 ±60°/s, 각가속도 ±30°/s²였고 yaw는 각도 제한 없이 ±60°/s였다. IBEX는 선형 가속을 생략하는 대신 이 회전 범위를 넘는 속도·가속도를 목표로 하며, 사람을 태우는 장치이므로 기구 하중·진동·전기·비상정지를 함께 설계했다.</p><p>제어는 yaw motor angle을 cabin yaw에 직접 대응시키고, roll φ와 pitch θ는 두 lever의 각도 α_i로 해석하는 inverse kinematics다. 운영 모드에 따라 실제 굴착기의 자세·카메라·조이스틱 신호 또는 Vortex simulator의 가상 상태를 같은 ROS interface로 연결한다. 영상은 변동 지연을 피하기 위해 analog 5.8 GHz, 명령과 자세는 XBee-PRO 868 digital link로 분리한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>실기 요구 계측</h4><p>전문 운전자가 M545로 극한 기동할 때 onboard IMU로 차체 운동을 기록한다. 수평 운동은 지각·자동차 가속에 비해 작다고 판단하고, roll·pitch·yaw의 각도와 각속도 재현 범위를 설계 입력으로 삼는다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>차동 roll·pitch 기구</h4><p>cone-shaped aluminum base 안의 대칭 eccentric lever 두 개를 MOOG G3-V6 motor와 Wittenstein TPK+50 gearbox로 구동한다. 두 lever의 조합이 roll과 pitch를 만들고, universal/pivot joint가 cockpit 하중을 지지한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>연속 yaw와 slip-ring</h4><p>Schaeffler VSA200414-N-RL0 four-point bearing의 external tooth를 Wittenstein TPM+ dynamic 025 motor로 구동한다. SRA-73798과 SC104 slip-ring을 통해 CAN·Ethernet·전원·emergency signal을 고정 base와 회전 cockpit 사이에 전달한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>운전자 feedback</h4><p>U자형 3개 화면 중 바깥 두 개를 접을 수 있게 하고, 실제 굴착기 joystick의 hydraulic pilot 대신 Logitech sensor base와 조정된 return spring을 쓴다. pedal과 joystick 위치는 운전자 체격에 맞게 이동한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>통신·훈련 운영</h4><p>100 Hz command는 868 MHz XBee, 3개 영상은 5.8 GHz analog link로 보내고, Vortex의 M545·deformable earth work를 같은 ROS 제어에 연결한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>lever 연결 길이 제약</h4><code>\lVert \overrightarrow{OD_1}-\overrightarrow{OB_1}\rVert^2=b^2+c^2</code><p>roll·pitch 자세에서 cockpit 쪽 결합점 D_1과 motor lever 결합점 B_1 사이 rod 길이가 일정하다는 inverse-kinematics 제약이다.</p></div><div class="eq"><h4>lever 각도 해</h4><code>\alpha_1=2\arctan\!\left(\frac{A_1\pm\sqrt{A_1^2+B_1^2-C_1^2}}{B_1+C_1}\right)</code><p>기하 제약을 풀어 roll φ와 pitch θ에 대응하는 한쪽 lever angle α_1을 구하며, 반대쪽도 같은 방식으로 계산한다.</p></div><div class="eq"><h4>구동계 관성비</h4><code>\lambda=\frac{J_{load}}{J_{motor}}</code><p>gear compliance로 인한 사람 탑승 플랫폼의 two-mass oscillation을 피하기 위해 최대 10:1을 설계 기준으로 사용했다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p072-figure-p0003-3-o01-a634d1aa">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/63cfb111c5b97cea50780ee4.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3. Static base assembly overview</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0003-4-o01-3805e3d2">
+<img alt="원문 Figure 4, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b5e988eb8a01bb4c25783494.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.3</b> — Fig. 4. Lever assembly for differential actuation of roll and pitch.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0003-5-o01-d4ccc48b">
+<img alt="원문 Figure 5, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0140c3bacf4af4a1c26dbe82.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.3</b> — Fig. 5. Ibex reaches a maximum angle of ±45◦in roll and pitch.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0004-6-o01-a693cbf7">
+<img alt="원문 Figure 6, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/245cf3ce3cd623ceb5fc6975.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 6 · PDF p.4</b> — Fig. 6. The central bearing systems enables permanent rotation of the cockpit and supports the cockpit by a universal joint.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0004-7-o01-7a9efa17">
+<img alt="원문 Figure 7, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/62d59e49172833108c8c73eb.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 7 · PDF p.4</b> — Fig. 7. The cockpit consists of a chair, three screens, excavator joysticks as well as pedals.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0004-9-o01-d2efcfab">
+<img alt="원문 Figure 9, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6183c00ef983d58cb546b94e.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 9 · PDF p.4</b> — Fig. 9. Schematic depiction of the power and data connections between the control cabinet and the motion platform.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0005-10-o01-481a334e">
+<img alt="원문 Figure 10, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9a83c5542a7eef3d7ccfc35a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 10 · PDF p.5</b> — Fig. 10. Angle deﬁnition of lever assembly kinematics</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p072-figure-p0005-11-o01-1e97f6c4">
+<img alt="원문 Figure 11, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/2833d861ee08b47c9046a6f5.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 11 · PDF p.5</b> — Fig. 11. Communication overview</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>작은 설치면적에서 큰 자세를 내는 차동 lever</h3><p>두 대칭 lever를 독립 구동하면 공통 성분과 차동 성분으로 pitch와 roll을 만든다. 상·하 singularity를 의도적으로 극한 위치로 써 공간을 줄였고, universal joint가 큰 cockpit 운동을 허용한다. NX motion simulation에서 평균 체격 dummy와 실측 기동을 재생해 최대 actuator torque 240 Nm를 얻고 safety factor 2.5를 적용해 600 Nm를 요구치로 정했다.</p><ul><li>roll·pitch 각도 ±45°</li><li>IBEX 각속도 ±87°/s와 각가속도 ±57°/s²</li><li>TPK+50 overall gear reduction 462:1</li><li>MOOG G3-V6는 관성비 10:1 조건을 만족하는 최소 series motor</li></ul></article><article class="tech-card"><h3>연속 회전 cockpit와 사람 중심 interface</h3><p>yaw는 real excavator처럼 무한 회전해야 하므로 Stewart 구조 대신 외치형 four-point bearing과 직접 motor drive를 쓴다. cockpit의 PC, 3개 화면, joystick, pedal이 함께 회전하고 slip-ring이 data와 power를 전달한다. 접이식 화면과 trailer의 접이식 side wall은 운용 때 motion envelope를 확보하면서 운송 때 일반 문과 작은 trailer에 맞추는 설계다.</p><ul><li>IBEX yaw 최대 각속도 ±95°/s</li><li>총 플랫폼 질량 450 kg</li><li>4-point safety belt와 adjustable controls</li><li>전기 cabinet은 EN 61439-1 외부 인증</li></ul></article><article class="tech-card"><h3>지연 특성이 다른 신호의 통신 분리</h3><p>제어 명령은 압축 가능한 저대역 digital link, 영상은 동기 변동이 적은 analog link에 배정한다. 목표 원격 거리는 최소 500 m이고 플랫폼-굴착기 제어 지연은 500 ms 미만이어야 한다. 논문은 특히 영상과 motion feedback의 상대 지연이 5 ms를 넘으면 motion sickness가 생길 수 있다고 보고, 절대 대역폭보다 일정한 동기를 우선했다.</p><ul><li>XBee-PRO 868: outdoor 최대 40 km, 24 kbps</li><li>굴착기 100 Hz control의 요구량 14.4 kbps</li><li>3개 Immersion RC 25 mW transmitter, 5.8 GHz</li><li>8 channels, channel width 37 MHz</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p072-figure-p0004-8-o01-3bc3974e">
+<img alt="원문 Figure 8, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/0d5d987984561ca05e5d371b.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 8 · PDF p.4</b> — Fig. 8. ibex is mounted in a custom trailer with side walls that can be folded out.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>Menzi Muck M545 보행 굴착기의 숙련 운전자 극한 기동을 onboard IMU로 계측해 플랫폼 요구치를 만들었다.</li><li>450 kg 3DOF IBEX에 MOOG G3-V6 roll/pitch motors, Wittenstein gearbox, continuous-yaw bearing, 3개 foldable screens, excavator-style joysticks와 pedals를 통합했다.</li><li>CM Labs Vortex에서 M545와 deformable-soil earth work를 모델링하고, 숙련자와 비숙련자가 동일 cockpit에서 여러 scenario를 시험했다.</li><li>실기 원격 통신 architecture는 XBee-PRO 868 command link와 3-channel 5.8 GHz analog video, patch·cloverleaf diversity receiver로 설계했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>실측 M545의 최대 roll/pitch/yaw 각도·각속도·각가속도와 IBEX가 달성한 기구 사양을 Table I에서 대조했다.</li><li>Vortex 훈련 scenario를 숙련·비숙련 운전자에게 제공하고 motion·visual feedback의 동작과 초기 사용자 반응을 확인했다.</li><li>real excavator와의 장거리 teleoperation 성능, 작업시간, error rate, 지연 분포를 측정하는 정식 protocol은 이 논문에서 완료되지 않았다.</li></ul>
+<h3>비교 기준</h3><ul><li>Menzi Muck M545 실측 회전 사양</li><li>상용 Stewart·gimbal·industrial robot arm 구조에 대한 요구조건 비교</li><li>사용자 작업 성능의 정량 baseline은 원문에서 보고되지 않음</li></ul>
+<h3>평가 지표</h3><ul><li>최대 자세각</li><li>최대 각속도</li><li>최대 각가속도</li><li>actuator torque와 safety factor</li><li>통신 거리·대역폭·지연 요구</li><li>숙련·비숙련 사용자의 초기 정성 feedback</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p072-figure-p0006-12-o01-8b088311">
+<img alt="원문 Figure 12, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b0ec443057b66d87d38b7f35.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 12 · PDF p.6</b> — Fig. 12. User training with Vortex simulator</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>IBEX는 M545와 동일한 roll·pitch ±45° 및 무한 yaw 범위를 재현했다. 속도 여유도 확보해 roll·pitch 최대 각속도는 실기 ±60°/s보다 큰 ±87°/s, yaw는 ±95°/s, roll·pitch 각가속도는 실기 ±30°/s²보다 큰 ±57°/s²를 달성했다. 즉 숙련자 계측에서 도출한 회전 motion envelope를 플랫폼이 충족하거나 넘었다.</p><p>숙련·비숙련 운전자가 Vortex simulator와 3DOF 플랫폼을 성공적으로 사용했고 초기 feedback은 일관되게 긍정적이었다. 하지만 참가자 수, task completion time, collision, workload, sickness score 같은 통계는 보고되지 않았다. 결과는 기구 사양 충족과 feasibility demonstration으로는 유효하지만, 3D situational awareness가 실제 작업 성능을 얼마나 높이는지는 아직 입증하지 못했다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>roll/pitch 최대 자세각</td><td>M545 ±45° / IBEX ±45°</td><td>실기 motion envelope를 동일하게 재현</td><td>PDF p.2</td></tr><tr><td>roll/pitch 최대 각속도</td><td>M545 ±60°/s / IBEX ±87°/s</td><td>플랫폼 속도 여유 확보</td><td>PDF p.2</td></tr><tr><td>roll/pitch 최대 각가속도</td><td>M545 ±30°/s² / IBEX ±57°/s²</td><td>Table I 사양 비교</td><td>PDF p.2</td></tr><tr><td>yaw 최대 각속도</td><td>M545 ±60°/s / IBEX ±95°/s</td><td>각도 범위는 둘 다 무한</td><td>PDF p.2</td></tr><tr><td>roll/pitch 구동 토크 설계</td><td>simulation 최대 240 Nm, safety factor 2.5 적용 요구 600 Nm</td><td>평균 체격 dummy와 실측 극한 기동을 NX에서 재생</td><td>PDF p.3</td></tr><tr><td>제어 통신량</td><td>100 Hz에서 14.4 kbps</td><td>XBee-PRO 868 가용 24 kbps 이내</td><td>PDF p.5</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>3개 화면만으로 충분한 3D situational awareness를 제공하는 것이 simulation과 teleoperation 모두의 핵심 난제로 남았다.</li><li>실제 excavator 원격 시험이 완료되지 않아 장거리 radio shadow, packet loss, 지연 변동에 대한 복구 동작이 검증되지 않았다.</li><li>linear acceleration을 생략했으므로 급정지·충격·주행 가속의 촉각 단서는 재현하지 않는다.</li><li>사용자 평가가 정성적이라 숙련도별 학습효과와 motion sickness를 수치로 판단할 수 없다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>실제 M545와 결합한 teleoperation field trial이 논문 시점에는 예정 단계여서 원격 작업 성능을 입증하지 않았다.</li><li>숙련·비숙련 사용자를 시험했지만 표본 수와 completion time·error·NASA-TLX·sickness 같은 지표가 없다.</li><li>3면 화면은 가려진 다리와 bucket contact의 깊이 정보를 충분히 전달하지 못해 3D situational awareness가 남은 난제다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>실제 walking excavator와 결합해 camera·audio stream을 포함한 원격 작업을 반복 평가한다.</li><li>깊이·후방·다리 접지·bucket contact를 시각화해 3D situational awareness를 높인다.</li><li>force·hydraulic pressure·audio를 지연 정렬하고 packet loss 때 predictive display나 안전 정지로 전환한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>M545 기동 계측에서 회전 요구를 정하고, 차동 lever roll·pitch와 연속 bearing yaw, 3면 영상·실제형 조작계·Vortex를 450 kg trailer 플랫폼에 통합했다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>±45° 자세와 실기보다 큰 각속도·각가속도를 달성하고 숙련·비숙련자가 simulator를 성공적으로 사용했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>실제 굴착기 원격 작업과 사용자 성능·지연 통계가 없어 재난 현장 효과와 3D 상황인지 개선 정도는 아직 정량 확인되지 않았다.</p></div></div>
+<div class="kw"><span>#안전·HRI</span><span>#시스템통합·현장실증</span><span>#3자유도 모션 플랫폼</span><span>#3면 영상</span><span>#굴착기 조이스틱 연동</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>IBEX는 자율굴착이 완전 자동화되지 않은 단계에서 사람이 안전 구역에서 supervisory control과 예외 복구를 수행하는 실용적 다리다. 특히 보행 굴착기의 차체 자세를 운전자에게 돌려주는 설계는 화면만으로는 접지와 전복 위험을 판단하기 어렵다는 현장 HRI 문제를 직접 다룬다.</p><p>자율 planner가 이동·굴착 primitive를 실행하고 IBEX 운전자가 불확실한 접촉에서만 개입하면, 예측 display와 motion cue로 통신 지연과 상태 confidence를 전달할 수 있다.</p><ul><li>유압 압력·bucket force·track or leg contact를 좌석 motion과 화면 overlay로 동기화하면 가림 속 작업 접촉을 복원할 수 있다.</li><li>자율 planner의 predicted trajectory를 Vortex digital twin에 선행 재생해 500 ms급 지연에서도 운전자가 미래 상태를 볼 수 있다.</li><li>비상시 autonomous safe-pose와 emergency stop을 연동해 radio loss 때 장비를 안정 상태로 전환해야 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4, p.5, p.6</li><li><b>실험</b>: p.2, p.3, p.5, p.6</li><li><b>결과</b>: p.2, p.3, p.5, p.6</li><li><b>한계</b>: p.2, p.5, p.6</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">원문 PDF</span> <span>pdf</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/bad9437ab2c369c1.html" rel="noopener" target="_blank">ETH 자율굴착 논문 카드 요약 2014-2026.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2016 IBEX - A Tele-operation and Training Device for Walking Excavators.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-071.html"><span class="lbl">← 이전 #71</span>ROS 다층 Grid Map</a><a class="next" href="paper-073.html"><span class="lbl">다음 #73 →</span>거친 지형 계층형 주행계획</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

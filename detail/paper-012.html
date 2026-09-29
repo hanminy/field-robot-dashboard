@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#12 ExACT: 행동 청킹 Transformer 기반 종단간 자율굴착기 시스템 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #012</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2024</span><span class="badge">#012</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>ExACT: 행동 청킹 Transformer 기반 종단간 자율굴착기 시스템</h1>
+<p class="title-en" lang="en">ExACT: An End-to-End Autonomous Excavator System Using Action Chunking With Transformers</p>
+<p class="authors">Liangliang Chen, Shiyu Jin, Haoyu Wang, Liangjun Zhang · arXiv:2405.05861</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/0c19cac129eeec53.html">Baidu 자율굴착 최신 연구 동향 2026</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html">Baidu 자율굴착 논문 핵심 분석 2019-2024</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — ExACT는 기존 인지–계획–제어 모듈을 분리하는 대신, 조건부 VAE와 Transformer로 멀티모달 관측에서 30스텝 행동 묶음을 만들고 시간 앙상블해 밸브 또는 관절 명령으로 실행한다. reach와 dig-dump-return은 모사했으나, 고주파 밸브 명령을 따라가지 못했고 실차 폐루프 안전성은 아직 입증되지 않았다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>소수 시연으로 모듈식 자율굴착 체인을 종단간 정책으로 바꾸기</h3>
+<p>기존 자율굴착기는 인지·예측·계획·제어를 순차 실행하지만 작업 부하, 유압 지연, 밸브 데드존처럼 모델링하기 어려운 비선형성이 모듈 경계마다 누적된다. ExACT는 전방 영상·LiDAR 지형·관절 상태에서 밸브 또는 관절 명령까지 직접 매핑하는 데이터 기반 정책으로 이 사슬을 대체한다.</p><p>실험은 21.5톤 drive-by-wire 굴착기를 원격조작해 적은 완성 궤적을 모으고 Action Chunking with Transformers(ACT)로 미래 행동 묶음을 학습한다. 안전 때문에 정책을 실차 폐루프로 시험하지 않고 기록 센서와 밸브–관절속도 선형모델을 결합한 오프라인 검증으로 제한했다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p012-figure-p0001-1-o01-b47acb2e">
+<img alt="원문 Figure 1, PDF 1쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/dc2b2851260f579802349eff.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.1</b> — Fig. 1: Framework of ExACT</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>모듈식 시스템은 부하·지연·데드존을 정확히 모델링하기 어렵고 모듈 간 오차가 누적된다.</li><li>일반 행동복제는 매 시점 오차가 장기 궤적에서 누적되는 compounding error에 취약하다.</li><li>확산정책은 생성력이 높지만 고주파 굴착 제어에는 추론시간이 길 수 있다.</li><li>기존 학습 굴착은 궤적 추종이나 특정 접촉 단계에 집중해 원시 멀티모달 종단간 제어 사례가 제한적이다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>전방 RGB, 4관절 위치, 굴착·덤핑 LiDAR 고도지도에서 밸브 또는 관절 명령을 출력하는 ExACT를 제시했다.</li><li>conditional VAE와 Transformer가 미래 30스텝 행동을 만들고 겹친 예측을 시간 앙상블로 평활화한다.</li><li>reach, dig-dump, dig-dump-return 세 작업에 8·12·12개 실차 원격조작 에피소드를 수집했다.</li><li>2,661개 밸브상태–관절속도 쌍으로 4관절 선형모델을 만들고 실차 투입 전 오프라인 검증에 사용했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>모든 작업은 swing·boom·stick·bucket의 4차원 관절 위치와 480×640×3 전방 영상을 입력받는다. dig-dump 계열은 원시 LiDAR 고도지도에서 굴착·덤핑 구역을 잘라낸 두 480×640×3 지역지도를 더한다. 영상은 작업기와 주변 외관, 고도지도는 두 작업영역의 3D 형상, 관절 상태는 현재 자세를 제공한다.</p><p>ACT의 conditional VAE는 사람 시연의 잡음과 행동 변이를 잠재표현으로 흡수하고 Transformer가 행동 묶음을 예측한다. 같은 실행시각을 가리키는 여러 chunk 예측은 지수 가중 temporal ensembling으로 결합한다. reach와 dig-dump는 밸브 상태, 더 긴 dig-dump-return은 관절 위치를 출력한다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>실차 시연 수집</h4><p>휴대형 RC로 21.5톤 굴착기의 밸브를 조작하며 10 Hz로 센서와 명령을 동기 수집한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>멀티모달 관측 구성</h4><p>모든 작업에 4관절 위치·전방 영상을 넣고 dig-dump에는 굴착·덤핑 LiDAR 지역 고도지도를 추가한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>행동 묶음 생성</h4><p>conditional VAE와 Transformer가 현재 관측에서 미래 30스텝 밸브 또는 관절 위치 시퀀스를 예측한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>Temporal ensembling</h4><p>매 시점 새 chunk를 만들고 동일 미래시각의 후보 명령을 지수 가중 결합해 실행을 평활화한다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>밸브–관절속도 모델</h4><p>2,661개 실차 쌍에서 swing·boom·stick·bucket 선형식을 적합한다. 기본 밸브값 8190은 속도 0에 대응한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>기록 관측 테스트</h4><p>작업별 한 에피소드를 테스트로 떼고 첫 관절상태만 실측으로 초기화한다. 이후 상태는 예측 행동으로 전개한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>swing 밸브–속도 모델</h4><code>\\dot{q}_{swing}=-2.8227\\times10^{-6}V_{swing}+2.3118\\times10^{-2}</code><p>논문 식 (1a)의 오프라인 선형 근사다.</p></div><div class="eq"><h4>boom 밸브–속도 모델</h4><code>\\dot{q}_{boom}=1.3736\\times10^{-6}V_{boom}-1.1250\\times10^{-2}</code><p>논문 식 (1b)의 boom 근사다.</p></div><div class="eq"><h4>stick 밸브–속도 모델</h4><code>\\dot{q}_{stick}=-2.4656\\times10^{-6}V_{stick}+2.0193\\times10^{-2}</code><p>논문 식 (1c)의 stick 근사다.</p></div><div class="eq"><h4>bucket 밸브–속도 모델</h4><code>\\dot{q}_{bucket}=5.8151\\times10^{-6}V_{bucket}-4.7625\\times10^{-2}</code><p>논문 식 (1d)이며 실제 부하·지연·데드존을 완전히 재현하지 않는다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p012-figure-p0002-2-o01-6c50abc3">
+<img alt="원문 Figure 2, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c54cd60cca614437bbd0becb.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.2</b> — Fig. 2: Examples of the front camera image and LiDAR elevation maps. (a) Raw LiDAR elevation map (visualized in RViz) from which the digging (red box) and dumping (green box) LiDAR elevation maps are cropped; (b) Preprocessed LiDAR elevation map of the digging zone; (c) Preprocessed LiDAR elevation map of the dumping zone; (d) front camera image.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>ACT action chunking과 조건부 생성</h3><p>단일 행동 대신 미래 시퀀스를 예측해 짧은 구간의 굴착 시간구조를 학습하고 compounding error를 줄인다. conditional VAE는 동일 관측에서 달라지는 사람 조작을 하나의 평균으로 뭉개지 않고 잠재변수로 표현한다.</p><ul><li>chunk size 30</li><li>KL divergence weight 10</li><li>Transformer 조건부 시퀀스 예측</li><li>학습률 1.0×10^-5, 30,000 steps</li></ul></article><article class="tech-card"><h3>LiDAR 지역 고도지도의 작업 조건화</h3><p>전방 RGB만으로 알기 어려운 굴착·덤핑 구역의 깊이와 형상을 LiDAR로 제공한다. 전체 고도지도에서 두 지역을 따로 잘라 정책이 어디서 퍼고 어디에 버릴지 3D 기하로 조건화한다.</p><ul><li>굴착·덤핑 region 별도 crop</li><li>각 480×640×3</li><li>reach에는 고도지도 미사용</li><li>Fig. 2에 원시·전처리 지도 제시</li></ul></article><article class="tech-card"><h3>밸브 직접제어와 관절위치 제어</h3><p>reach와 dig-dump는 네 유압 밸브를 직접 출력하지만 dig-dump는 고주파 성분을 따라가지 못해 팔이 둔해지고 버킷 날이 과도하게 이동할 수 있었다. dig-dump-return은 관절 위치 제어로 바꿔 굴착·덤핑·swing·복귀 시퀀스를 완수했다.</p><ul><li>밸브 대상 swing·boom·stick·bucket</li><li>기본값 8190에서 속도 0</li><li>dig-dump-return은 다음 굴착 준비까지 포함</li><li>제어변수 변경은 동일조건 절제가 아님</li></ul></article><article class="tech-card"><h3>중첩 예측의 시간 앙상블</h3><p>action chunking은 같은 실행시각에 여러 예측을 만든다. ExACT는 이를 지수 가중으로 결합해 단발 오류와 시연 불연속을 줄인다. 모든 테스트에 적용했지만 밸브 고주파 성분 자체를 복원하는 해결책은 아니다.</p><ul><li>매 timestep 새 chunk</li><li>동일 시각 예측 결합</li><li>전 작업 테스트 적용</li><li>평활화와 동특성 복원은 구분</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p012-figure-p0003-3-o01-79e75f2d">
+<img alt="원문 Figure 3, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/b62c1a54518709eff2708370.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.3</b> — Fig. 3: Test performance of the task reach (valve state control)</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p012-figure-p0003-4-o01-2fec1da2">
+<img alt="원문 Figure 4, PDF 3쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/15cbf26c8729bd07968c93ff.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.3</b> — Fig. 4: Ground truth and predicted actions of the tasks (a) dig dump and (b) dig dump return</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>21.5톤 drive-by-wire 유압굴착기, RC·CAN bus 제어, GPU 탑재 산업용 컴퓨터를 사용했다.</li><li>센서는 관절 inclinometer, cabin swing encoder, 3D LiDAR, RGB 카메라, IMU, RTK GPS다.</li><li>작업은 traffic cone reach, 지정구역 dig-dump, 덤핑 뒤 다음 굴착 위치까지 돌아오는 dig-dump-return이다.</li><li>정책은 실차가 아니라 기록 영상·고도지도와 선형 밸브–속도 모델 기반 오프라인 시뮬레이터에서 시험했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>데이터는 10 Hz로 수집하고 작업별 완성 시연을 에피소드로 저장했다.</li><li>각 작업에서 한 에피소드를 테스트로 무작위 선택하고 나머지를 학습했다.</li><li>테스트 첫 관절 위치만 실측 초기화하고 이후는 예측 행동으로 계산해 기록 상태 누설을 피했다.</li><li>카메라·LiDAR는 테스트 에피소드 기록값을 사용하고 모든 작업에 temporal ensembling을 적용했다.</li><li>reach·dig-dump는 밸브 상태, dig-dump-return은 관절 위치 제어로 평가했다.</li></ul>
+<h3>비교 기준</h3><ul><li>외부 학습·제어 베이스라인과 정량 성공률 비교는 없다.</li><li>테스트 에피소드의 사람 ground-truth 행동과 예측 행동 시계열을 비교했다.</li><li>reach는 RViz 버킷 경로와 밸브 상태, 다른 작업은 ground-truth와 예측 명령을 비교했다.</li><li>밸브와 관절위치 결과 차이는 난이도를 보이지만 정식 절제 실험은 아니다.</li></ul>
+<h3>평가 지표</h3><ul><li>작업별 에피소드 수와 평균 길이</li><li>예측·ground-truth 행동의 시계열 정합</li><li>RViz 버킷 궤적과 작업 순서</li><li>고주파 밸브 성분 재현 여부</li><li>정성 작업 완성 판정</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p012-figure-p0004-5-o01-665b27ff">
+<img alt="원문 Figure 5, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/38ce96087b91ebd577981712.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.4</b> — Fig. 5: Front camera images and bucket trajectory during the testing of the task dig dump return (joint position control)</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>reach는 8개 시연 중 7개를 학습에 사용해 버킷을 표적 콘과 수평 정렬한 뒤 수직 하강하는 순서를 재현했다. 예측 밸브 상태가 기록 ground truth와 대체로 맞고 버킷 궤적도 올바른 도달 행동을 보여, 단순 작업에서는 선형 밸브–속도 모델이 오프라인 전개에 쓸 수 있음을 확인했다.</p><p>dig-dump는 11개 학습 에피소드에도 밸브 시연의 고주파 성분을 충분히 배우지 못했다. 밸브가 관절속도를 직접 정하므로 평활화된 예측은 팔을 둔하게 하고 버킷 날을 필요 이상 이동시킬 수 있다. 논문은 더 많은 시연과 고주파 학습을 후속 과제로 남겼다.</p><p>dig-dump-return은 관절 위치를 출력하자 굴착, 덤핑, cabin swing, 다음 굴착 위치 복귀까지 기록 관측 시뮬레이터에서 완수했다. 그러나 수치 오차, 성공률, 토량, 사이클타임, 실차 안전성은 제시하지 않아 가능성 입증 수준이다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>reach 데이터</td><td>8 episodes, 평균 180.5 timesteps</td><td>1개 테스트, 나머지 학습</td><td>PDF p.3</td></tr><tr><td>dig-dump 데이터</td><td>12 episodes, 평균 361.0 timesteps</td><td>1개 테스트, 나머지 학습</td><td>PDF p.3</td></tr><tr><td>dig-dump-return 데이터</td><td>12 episodes, 평균 397.8 timesteps</td><td>1개 테스트, 나머지 학습</td><td>PDF p.3</td></tr><tr><td>데이터 주파수</td><td>10 Hz</td><td>실차 원격조작 수집</td><td>PDF p.3</td></tr><tr><td>선형모델 데이터</td><td>2,661 pairs</td><td>4관절 밸브–속도 적합</td><td>PDF p.3</td></tr><tr><td>행동 묶음</td><td>30 steps</td><td>ACT chunk size</td><td>PDF p.3</td></tr><tr><td>학습 설정</td><td>30,000 steps, learning rate 1.0×10^-5</td><td>표 II</td><td>PDF p.3</td></tr><tr><td>KL 가중치</td><td>10</td><td>conditional VAE</td><td>PDF p.3</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>dig-dump 밸브의 고주파 성분을 학습하지 못해 관절운동이 경직되고 버킷이 과도 이동할 수 있다.</li><li>기록 센서를 재생하므로 정책 행동이 다음 관측을 바꾸는 폐루프 효과가 없다.</li><li>선형모델은 실제 부하, 입력 지연, 데드존, 유압 관절결합을 충분히 표현하지 못한다.</li><li>외부 baseline, 반복 성공률, 위치·토량오차가 없어 우수성을 정량 비교할 수 없다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>실차 폐루프가 아니라 기록 관측과 선형모델 기반 오프라인 시뮬레이션에 한정된다.</li><li>작업당 8~12개 시연뿐이며 다른 토질·장비·날씨에 대한 일반화 근거가 없다.</li><li>dig-dump 밸브 직접제어는 고주파 명령을 재현하지 못했다.</li><li>충돌회피, 힘·압력 제한, 작업공간 제약 같은 안전 계층이 없다.</li><li>성공률, 궤적 RMSE, 토량, 사이클타임이 보고되지 않았다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>부하·지연·데드존·관절결합을 포함한 동역학 또는 residual 모델로 사전검증 충실도를 높인다.</li><li>고주파 밸브 성분을 보존하는 표현과 더 다양한 시연으로 dig-dump 직접제어를 개선한다.</li><li>안전 감시와 행동 제한을 결합해 실차에서 단계적 폐루프 시험을 수행한다.</li><li>토질·작업영역·기종을 바꿔 성공률, 궤적오차, 적재량, 사이클타임을 평가한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>카메라·관절 상태와 LiDAR 고도지도를 ACT에 넣어 30스텝 행동을 만들고 temporal ensembling으로 밸브 또는 관절 명령을 평활화한다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>소수 시연으로 reach와 관절위치 기반 dig-dump-return을 모사했지만 밸브 기반 dig-dump는 고주파 명령 재현에 실패했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>실차 폐루프와 정량 성능이 없고 선형 동역학·기록 관측에 의존해 종단간 굴착의 초기 가능성 검증에 머문다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#시스템통합·현장실증</span><span>#제어·MPC</span><span>#ACT</span><span>#conditional VAE</span><span>#Transformer</span><span>#action chunking</span><span>#temporal ensembling</span><span>#모방학습</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>ExACT는 Baidu AES의 명시적 지형인식·작업계획을 멀티모달 정책으로 압축하려는 전환점이다. action chunk는 굴착처럼 수초에 걸쳐 순서가 강한 접촉 작업에 적합하고, 기존 AES 고도지도를 학습정책 입력으로 재사용한다.</p><p>필드로봇에서는 안전 계층 없는 대체재보다 기존 계획기의 행동 prior로 쓰는 편이 근거에 맞다. 압력·접촉력 피드백, 작업공간 제약, 비상정지와 폐루프 재계획을 별도 보장하고 실제 행동이 만든 다음 관측으로 검증해야 한다.</p><ul><li>기존 AES 고도지도·관절 계측을 end-to-end 입력으로 활용할 수 있다.</li><li>action chunk를 penetration–drag–close–lift–dump 장주기 primitive로 확장할 수 있다.</li><li>temporal ensembling은 시연잡음을 줄이지만 유압 고주파 응답과 안전제약을 대신하지 않는다.</li><li>실차 전에는 정책 불확실성과 human takeover 조건을 함께 설계해야 한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p012-table-p0003-i-o01-6d0719b6">
+<img alt="원문 Table I, PDF 3쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/f4a481ef33ae694089527be6.webp" tabindex="0"/>
+<figcaption><b>원문 Table I · PDF p.3</b> — TABLE I: Data statistics of different tasks</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p012-table-p0003-ii-o01-a57d43a9">
+<img alt="원문 Table II, PDF 3쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/040b49135a7e0e1dda5a261f.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.3</b> — TABLE II: Training hyperparameters</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.1, p.2, p.3</li><li><b>실험</b>: p.2, p.3, p.4</li><li><b>결과</b>: p.3, p.4</li><li><b>한계</b>: p.4</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/cab0e226433099c41a4dce59.webp" rel="noopener" target="_blank">ExACT 프레임워크</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/0c19cac129eeec53.html" rel="noopener" target="_blank">Baidu 자율굴착 최신 연구 동향 2026.md</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 핵심 분석 2019-2024.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2024 ExACT - An end-to-end autonomous excavator system using action chunking with transformers.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-011.html"><span class="lbl">← 이전 #11</span>완전 통합 자율굴착: 정밀 절토와 온보드 지형 검사를 위한 자율 굴착기</a><a class="next" href="paper-013.html"><span class="lbl">다음 #13 →</span>ETHcavation 동적 현장지도·주행</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>

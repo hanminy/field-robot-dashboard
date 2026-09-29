@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><title>2025 Advancements and challenges in earthmoving equipment automation using core technologies</title><link href="../assets/notes.css" rel="stylesheet"/><meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head><body><nav><a href="../index.html">← 대시보드</a> · <a href="index.html">요약 노트 목록</a></nav><main><h1>2025 Advancements and challenges in earthmoving equipment automation using core technologies</h1><h1 id="advancements-and-challenges-in-earthmoving-equipment-automation-using-core-technologies">Advancements and Challenges in Earthmoving Equipment Automation Using Core Technologies</h1>
+<p><strong>Authors:</strong> Jiyu Feng, Wei Chen, Changyi Liu, Xinhui Liu, Bingwei Cao, Feixiang Xu</p>
+<p><strong>Journal:</strong> Automation in Construction 179 (2025) 106472</p>
+<p><strong>Affiliations:</strong>
+- School of Mechanical and Aerospace Engineering / National Key Laboratory of Automotive Chassis Integration and Bionics, Jilin University, Changchun 130025, China
+- Key Laboratory of Bionic Engineering, Ministry of Education, Jilin University, Changchun 130025, China
+- School of Mechanical and Vehicle Engineering, Changchun University, Changchun 130025, China
+- School of Information and Control Engineering, China University of Mining and Technology, Xuzhou 221116, China</p>
+<hr/>
+<h2 id="abstract">Abstract</h2>
+<p>Earthmoving equipment automation is limited by interactions with complex media, unstructured terrain and highly variable environmental conditions. Although research in this field has continued for nearly thirty years, a truly fully autonomous system remains unrealized. This paper examines automation technologies for earthmoving equipment in typical repetitive short-cycle loading operations and presents a systematic survey of core literature spanning over thirty years. Key techniques are grouped into four categories: environmental perception, path planning and tracking, autonomous loading and unloading, and safety and risk assessment. The analysis indicates that current research primarily addresses improvements to individual stages or subsystems while system-level optimization of the entire workflow is still lacking. Moreover, data-physics hybrid methods show strong potential in earthmoving equipment automation applications by compensating for errors in physical models and improving the generalization of data-driven models. Finally, the major challenges are summarized and directions for future research are proposed.</p>
+<p><strong>Keywords:</strong> Earthmoving equipment, Automation, Short-cycle loading, Sensing technology</p>
+<hr/>
+<h2 id="1-introduction">1. Introduction</h2>
+<p>Earthmoving equipment is widely used in various environments, including mining operations, construction sites, railway freight yards, and agricultural estates, primarily for excavation and loading tasks. In earthworks projects, wheel loaders and excavators typically work in conjunction with dump trucks to perform short-cycle loading tasks for material transport. These tasks are inherently monotonous and repetitive, and prolonged driving operations can lead to driver distraction and physical fatigue, affecting reaction time and judgment, potentially decreasing productivity and causing safety incidents. Additionally, the dust, noise, and vibrations generated during earthmoving operations pose significant occupational health and safety risks to operators.</p>
+<p>As a result, the automation of earthmoving equipment has become an area of significant research interest, particularly with the continuous advancements in autonomous driving technology for passenger vehicles. However, despite extensive research, commercial earthmoving machinery automation systems suitable for practical application have yet to materialize, constrained by factors such as environmental complexity, perception capabilities, autonomous decision-making and operational strategies, and safety.</p>
+<h3 id="comparison-with-previous-surveys">Comparison with Previous Surveys</h3>
+<table>
+<thead>
+<tr>
+<th>Authors</th>
+<th>Title</th>
+<th>Categories</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dadhich et al. (2016)</td>
+<td>Key challenges in automation of earth-moving machines</td>
+<td>Wheel loaders</td>
+<td>Highlights the key challenges in automating and tele-operating earthmoving machines, with particular emphasis on the loading phase</td>
+</tr>
+<tr>
+<td>Borngrund et al. (2022)</td>
+<td>Deep-learning-based vision for earth-moving automation</td>
+<td>Wheel loaders</td>
+<td>Analyzes the relative importance of different sensor modalities, focusing on deep-learning-based vision for short-cycle loading tasks</td>
+</tr>
+<tr>
+<td>Ha et al. (2019)</td>
+<td>Robotic autonomous systems for earthmoving in military applications</td>
+<td>Excavators; bulldozers; wheel loaders; graders and haul trucks</td>
+<td>Platform-centric autonomous robotic systems for earthmoving in military contexts</td>
+</tr>
+<tr>
+<td>Lee et al. (2019)</td>
+<td>Challenges, tasks, and opportunities in teleoperation of excavator</td>
+<td>Excavators</td>
+<td>Surveys remote excavator operation, emphasizing human-machine interaction, interface design, and environmental considerations</td>
+</tr>
+<tr>
+<td>Eraliev et al. (2022)</td>
+<td>Autonomous excavation systems</td>
+<td>Excavators</td>
+<td>Reviews automated systems across five dimensions: sensing, perception, decision making, planning, action</td>
+</tr>
+<tr>
+<td><strong>Present study</strong></td>
+<td><strong>Advancements and challenges in earthmoving equipment automation using core technologies</strong></td>
+<td><strong>Earthmoving equipment</strong></td>
+<td>Examination of core technologies for short-cycle automated operations; pays special attention to previously overlooked technical details such as pile reconstruction and excavation difficulty assessment</td>
+</tr>
+</tbody>
+</table>
+<p>This paper fills the gap by providing a thorough examination of core technologies for short-cycle automated operations in earthmoving equipment, focusing on four enabling areas: environmental perception, path planning and tracking, autonomous loading and unloading, and safety and risk assessment.</p>
+<hr/>
+<h2 id="2-problem-definition-and-decomposition">2. Problem Definition and Decomposition</h2>
+<p>Unlike autonomous vehicles, which confront complex traffic environments, automated earthmoving equipment typically operates within enclosed and strictly controlled work sites. The driving environment is relatively simplified, thereby facilitating the implementation of automation technologies. However, the functional characteristics of earthmoving equipment dictate that, in addition to autonomous driving capabilities, they must also perform material loading and short-distance transportation — a fundamental deviation from the core tasks of autonomous vehicles.</p>
+<h3 id="21-wheel-loader-short-cycle-loading-workflow">2.1 Wheel Loader Short-Cycle Loading Workflow</h3>
+<p>The short-cycle loading operation of a wheel loader can be subdivided into six principal phases:</p>
+<ol>
+<li>
+<p><strong>Approach and site assessment:</strong> Ascertain the location and geometric configuration of the material stockpile and the parking position of the dump truck; select the most appropriate excavation point and plan the optimal access route.</p>
+</li>
+<li>
+<p><strong>Excavation and loading:</strong> Select an appropriate digging trajectory based on material type and size to ensure the front bucket is fully loaded. Adjust the operating strategy in real-time to prevent tire slippage or insufficient loading.</p>
+</li>
+<li>
+<p><strong>Retreat and route planning:</strong> Assess the relative position of the loader and the dump truck; plan the optimal route for retreat from the stockpile to the dump truck. This is critical for reducing cycle time, lowering fuel consumption, and enhancing operational efficiency.</p>
+</li>
+<li>
+<p><strong>Approach and pre-assessment of dump truck:</strong> Pre-assess the distribution of material on the truck to ensure an even spread during unloading and prevent spillage. Rapidly raise the boom so that the bucket's elevation surpasses the truck body, while maintaining appropriate clearance.</p>
+</li>
+<li>
+<p><strong>Unloading and material adjustment:</strong> Tilt the material within the bucket as needed and make any necessary adjustments to the material on the dump truck to meet subsequent transportation requirements.</p>
+</li>
+<li>
+<p><strong>Return and preparation:</strong> Maneuver the loader in reverse to move away from the dump truck and lower the bucket in preparation for the subsequent short-cycle loading operation.</p>
+</li>
+</ol>
+<p>As achieving a fully loaded dump truck typically necessitates multiple short-cycle loading operations, the geometry of the material stockpile, the selection of excavation points, and the choice of travel paths exhibit dynamic changes as the number of scooping operations increases. This scenario necessitates that the wheel loader be equipped with an array of high-precision sensors, which, in combination with data fusion techniques, enable real-time comprehensive assessments to underpin accurate autonomous decision-making.</p>
+<hr/>
+<h2 id="3-research-methodology">3. Research Methodology</h2>
+<p>This paper employs a hybrid methodology that combines bibliometric analysis and systematic review. The paper systematically searches the relevant literature from academic databases and uses keyword co-occurrence and cluster analysis for bibliometric analysis to identify key research areas and trends. Representative literature is then systematically reviewed to gain a comprehensive understanding of the evolution of the field.</p>
+<h3 id="31-data-collection">3.1 Data Collection</h3>
+<p>This paper primarily focuses on earthmoving equipment such as wheel loaders, Load-Haul-Dump (LHD) loaders, excavators, and other earthmoving machinery that use a bucket as the main operational tool.</p>
+<p><strong>Data sources:</strong> Google Scholar, Scopus, Web of Science, and IEEE Xplore</p>
+<p><strong>Search keywords:</strong>
+- Primary: "earthmoving equipment," "wheel loader," "excavator," "automation," "construction machinery"
+- Extended: "environmental perception," "unstructured roads," "pile identification," "excavation difficulty," "pose recognition," "path planning," "excavation points," "excavation trajectory," "load and volume estimation," "unloading points," "worker and equipment recognition," "safety," "risk monitoring"</p>
+<p><strong>Selection criteria:</strong>
+1. Thematic constraints: restricted to earthmoving equipment fields
+2. Publication date: 1990 to present (2025)
+3. Language: English only
+4. Quality: peer-reviewed papers from international journals and conferences
+5. Relevance filtering: manually filtered based on keywords and abstracts</p>
+<p><strong>Selection process (PRISMA):</strong>
+- 596 papers retrieved
+- 32 duplicates removed; 8 non-English or irrelevant records excluded
+- 556 articles proceeded to title/abstract screening; 298 discarded
+- 258 papers underwent full-text review; 144 excluded
+- 114 articles included; forward/backward citation tracking yielded 47 additional references
+- 28 of 47 additional references met inclusion standards
+- <strong>Total: 142 papers</strong> form the foundation for bibliometric analysis and systematic review</p>
+<h3 id="32-bibliometric-analysis-results">3.2 Bibliometric Analysis Results</h3>
+<h4 id="321-publication-trends-by-year">3.2.1 Publication Trends by Year</h4>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Period</th>
+<th>Papers</th>
+<th>Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Initial stage</td>
+<td>1990-2004</td>
+<td>6</td>
+<td>Exploratory, proof-of-concept, fundamental automation principles and control models</td>
+</tr>
+<tr>
+<td>Steady development</td>
+<td>2004-2014</td>
+<td>25</td>
+<td>~4x increase; computer vision, control theory, embedded systems matured; path planning research emerged</td>
+</tr>
+<tr>
+<td>Rapid growth</td>
+<td>2014-2025</td>
+<td>111</td>
+<td>&gt;78% of total literature; driven by AI, deep learning, high-performance computing; advanced sensors widely applied</td>
+</tr>
+</tbody>
+</table>
+<h4 id="322-publications-by-countryregion">3.2.2 Publications by Country/Region</h4>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Country</th>
+<th>Share</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>China</td>
+<td>32.39% (46 papers) - top institutions: Jilin University, Xiamen University, HKUST</td>
+</tr>
+<tr>
+<td>2</td>
+<td>USA</td>
+<td>13.38%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Japan</td>
+<td>9.15%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Canada</td>
+<td>9.15%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Korea</td>
+<td>7.04%</td>
+</tr>
+</tbody>
+</table>
+<p>Top 10 countries contribute 90.85% of total publications.</p>
+<h4 id="323-high-frequency-publication-sources">3.2.3 High-Frequency Publication Sources</h4>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Count</th>
+<th>Publication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>30</td>
+<td>Automation in Construction (2434 citations)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>6</td>
+<td>Computer-Aided Civil and Infrastructure Engineering (292 citations)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4</td>
+<td>Journal of Field Robotics</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>IEEE Robotics and Automation Letters</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>IEEE Transactions on Vehicular Technology</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>Journal of Computing in Civil Engineering (311 citations)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>Mechanical Systems and Signal Processing</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>Robotics and Autonomous Systems</td>
+</tr>
+</tbody>
+</table>
+<p>35 papers were presented at 33 different international conferences (~24.65% of total).</p>
+<h4 id="324-research-clusters-keyword-co-occurrence-analysis">3.2.4 Research Clusters (Keyword Co-occurrence Analysis)</h4>
+<p>A threshold of 3 occurrences was applied; 39 co-occurring keywords identified, revealing four significant research clusters:</p>
+<p><strong>Cluster 1: Environmental Perception</strong>
+Keywords: "computer vision," "recognition"
+Environmental perception includes recognition of unstructured roads, identification of material pile locations and shapes, and recognition of dump truck positions. Information fusion-based environmental perception technologies form the foundation of autonomous earthmoving operations.</p>
+<p><strong>Cluster 2: Path Planning and Tracking</strong>
+Keywords: "path planning," "trajectory planning," "tracking"
+Autonomous earthmoving equipment must plan a smooth, executable trajectory based on the results of environmental perception. Path planning, particularly for the unique articulated structure of wheel loaders, has long been a focus of research.</p>
+<p><strong>Cluster 3: Autonomous Loading and Unloading</strong>
+Keywords: "machine learning," "optimization," "deep learning"
+Most current work is concentrated in the semi-automation domain. With the continued development of AI technologies, this field is poised to experience a new wave of research driving efficient and energy-saving autonomous operations.</p>
+<p><strong>Cluster 4: Safety and Risk Assessment</strong>
+Keywords: "proximity warning system," "blind spots," "safety"
+Real-time monitoring of personnel and equipment positions can promptly trigger alerts within pre-planned safety zones. Monitoring environmental factors such as landslides, collapses, and public utility pipelines during construction is critical.</p>
+<hr/>
+<h2 id="4-core-technologies-for-autonomous-operations">4. Core Technologies for Autonomous Operations</h2>
+<p>Following the six phases of the wheel loader's short-cycle loading operation, the key technologies are organized into four parts: environmental perception (4.1), path planning and tracking (4.2), autonomous loading and unloading (4.3), and safety and risk assessment (4.4). Although these technologies are discussed separately, they are not isolated; they are closely interconnected and mutually supportive.</p>
+<h3 id="41-environmental-perception">4.1 Environmental Perception</h3>
+<p>Environmental perception primarily involves the use of sensors such as cameras, LiDAR, and millimeter-wave radar to perceive unstructured roads, identify and reconstruct material piles, assess excavation difficulty, and recognize vehicle pose. This capability forms the foundation for the autonomous operation of earthmoving equipment.</p>
+<h4 id="411-perception-of-unstructured-roads">4.1.1 Perception of Unstructured Roads</h4>
+<p>Earthmoving equipment mainly operates in unstructured environments such as construction sites and mines, where it is often impossible to perform road recognition using uniform typical features as on urban roads or highways. Factors such as unclear road boundaries, irregular shapes, deteriorated pavement appearance, variable lighting, and changing backgrounds pose great challenges.</p>
+<p>Three categories of research:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Methods</th>
+<th>Advantages</th>
+<th>Limitations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Computer vision-based</td>
+<td>Model-based, feature-based, machine learning-based (e.g., RD-Net semantic segmentation, attention modules)</td>
+<td>Rich information content, low cost</td>
+<td>Susceptible to lighting/weather changes; large image databases needed</td>
+</tr>
+<tr>
+<td>LiDAR-based</td>
+<td>Semantic segmentation with attention mechanism (Liu et al.)</td>
+<td>Not affected by lighting conditions; rich point cloud data</td>
+<td>Limited research; ideal accuracy not yet achieved</td>
+</tr>
+<tr>
+<td>Multimodal fusion</td>
+<td>Low-level and high-level feature fusion from images and point clouds (Ye et al.)</td>
+<td>Effective complementarity; improved accuracy and real-time responsiveness</td>
+<td>Higher system complexity</td>
+</tr>
+</tbody>
+</table>
+<p>Research on road perception for earthmoving equipment in unstructured environments is currently scarce but is a key component for enabling autonomous operations.</p>
+<h4 id="412-pile-identification-and-contour-reconstruction">4.1.2 Pile Identification and Contour Reconstruction</h4>
+<p>Rapid and accurate identification of stockpiles and reconstruction of their contours are of great significance for determining the optimal excavation point, planning the operational path, evaluating operational efficiency, and achieving fully autonomous operation.</p>
+<p><strong>Main approaches:</strong></p>
+<ul>
+<li><strong>Deep learning + computer vision:</strong> Building image datasets for stockpile recognition (widely used but requires significant time/financial investment; susceptible to dust and lighting)</li>
+<li><strong>Proprioceptive sensors:</strong> Using IMUs to measure acceleration data for material classification (Artan et al.); pressure sensors to distinguish between material types (Fernando et al.); energy and motion data from excavators to classify four different materials (Liu et al.); limited to single-material classification</li>
+<li><strong>Pile contour reconstruction methods:</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Reference</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stereo-vision triangulation</td>
+<td>Koyachi et al.</td>
+<td>Captures pile images, converts 3D data into column model</td>
+</tr>
+<tr>
+<td>LiDAR column model</td>
+<td>Multiple</td>
+<td>Real-time capability</td>
+</tr>
+<tr>
+<td>3D point cloud profiling</td>
+<td>Multiple</td>
+<td>High accuracy</td>
+</tr>
+<tr>
+<td>Stereo-LiDAR fusion</td>
+<td>Chen et al.</td>
+<td>Combines advantages of both modalities</td>
+</tr>
+<tr>
+<td>Total-station measurements</td>
+<td>Yakar et al.</td>
+<td>Compared photogrammetry and laser scanning; both achieved 95% reliability; laser scanning higher accuracy, photogrammetry more cost-effective; real-time transmission remains a critical challenge</td>
+</tr>
+</tbody>
+</table>
+<h4 id="413-excavation-difficulty-assessment">4.1.3 Excavation Difficulty Assessment</h4>
+<p>Excavation difficulty assessment enables equipment and cooperating dump trucks to make more accurate autonomous decisions. This area is closely related to material identification and pile reconstruction.</p>
+<h4 id="414-vehicle-pose-recognition">4.1.4 Vehicle Pose Recognition</h4>
+<p>Accurate pose recognition of cooperating vehicles (especially dump trucks) is essential for planning unloading maneuvers and maintaining appropriate clearances.</p>
+<h3 id="42-path-planning-and-tracking">4.2 Path Planning and Tracking</h3>
+<h4 id="421-path-planning">4.2.1 Path Planning</h4>
+<p>Path planning addresses route generation for Phase I (approaching the material pile), Phase III (moving from the pile to the dump truck), and Phase VI (returning from the dump truck to the staging point). It involves both point-to-point (PTP) planning and complete coverage path planning (CCPP).</p>
+<p><strong>Global path planning:</strong> Uses known positions of the pile, dump truck, and equipment to create a collision-free base route optimized for shortest distance and efficiency.</p>
+<p><strong>Local path planning:</strong> Adjusts the route in real-time based on the machine's status and surrounding conditions.</p>
+<p><strong>Key algorithms:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dijkstra</td>
+<td>Deterministic and consistent; widely used for global planning</td>
+</tr>
+<tr>
+<td>A*</td>
+<td>Heuristic search; efficient for grid maps</td>
+</tr>
+<tr>
+<td>RRT / Goal-directed RRT (improved)</td>
+<td>Sampling-based; suitable for high-dimensional spaces with complex constraints</td>
+</tr>
+<tr>
+<td>Particle Swarm Optimization (PSO)</td>
+<td>Population-based optimization</td>
+</tr>
+<tr>
+<td>Ant Colony Algorithm (improved)</td>
+<td>Bio-inspired; suitable for combinatorial problems</td>
+</tr>
+<tr>
+<td>Reinforcement Learning</td>
+<td>Adaptive; learns from environment interaction; for path + energy optimization</td>
+</tr>
+<tr>
+<td>MPC (Model Predictive Control)</td>
+<td>Online; considers constraints and disturbances</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Industry examples:</strong>
+- Kajima A4CSEL: robust tracking control with heading estimation; field trials with autonomous rollers and bulldozers achieved path-tracking accuracy within +/-10 cm
+- Sakai Heavy Industries + JIG-SAW: autonomous roller with path-tracking deviations ~20 cm; compaction coverage ~3.5x higher than manual operation</p>
+<h4 id="422-path-tracking">4.2.2 Path Tracking</h4>
+<p>Path tracking ensures the vehicle follows the planned trajectory accurately and smoothly. Methods include:
+- Feedback linearized iterative learning (Dekker et al.)
+- LQR controller
+- PSO-NMPC control strategy
+- Pure tracking + fuzzy control (for unmanned electric shovels)
+- Nonlinear Model Predictive Control</p>
+<h3 id="43-autonomous-loading-and-unloading">4.3 Autonomous Loading and Unloading</h3>
+<h4 id="431-selection-of-excavation-points">4.3.1 Selection of Excavation Points</h4>
+<p>Excavation point selection involves identifying the optimal digging locations and orientations on a material pile based on its geometric shape. Reliable excavation points significantly impact the fill factor, safety, energy consumption, vehicle structural damage, travel distance, and number of excavation cycles.</p>
+<p><strong>Principles for reducing candidate excavation points:</strong>
+1. Select points on the pile boundary
+2. Choose locations adjacent to the previous excavation point to shorten travel distance
+3. Choose the candidate point that minimizes the drop edge length of the pile after excavation
+4. The direction of the excavation point should be perpendicular to the slope of the pile
+5. Choose candidate points that exhibit a certain degree of convexity</p>
+<p><strong>Main methods:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Column model + bucket trajectory</td>
+<td>Computes moment acting on bucket to evaluate each potential excavation posture; minimizes total moment</td>
+<td>Sarata et al.</td>
+</tr>
+<tr>
+<td>Two-section bucket method</td>
+<td>Divides bucket into left and right; evaluates convexity and inclination</td>
+<td>Singh et al.</td>
+</tr>
+<tr>
+<td>Three-section bucket method</td>
+<td>Subdivides into left, middle, right; more accurate description of convex/concave regions; also proposes quadratic fitting model</td>
+<td>Magnusson et al.</td>
+</tr>
+<tr>
+<td>GA-based optimization with slope/distance metrics</td>
+<td>Incorporates slope and travel distance evaluation metrics</td>
+<td>Chen et al.</td>
+</tr>
+<tr>
+<td>3D configuration score space</td>
+<td>Maps path length values to score space to identify optimal excavation point</td>
+<td>Takei et al.</td>
+</tr>
+<tr>
+<td>Centroid evaluation</td>
+<td>Combines pile edge curves with height field; uses material centroid position within bucket</td>
+<td>Lindmark et al.</td>
+</tr>
+<tr>
+<td>Height-field grid method</td>
+<td>Considers multiple metrics: distance, collision, spatial area, fill volume</td>
+<td>Cardenas et al.</td>
+</tr>
+<tr>
+<td>Reinforcement Learning</td>
+<td>Reward function based on convexity; typically integrated with path planning</td>
+<td>Backman et al., Kawabe et al.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="432-excavation-trajectory-planning">4.3.2 Excavation Trajectory Planning</h4>
+<p>Trajectory planning involves generating a time-parameterized motion profile along a predefined path. Studies show the excavation phase accounts for approximately one-third of total energy consumption in the entire operation cycle. Experienced operators can achieve fuel efficiency improvements of up to 150% and productivity increases of up to 300%.</p>
+<p><strong>Comparison of trajectory generation methods:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Methods</th>
+<th>Key Characteristics</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Experience-based</td>
+<td>One-step, stepwise, digging, coordinated excavation (slicing) methods</td>
+<td>Based on observation of skilled operators; coordinated method identified as most efficient</td>
+<td>Real equipment</td>
+</tr>
+<tr>
+<td>Geometry-based</td>
+<td>Keypoints + arc curves, cubic polynomials, hybrid polynomials; energy minimization models</td>
+<td>Smooth trajectories; simplified; cannot adapt to complex conditions</td>
+<td>Simulation/real</td>
+</tr>
+<tr>
+<td>Optimization-based</td>
+<td>GA, PSO, Sparrow Search, gradient descent, SQP; minimize time, energy, jerk, moment, fill factor</td>
+<td>Handles complex constraints; computationally intensive; force/power trajectory variants for soil uncertainty</td>
+<td>Simulation</td>
+</tr>
+<tr>
+<td>Learning-based</td>
+<td>LSTM, RL, Inverse RL, Imitation learning</td>
+<td>Circumvents complex modeling; adaptive to different environments; high training cost for high-dimensional problems</td>
+<td>Platform/real</td>
+</tr>
+<tr>
+<td>Hybrid</td>
+<td>Prediction-optimization (imitation learning + SQP/GA/PSO); data generation-learning (RL, PINN)</td>
+<td>Combines efficiency of optimization with generalization of learning; higher-quality datasets but significant time cost</td>
+<td>Simulation/platform</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Industry examples:</strong>
+- Obayashi Corporation: merges operator know-how with AI to reproduce digging and loading motions with high precision
+- Kajima Corporation (bulldozers): developed baseline model via computer simulation + genetic algorithm; performance closely matches skilled operators</p>
+<p><strong>Selected method comparison (Table 5 in paper):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Vehicle</th>
+<th>Soil-adaptive</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keypoints + arc transition (fill factor)</td>
+<td>Excavator</td>
+<td>Yes</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>Keypoints + cubic polynomial (smoothness)</td>
+<td>Excavator</td>
+<td>No</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>Mathematical models + energy (LHD)</td>
+<td>LHD</td>
+<td>Yes</td>
+<td>Simulation</td>
+</tr>
+<tr>
+<td>Surrogate model + GA (productivity, structural damage)</td>
+<td>LHD</td>
+<td>Yes</td>
+<td>Simulation</td>
+</tr>
+<tr>
+<td>Optimal control + nonlinear algorithm (fill factor, fuel, cycle time)</td>
+<td>Wheel loader</td>
+<td>Yes</td>
+<td>Simulation</td>
+</tr>
+<tr>
+<td>Keypoints + cubic spline + SQP (time, jerk)</td>
+<td>Excavator</td>
+<td>No</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>LSTM (skilled, collision avoidance)</td>
+<td>Excavator</td>
+<td>No</td>
+<td>Platform</td>
+</tr>
+<tr>
+<td>RL (fill factor, time)</td>
+<td>Excavator</td>
+<td>Yes</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>Inverse RL (skilled)</td>
+<td>Excavator</td>
+<td>No</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>PSO + RL (time, energy, excavation rate)</td>
+<td>Excavator</td>
+<td>Yes</td>
+<td>Simulation</td>
+</tr>
+<tr>
+<td>Sixth-order polynomial + PSO + PINN (time, energy, fill factor)</td>
+<td>Excavator</td>
+<td>Yes</td>
+<td>Platform</td>
+</tr>
+</tbody>
+</table>
+<h4 id="433-load-mass-and-volume-estimation">4.3.3 Load Mass and Volume Estimation</h4>
+<p>Accurate estimation of bucket load and fill factor is crucial for evaluating productivity, preventing overload and underload, extending service life, and ensuring operator safety.</p>
+<p><strong>Methods for load estimation:</strong>
+1. Kinematics and dynamics models (most common commercialized method; accurate mathematical model is challenging due to harsh environment and time-varying friction coefficients)
+2. Machine learning / neural networks (inputs: boom hydraulic cylinder pressure, displacement, boom angle; supplemented by kinematics model solutions and acceleration)
+3. Strain gauge installation on bucket load pin
+4. LiDAR-based volume estimation
+5. Computer vision (stereo cameras, depth maps, Faster R-CNN)</p>
+<p><strong>Quantitative comparison of payload/volume estimation methods:</strong></p>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>Reference</th>
+<th>Vehicle</th>
+<th>Method</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Feng et al.</td>
+<td>Wheel loader</td>
+<td>Dynamic model + optimal least-squares + neural network</td>
+<td>Payload error: 2%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Guan et al.</td>
+<td>Wheel loader</td>
+<td>Stereo camera + improved CNN + probabilistic knowledge</td>
+<td>Volume error: 3.11%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Brinkschulte et al.</td>
+<td>Wheel loader</td>
+<td>Kinematic model</td>
+<td>Payload error: 2%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Renner et al.</td>
+<td>Excavator</td>
+<td>Dynamic model with friction</td>
+<td>Payload error: 3%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Lu et al.</td>
+<td>Wheel loader</td>
+<td>Stereo camera + ResNet + Faster Region-CNN</td>
+<td>Volume error: 4.77%</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Yung et al.</td>
+<td>Tractor loader</td>
+<td>Kinematic model + calibrate center of gravity</td>
+<td>Payload error: 5%</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Bennett et al.</td>
+<td>Excavator</td>
+<td>Linear interpolation</td>
+<td>Payload error: 3%</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Savia et al.</td>
+<td>LHD</td>
+<td>Kalman filter + neural network</td>
+<td>Payload error: 3.86%</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Kheiralla et al.</td>
+<td>Wheel loader</td>
+<td>Strain gauge on bucket load pin</td>
+<td>Payload error: 1%</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Chen et al.</td>
+<td>Wheel loader</td>
+<td>LiDAR + ICP registration + alpha-shape of Delaunay triangulation</td>
+<td>Volume error: 4.64%</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Li et al.</td>
+<td>Excavator</td>
+<td>Stereo vision + excavator kinematics + InceptionTime + CBAM</td>
+<td>Volume error: 10.65%</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Helian et al.</td>
+<td>Excavator</td>
+<td>2D images + Faster Region-CNN</td>
+<td>Volume error: 3.09%</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Bewley et al.</td>
+<td>Cable shovel</td>
+<td>LiDAR + height grid</td>
+<td>Volume error: 5%</td>
+</tr>
+</tbody>
+</table>
+<h4 id="434-unloading-point-selection-and-material-distribution">4.3.4 Unloading Point Selection and Material Distribution</h4>
+<p>After filling the bucket, the system must determine optimal unloading points on the dump truck bed to ensure even material distribution, prevent spillage, and meet subsequent transportation requirements.</p>
+<p><strong>Key methods:</strong>
+- 3D pose recognition of dump truck (Lee et al.): stereo cameras and point cloud processing
+- Load distribution estimation with attention mechanism (Wu et al.): predicts material distribution across multiple trucks</p>
+<h3 id="44-safety-and-risk-assessment">4.4 Safety and Risk Assessment</h3>
+<h4 id="441-construction-personnel-and-equipment-identification">4.4.1 Construction Personnel and Equipment Identification</h4>
+<p><strong>Sensor-based methods:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Principle</th>
+<th>Advantages</th>
+<th>Disadvantages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RFID</td>
+<td>LF/HF/UHF</td>
+<td>Rapid identification; low-cost tags; passive mode possible</td>
+<td>Dense multipath fading; maintenance cost; restricted read/write distances</td>
+</tr>
+<tr>
+<td>Bluetooth</td>
+<td>2.4 GHz</td>
+<td>Low power; low cost; good compatibility with mobile devices</td>
+<td>Limited ranging accuracy; short communication distance</td>
+</tr>
+<tr>
+<td>UWB</td>
+<td>3.1-10.6 GHz</td>
+<td>High positioning accuracy; strong anti-interference; supports micro-motion detection</td>
+<td>Relatively high cost; requires cabling</td>
+</tr>
+<tr>
+<td>GPS</td>
+<td>Satellite navigation</td>
+<td>Global coverage; high outdoor positioning accuracy</td>
+<td>Expensive; high power consumption</td>
+</tr>
+<tr>
+<td>Magnetic field sensing</td>
+<td>Earth's/artificial magnetic field</td>
+<td>Low power; extremely low cost in certain scenarios</td>
+<td>Short range; highly dependent on environment; limited accuracy</td>
+</tr>
+<tr>
+<td>Ultrasonic</td>
+<td>Sound waves (&gt;20 kHz)</td>
+<td>Simple hardware; low cost; immune to electromagnetic interference</td>
+<td>Short range; affected by ambient noise and temperature/humidity</td>
+</tr>
+<tr>
+<td>Wi-Fi</td>
+<td>2.4 GHz/5 GHz (CSI/RSSI)</td>
+<td>Utilizes existing networks; extensive coverage; motion detection</td>
+<td>Prone to interference; limited ranging accuracy; complex algorithms</td>
+</tr>
+<tr>
+<td>Radar</td>
+<td>24/60/77 GHz</td>
+<td>High precision; micro-movement detection; privacy preserving</td>
+<td>Expensive; complex algorithms; limited measurement range</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Computer vision-based methods:</strong>
+- Feature extraction (contours, edges, colors): intuitive but susceptible to occlusion and complex backgrounds
+- Deep learning instance segmentation (Xiao et al.): tracking workers in off-site construction
+- Hybrid vision + radio approaches (Cai et al.): 3D tracking of multiple construction workers
+- Local sparse transformer + LiDAR (Zhang et al.): worker detection in 3D point clouds
+- Night-time obstacle detection: image enhancement + multisensor fusion (Zou et al.)
+- Adaptive 2D tracking in complex environments (Konstantinou et al.)
+- Automated 2D detection using histograms of oriented gradients and colors (Memarzadeh et al.)</p>
+<h4 id="442-field-construction-risk-monitoring">4.4.2 Field Construction Risk Monitoring</h4>
+<p><strong>Landslide and collapse detection:</strong>
+- Terrestrial laser scanning + optical images (Ozdogan et al.)
+- LiDAR-based landslide inventory mapping (Bernat Gazibara et al.)
+- Image fusion techniques (Marcelino et al.)</p>
+<p><strong>Underground utility detection:</strong>
+- Magnetic sensors mounted on excavator (Kim et al.): low-cost wireless pipeline localization
+- Wireless multi-node metal pipeline localization via Bluetooth (Jiang et al.)
+- Deep learning + radargram inversion (Wang et al.): underground infrastructure detection</p>
+<p><strong>Proximity warning systems:</strong>
+- Bluetooth Low Energy RTLS (Huang et al.)
+- UWB-based proximity hazard indicator for workers near construction equipment (Teizer et al.)
+- Heat map generation for predictive safety planning (Golovina et al.)
+- Magnetic field proximity detection and alert technology (Teizer)
+- Wireless ad-hoc networks for proximity warning in surface mines (Sabniveesu et al.)
+- IoT-based autonomous system for worker safety with real-time alarming, monitoring, and positioning (Kanan et al.)</p>
+<p><strong>Excavator-avoidance for buried pipes:</strong>
+- LiDAR + GNSS-based excavator-avoidance system (Yajima et al.)</p>
+<hr/>
+<h2 id="5-major-challenges-and-future-directions">5. Major Challenges and Future Directions</h2>
+<h3 id="51-key-challenges-in-practice">5.1 Key Challenges in Practice</h3>
+<h4 id="511-limitations-of-heterogeneous-sensor-data-fusion">5.1.1 Limitations of Heterogeneous Sensor Data Fusion</h4>
+<p>To achieve comprehensive and accurate site perception, autonomous earthmoving equipment combines data from multiple sensors (stereo vision cameras, LiDAR, GPS, and more). These sources are highly complementary, but each uses different formats and stores data separately, making fusion the key to high-precision environment sensing. Key challenges during fusion:
+- Mismatched resolutions
+- Alignment errors
+- Uneven sensor quality
+- Transmission delays</p>
+<p>Additionally, autonomy demands real-time performance, requiring raw sensor streams to be dimension-reduced, stripped of redundancy, and distilled into key features before fusion.</p>
+<p><strong>Future direction:</strong> A layered fusion architecture built on edge computing and cloud collaboration:
+- On-site edge nodes align sensor data in time and space, normalize resolutions, and perform initial dimension reduction
+- Only the most valuable compressed features are sent to the cloud
+- Hybrid fusion algorithm (blending data-driven and knowledge-driven methods) merges inputs into high-level representations</p>
+<h4 id="512-insufficient-material-identification-of-stockpiles-and-diversified-excavation-strategies">5.1.2 Insufficient Material Identification of Stockpiles and Diversified Excavation Strategies</h4>
+<p>Stockpile characteristics depend not only on inherent physical properties but also on external factors such as weather conditions (dry/loose soil vs. wet/muddy soil). Raw materials also vary widely in size, and interactions between stones of different dimensions and the bucket are complex.</p>
+<p><strong>Future direction:</strong> Combined digital twin and human-machine collaboration:
+- Digital twin simulates material properties and bucket contact mechanics, generating diverse large-scale synthetic data for training
+- In the field, when the system detects unfamiliar or extreme materials, a skilled operator demonstrates or fine-tunes the digging motion
+- Demonstrations are uploaded in real-time to edge nodes and synced to the cloud to update models and strategies</p>
+<h4 id="513-lack-of-a-universal-safety-and-risk-assessment-framework">5.1.3 Lack of a Universal Safety and Risk Assessment Framework</h4>
+<p>Existing safety and risk assessment tools typically focus on personnel monitoring or static environmental sensing, but do not provide a comprehensive evaluation of major hazards such as underground utilities, landslides, or tunnel collapses.</p>
+<p><strong>Required framework with three core modules:</strong>
+1. Personnel monitoring
+2. Environmental sensing
+3. Construction risk evaluation
+- With extensions tailored to mining, tunnel excavation, and high-slope operations
+- Standardized interface standards and data protocols enabling plug-and-play components
+- Swappable submodules (landslide prediction, collapse detection) that can be interchanged to match project needs
+- Validate module performance within a digital twin virtual platform</p>
+<h4 id="514-lack-of-high-quality-large-scale-datasets-for-earthmoving-equipment">5.1.4 Lack of High-Quality, Large-Scale Datasets for Earthmoving Equipment</h4>
+<p>Existing collections fail to capture the full range of construction scenarios (various equipment types, pile geometries, unstructured terrain), limiting deep-learning models' generalization and robustness.</p>
+<p><strong>Future direction:</strong>
+- Digital twin platforms simulate diverse job-site conditions and produce precisely labeled synthetic data for cameras, LiDAR, and IMUs
+- Generative AI models apply domain randomization and detail augmentation to create training data resembling real-world conditions
+- Edge nodes collect key real-world snippets; mixed training on real and synthetic data substantially improves model stability and robustness</p>
+<h3 id="52-future-development-directions">5.2 Future Development Directions</h3>
+<h4 id="521-digital-twin">5.2.1 Digital Twin</h4>
+<p>Digital twin technology creates virtual models of autonomous earthmoving equipment, enabling real-time mapping of machine status and environmental changes to support operation simulation, strategy optimization, and preventive maintenance.</p>
+<p><strong>Industry example:</strong> DeepX Corporation (Japan) achieved automated underground excavation by combining digital twin visualization with autonomous excavators. Their system collects site data via LiDAR and GNSS, uses point-cloud recognition to visualize terrain, equipment position, and motion in 3D, synchronizing the physical world with the digital twin in real-time. The platform also computes key performance metrics and generates reports for remote monitoring.</p>
+<p><strong>Future focus:</strong> Enhancing model accuracy and live-update capability to enable more precise simulations and intelligent decision-making.</p>
+<h4 id="522-edge-computing-and-cloud-collaboration">5.2.2 Edge Computing and Cloud Collaboration</h4>
+<p>Deploying edge computing devices on construction sites enables preprocessing, dimensionality reduction, and fusion of massive data from LiDAR, cameras, IMUs, and GPS directly on site. This delivers real-time feedback and mitigates the effects of network latency and instability. Cloud platforms use superior computing and storage resources to perform deep analysis on long-term accumulated data, refining algorithms and continuously updating models.</p>
+<p><strong>Industry example:</strong> Kajima's A4CSEL system (October 2021) — four operators in the centralized control center at Kajima's Tokyo headquarters managed twenty autonomous machines across three sites (Akita, Nara, and Kanagawa prefectures) around the clock, achieving notable gains in efficiency, safety, and consistency.</p>
+<p>Supported by 5G and 6G networks, communication efficiency and reliability will further improve.</p>
+<h4 id="523-standardization-and-modular-design">5.2.3 Standardization and Modular Design</h4>
+<p>The lack of a unified communication standard hampers efficient collaboration between machines from multiple manufacturers using different sensors, control systems, and data protocols. Required elements:
+- Standardized data-communication protocols: IIoT protocols, CAN bus, OPC UA
+- Open-source construction technology platforms</p>
+<p><strong>Industry example:</strong> Japan Civil Engineering Research Institute's OPERA (Open Platform for Earthwork with Robotics and Autonomy) integrates standardized control signals, hardware retrofit kits, wireless communication modules, simulators, and middleware; has successfully demonstrated autonomous excavator loading operations.</p>
+<p><strong>Roadmap for standardization:</strong>
+1. Establish unified domestic standards for OEMs and industry applications
+2. Work with international bodies (ISO, IEC) to develop compatible, interoperable global protocols
+3. Build shared open-source code repositories, simulation tools, and standardized datasets
+4. Form multinational, interdisciplinary alliances among research institutions, equipment manufacturers, and construction firms
+5. Promote certification and mutual recognition schemes for equipment, systems, and operators</p>
+<h4 id="524-human-machine-collaboration">5.2.4 Human-Machine Collaboration</h4>
+<p>Future autonomous earthmoving equipment will treat human operators and intelligent systems as complementary partners rather than mere replacements. In relatively uniform, high-repetition environments (quarries, concrete batching plants), automation performs effectively; however, in complex and dynamic construction settings, operators remain essential for strategic planning, anomaly handling, and emergency decision-making.</p>
+<p><strong>Industry example:</strong> Kajima's A4CSEL (July 2024) fully automated every task at a mountain tunnel face: an autonomous wheel loader scoops blasted material and transfers it to a rear dump truck; when load falls below a set threshold, operators in the remote-control room deploy a teleoperated excavator to gather scattered debris before resuming autonomous scooping. This collaborative approach boosts efficiency and safety while providing flexibility for continual refinement.</p>
+<p><strong>Emerging commercial systems:</strong>
+- <strong>Built Robotics Inc.:</strong> fully autonomous pile-driving robot RPD 35 operates at 5x the speed of a human crew
+- <strong>SafeAI Inc.:</strong> conversion of the Caterpillar 725 electric articulated dump truck delivers 13% improvement in on-site environmental performance
+- <strong>ARAV Inc.:</strong> excavator automation kits (sales planned from June 2025); retrofits excavators and loaders from major OEMs (Caterpillar, John Deere, Hitachi)</p>
+<hr/>
+<h2 id="6-conclusions">6. Conclusions</h2>
+<p>This paper provided a comprehensive review of the current state of research on automation technologies for earthmoving equipment, with a particular focus on advances in environmental perception, path planning and tracking, autonomous loading and unloading, and safety and risk assessment.</p>
+<h3 id="key-findings">Key Findings</h3>
+<ol>
+<li>
+<p><strong>Sensor fusion is fundamental:</strong> To operate autonomously in complex and uncertain environments, earthmoving equipment must rely on multisource information acquisition systems (computer vision, LiDAR, real-time dynamic positioning, pressure sensors) and utilize data fusion techniques to acquire comprehensive environmental information. Challenges including mismatches in sensor resolution, data alignment errors, inconsistent data quality, and transmission delays significantly hinder effective data fusion.</p>
+</li>
+<li>
+<p><strong>Individual subsystem optimization dominates:</strong> Current research primarily addresses improvements to individual stages or subsystems; system-level optimization of the entire workflow is still lacking. Researchers urgently need to undertake a holistic optimization of the entire workflow.</p>
+</li>
+<li>
+<p><strong>Data-physics hybrid methods show strong potential:</strong> These methods compensate for errors in physical models and improve the generalization of data-driven models.</p>
+</li>
+<li>
+<p><strong>Key challenges identified:</strong>
+   - Limitations in the fusion of data from heterogeneous sensors
+   - Insufficient sophistication in the recognition of stockpile material composition and deployment of diverse digging strategies
+   - Absence of a universal framework for safety and risk assessment
+   - Lack of high-quality, large-scale datasets</p>
+</li>
+<li>
+<p><strong>Digging strategies are critical:</strong> Adopting appropriate digging strategies tailored to the characteristics of the stockpiled material is critical for enhancing operational efficiency; these strategies are intrinsically linked to physical material properties and significantly influenced by external factors such as weather conditions.</p>
+</li>
+<li>
+<p><strong>Safety requires more attention:</strong> Safety, as the fundamental prerequisite for earthmoving automation, has hitherto received insufficient attention; the establishment of a universal framework for safety and risk assessment is of considerable practical significance.</p>
+</li>
+</ol>
+<h3 id="state-of-commercial-deployment">State of Commercial Deployment</h3>
+<p>Significant theoretical advances have been made, but many breakthroughs remain confined to simulations or laboratory tests:
+- <strong>Volvo prototype:</strong> automated cooperation between an articulated tractor and a wheel loader achieved just 70% of a skilled operator's digging and unloading efficiency
+- <strong>ETH Zurich hydraulic excavator:</strong> autonomously built a standalone stone wall (10 m x 1.7 m x 4 m) and a permanent retaining wall (65.5 m x 1.8 m x 6 m)
+- <strong>University of Tokyo + Seikei University:</strong> earth-transport experiment with multiple autonomous machines; when a team's performance dropped, the lead excavator re-allocated resources by coordinating with other teams, maintaining overall productivity in real-time
+- <strong>Kajima A4CSEL:</strong> achieved full-process automation (bulldozers, rollers, dump trucks) at Naruse Dam and the Kamigo test tunnel, allowing a single operator to manage multiple machines</p>
+<h3 id="future-outlook">Future Outlook</h3>
+<ol>
+<li><strong>Digital twin technology</strong> will create virtual models enabling real-time mapping of machine status and environmental changes</li>
+<li><strong>Edge-and-cloud collaborative architecture</strong> will balance on-site real-time performance with big-data analytics advantages; supported by 5G and 6G networks</li>
+<li><strong>Standardized, modular designs</strong> will ease retrofitting of legacy machines and enable seamless interoperability</li>
+<li><strong>Human-machine collaboration</strong> is likely to become the dominant mode in complex construction scenarios — autonomy does not replace operators but frees them from tedious, dangerous tasks to focus on higher-level decision-making and management</li>
+</ol>
+<hr/>
+<h2 id="key-references">Key References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref</th>
+<th>Authors</th>
+<th>Title / Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>Dadhich et al. (2016)</td>
+<td>Key challenges in automation of earth-moving machines, <em>Autom. Constr.</em> 68, 212-222</td>
+</tr>
+<tr>
+<td>[7]</td>
+<td>Borngrund et al. (2022)</td>
+<td>Deep-learning-based vision for earth-moving automation</td>
+</tr>
+<tr>
+<td>[8]</td>
+<td>Ha et al. (2019)</td>
+<td>Platform-centric autonomous robotic systems for earthmoving in military applications</td>
+</tr>
+<tr>
+<td>[9]</td>
+<td>Lee et al. (2019)</td>
+<td>Challenges in teleoperation of excavator toward human-in-the-loop construction automation</td>
+</tr>
+<tr>
+<td>[10]</td>
+<td>Eraliev et al. (2022)</td>
+<td>Autonomous excavation systems: sensing, perception, decision, planning, action</td>
+</tr>
+<tr>
+<td>[12]</td>
+<td>Chen et al.</td>
+<td>Excavation point selection with GA-based optimization incorporating slope and distance metrics</td>
+</tr>
+<tr>
+<td>[64]</td>
+<td>Sarata et al.</td>
+<td>Column model + bucket trajectory for excavation point evaluation</td>
+</tr>
+<tr>
+<td>[89]</td>
+<td>Singh et al. (1998)</td>
+<td>Multi-resolution planning for earthmoving; two-section bucket method</td>
+</tr>
+<tr>
+<td>[90]</td>
+<td>Backman et al. (2021)</td>
+<td>Continuous control of underground loader using deep RL, <em>Machines</em> 9(10), 216</td>
+</tr>
+<tr>
+<td>[91]</td>
+<td>Lindmark et al. (2018)</td>
+<td>Computational exploration of robotic rock loading, <em>Robot. Auton. Syst.</em> 106, 117-129</td>
+</tr>
+<tr>
+<td>[96]</td>
+<td>Yao et al. (2023)</td>
+<td>Bucket loading trajectory optimization for automated wheel loader, <em>IEEE Trans. Veh. Technol.</em> 72(6), 6948-6958</td>
+</tr>
+<tr>
+<td>[105]</td>
+<td>Egli et al. (2022)</td>
+<td>Soil-adaptive excavation using reinforcement learning, <em>IEEE Robot. Automation Lett.</em> 7(4), 9778-9785</td>
+</tr>
+<tr>
+<td>[106]</td>
+<td>Zhang et al. (2021)</td>
+<td>An autonomous excavator system for material loading tasks, <em>Sci. Robot.</em> 6(55), eabc3164</td>
+</tr>
+<tr>
+<td>[110]</td>
+<td>Yao et al. (2023)</td>
+<td>Real-time task-oriented continuous digging trajectory planning for excavator arms, <em>Autom. Constr.</em> 152, 104916</td>
+</tr>
+<tr>
+<td>[116]</td>
+<td>Chen et al. (2025)</td>
+<td>Estimating bucket fill factor for loaders using point cloud hole repairing, <em>Autom. Constr.</em> 170, 105886</td>
+</tr>
+<tr>
+<td>[117]</td>
+<td>Li et al. (2025)</td>
+<td>Multi-sensor data fusion and deep learning-based prediction of excavator bucket fill rates, <em>Autom. Constr.</em> 171, 106008</td>
+</tr>
+<tr>
+<td>[118]</td>
+<td>Helian et al. (2024)</td>
+<td>Computer vision-based excavator bucket fill estimation using depth map and Faster R-CNN, <em>Autom. Constr.</em> 166, 105592</td>
+</tr>
+<tr>
+<td>[122]</td>
+<td>Stentz et al. (1999)</td>
+<td>A robotic excavator for autonomous truck loading, <em>Auton. Robot.</em> 7(2), 175-186</td>
+</tr>
+<tr>
+<td>[125]</td>
+<td>Huang et al. (2021)</td>
+<td>Providing proximity alerts to workers using Bluetooth Low Energy RTLS, <em>Autom. Constr.</em> 132, 103928</td>
+</tr>
+<tr>
+<td>[126]</td>
+<td>Teizer et al. (2015)</td>
+<td>Proximity hazard indicator for workers near construction equipment, <em>Autom. Constr.</em> 60, 58-73</td>
+</tr>
+<tr>
+<td>[131]</td>
+<td>Zhang et al. (2024)</td>
+<td>Deep learning framework with local sparse transformer for construction worker detection in 3D with LiDAR, <em>Comput. Aided Civ. Inf. Eng.</em> 39(19), 2990-3007</td>
+</tr>
+<tr>
+<td>[139]</td>
+<td>Zou et al. (2023)</td>
+<td>Day-to-night obstacle detection for excavators based on image enhancement and multisensor fusion, <em>IEEE Sensors J.</em> 23(10), 10825-10835</td>
+</tr>
+<tr>
+<td>[144]</td>
+<td>Yajima et al. (2021)</td>
+<td>Development of an excavator-avoidance system for buried pipes, <em>Adv. Robot.</em> 35(23), 1468-1483</td>
+</tr>
+<tr>
+<td>[145]</td>
+<td>Kim et al. (2022)</td>
+<td>Underground metal pipeline localization using low-cost wireless magnetic sensors mounted on an excavator, <em>IEEE Trans. Ind. Electron.</em> 69(10), 10674-10683</td>
+</tr>
+<tr>
+<td>[147]</td>
+<td>Wang et al. (2023)</td>
+<td>Underground infrastructure detection using deep learning enabled radargram inversion, <em>Autom. Constr.</em> 154, 105004</td>
+</tr>
+</tbody>
+</table></main><script src="../assets/live.js"></script></body></html>

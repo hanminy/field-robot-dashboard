@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>#41 TaskNet: 자율굴착기 신경망 작업계획기 — 필드로봇 연구 통합 대시보드</title>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f9cff'/%3E%3Cpath d='M7 21h18v4H7zm3-11h12l3 9H7z' fill='white'/%3E%3C/svg%3E" rel="icon"/>
+<link href="paper.css" rel="stylesheet"/>
+<meta name="deployment-revision" content="77f3e393d388a8186a71dad238d8a9782d149fc2"></head>
+<body>
+<nav aria-label="상세 페이지 탐색" class="topbar">
+<a class="back-btn" href="../%ED%95%84%EB%93%9C%EB%A1%9C%EB%B4%87_%EC%97%B0%EA%B5%AC%ED%86%B5%ED%95%A9_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C.html">← 목록으로</a>
+<span class="crumb">필드로봇 연구 · Baidu Research · #041</span><span class="pdf-link" rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">📄 원문 · Obsidian</span>
+</nav>
+<header class="hero">
+<div class="badges"><span class="badge cat-core">Baidu Research</span><span class="badge">2021</span><span class="badge">#041</span><span class="badge score">학습·RL·IL·VLA</span><span class="badge">논문 PDF 기반 카드</span></div>
+<h1>TaskNet: 자율굴착기 신경망 작업계획기</h1>
+<p class="title-en" lang="en">TaskNet: A Neural Task Planner for Autonomous Excavator</p>
+<p class="authors">Jinxin Zhao, Liangjun Zhang</p>
+</header>
+<main><aside class="callout note"><b>Obsidian 최신 요약·근거 노트</b><ul><li><a href="../notes/8c9e0316fbd4642c.html">Baidu 자율굴착 논문 카드 요약 2019-2024</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html">Baidu 자율굴착 논문 핵심 분석 2019-2024</a></li></ul></aside>
+<div class="oneliner"><b>한줄 요약</b> — TaskNet은 목표 지형과 현재 LiDAR 높이맵의 차를 계층적 격자로 표현하고, 서로 다른 가중치를 가진 두 CNN 기반 계획기 TEM과 CEM이 상위 move/excavate 하위작업부터 approach/dig primitive의 위치·깊이·종료까지 순차 분해해 기존 경로·궤적계획기로 넘기는 데이터 기반 굴착 작업계획기다.</div>
+<h2><span class="sec-num">1.</span>연구 배경 및 동기</h2>
+<h3>규칙 기반 굴착 작업분해를 시연학습 가능한 계층 계획기로 전환</h3>
+<p>자율굴착은 한 번의 버킷 궤적뿐 아니라 차체를 어느 위치로 옮길지, 각 위치에서 어느 영역을 얼마나 깊게 굴착할지, 언제 다음 영역으로 넘어갈지를 긴 시퀀스로 정해야 한다. 이산 작업결정과 연속 충돌회피 운동을 동시에 탐색하면 공간이 커지고, 장비 도달범위를 지키면서 베이스 이동을 줄이는 전략까지 수작업으로 설계해야 한다.</p><p>기존 FSM·스크립트는 작업과 지형이 바뀔 때 규칙을 다시 작성해야 한다. TaskNet은 목표와 현재 LiDAR 높이의 차를 도달영역 단위 tile map과 버킷 폭 단위 cell map으로 나눈다. TEM은 move_to_tile/excavate_tile을, CEM은 approach/dig와 위치·깊이·종료를 예측한다. 출력은 기존 차체 경로·팔 궤적계획기로 전달되어 학습기는 계층적 작업분해에 집중한다.</p>
+<figure class="source-figure figure-asset" data-figure-id="p041-figure-p0002-1-o01-770205fc">
+<img alt="원문 Figure 1, PDF 2쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/ad009e212d993cc876f49e09.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 1 · PDF p.2</b> — Fig. 1. Illustration of grid map constructed from LiDAR scan points, tiles map and cells map.</figcaption>
+</figure>
+<div class="callout supp"><b>선행 연구의 한계</b><ul><li>FSM·스크립트는 새 지형·작업마다 상태와 전이 규칙을 다시 설계해야 한다.</li><li>작업과 운동의 결합 탐색은 이산 sub-task와 연속 궤적 때문에 고차원이다.</li><li>순수 imitation learning은 재귀 계획의 종료판단을 안정적으로 배우기 어렵다.</li><li>TEM과 CEM은 베이스 이동 최소화와 국소 최대 굴착이라는 서로 다른 전략을 요구한다.</li></ul></div>
+<div class="callout note"><b>이 연구의 기여</b><ul><li>굴착 목표를 sub-task·사양과 실행 가능한 primitive·사양으로 재귀 분해하는 신경 계획기를 제안했다.</li><li>도달영역 TEM과 버킷-cell CEM을 같은 구조·다른 가중치로 설계했다.</li><li>대규모 합성 trace와 인간 운전 fine-tuning을 결합해 3.5톤 simulation과 49톤 실차에서 검증했다.</li></ul></div>
+<h2><span class="sec-num">2.</span>방법론 및 시스템 구성</h2>
+<p>현재 높이 G와 목표 G_target의 차이가 모든 셀에서 epsilon 이내면 완료다. 원 격자를 굴착기 한 정차점의 도달영역 크기로 downsample해 binary G_tile을 만들고, 선택 tile에서는 버킷 폭 해상도의 G_cell을 자른다. 이 계층은 상위 이동과 하위 굴착이 필요한 공간 해상도를 분리한다.</p><p>TEM은 tile map과 최근 sub-task 이력으로 move_to_tile/excavate_tile, 방향·지역 사양과 전체 종료를 출력한다. 이동이면 PATH가 move_base 경로를 만들고, 굴착이면 CEM이 local cell map과 직전 approach에서 approach/dig, 좌표·깊이, 지역 종료를 예측한다. 두 모델은 CNN 2층과 출력별 FC decoder를 갖고 세 cross-entropy의 가중합으로 학습하되 core 가중치는 공유하지 않는다.</p>
+<h3>처리 파이프라인</h3><div class="pipeline"><div class="pipeline-card"><span class="step-num">1</span><h4>1. 높이차 지도</h4><p>LiDAR 현재 높이와 목표 높이의 차를 만들고 모든 셀이 epsilon 이내인지 검사한다.</p></div><div class="pipeline-card"><span class="step-num">2</span><h4>2. 계층 격자</h4><p>도달영역 크기의 G_tile과 버킷 폭 크기의 G_cell로 상·하위 입력을 분리한다.</p></div><div class="pipeline-card"><span class="step-num">3</span><h4>3. TEM 예측</h4><p>tile map과 이동 이력에서 move/excavate, 사양, 전체 종료를 출력한다.</p></div><div class="pipeline-card"><span class="step-num">4</span><h4>4. PATH 이동</h4><p>이동방향을 세계좌표로 바꾸고 grid search로 move_base 경로를 만든다.</p></div><div class="pipeline-card"><span class="step-num">5</span><h4>5. CEM 예측</h4><p>local map과 직전 approach에서 approach/dig, 좌표·깊이, 지역 종료를 출력한다.</p></div><div class="pipeline-card"><span class="step-num">6</span><h4>6. 운동계획</h4><p>primitive 사양을 팔 trajectory optimization과 차체 경로계획기에 전달한다.</p></div><div class="pipeline-card"><span class="step-num">7</span><h4>7. 관측 갱신</h4><p>실행 후 cell·tile map을 갱신해 전체 작업 완료까지 재귀 반복한다.</p></div><div class="pipeline-card"><span class="step-num">8</span><h4>8. 합성학습</h4><p>TEM 순회·건너뛰기와 CEM 최고 cell 우선 규칙으로 대규모 trace를 만든다.</p></div><div class="pipeline-card"><span class="step-num">9</span><h4>9. 실차 적응</h4><p>인간 운전 trace로 49톤 굴착기 시험 전 모델을 fine-tune한다.</p></div></div>
+<h3>원문 수식과 의미</h3><div class="equations"><div class="eq"><h4>목표 지형 완료조건 (Eq. 1)</h4><code>|G(p,q)-G_{target}(p,q)|&lt;\epsilon,\ \forall p,q</code><p>PDF p.2. 모든 셀의 현재-목표 높이차가 허용오차 안이면 완료다.</p></div><div class="eq"><h4>TEM 상위계획 (Eq. 2)</h4><code>(s^{(t)},a^{(t)},t_e)=\Psi_{TEM}(t_a,o^{(t)})</code><p>PDF p.3. 작업과 tile 관측에서 sub-task·사양·전체 종료를 낸다.</p></div><div class="eq"><h4>CEM 하위계획 (Eq. 3)</h4><code>(p^{(i)},b^{(i)},\tilde t_e)=\Psi_{CEM}(a^{(i)},\tilde o^{(i)})</code><p>PDF p.3. 지역 관측에서 primitive·사양·지역 종료를 낸다.</p></div><div class="eq"><h4>PATH 이동계획 (Eq. 4)</h4><code>(p^{(i)},b^{(i)},\tilde t_e)=\Psi_{PATH}(a^{(i)},\tilde o^{(i)})</code><p>PDF p.3. move_to_tile 사양을 move_base 경로로 바꾼다.</p></div><div class="eq"><h4>공통 다중 decoder 구조 (Eq. 5)</h4><code>x=f_{core}(u),\ y_1=f_x(x),\ y_2=f_{spec}(x),\ y_3=f_{term}(x)</code><p>PDF p.3. core 특징을 행동·사양·종료 decoder가 각각 해석한다.</p></div><div class="eq"><h4>TEM 입력 (Eq. 6)</h4><code>u^{(t)}=(G_{tile}^{(t)},(s^{(t)},s^{(t-1)},\ldots,s^{(t-k)}))</code><p>PDF p.4. tile map과 최근 처리 이력을 함께 사용한다.</p></div><div class="eq"><h4>CEM 입력 (Eq. 7)</h4><code>u^{(i)}=(G_{cell}^{(i)},b^{(i-1)})\in\mathbb{R}^{h\times w\times2}</code><p>PDF p.4. local map과 직전 approach를 두 채널로 결합한다.</p></div><div class="eq"><h4>지도학습 손실 (Eq. 8)</h4><code>L=\sum \alpha L_p(y_1,\hat y_1)+\beta L_b(y_2,\hat y_2)+\gamma L_t(y_3,\hat y_3)</code><p>PDF p.4. 행동·사양·종료 cross-entropy의 가중합이다.</p></div></div>
+<figure class="source-figure figure-asset" data-figure-id="p041-figure-p0004-2-o01-ff864843">
+<img alt="원문 Figure 2, PDF 4쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/393d5615cd1f20092bea94ab.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 2 · PDF p.4</b> — Fig. 2. Model architecture. TEM and CEM share the same network structure but use different weights. The planning core network is composed of 2 layers of convolutional neural network (CNN) with kernel size of 3, stride size of 1 and padding size of 1. Each CNN layers is followed by a ReLU activation function and MaxPooling of kernel size of 2 and stride size of 1. The decoders are all multilayer perceptron with 2 layers of fully-connected (FC) neural network of size 128.</figcaption>
+</figure>
+<h2><span class="sec-num">3.</span>핵심 기술</h2>
+<div class="tech-grid"><article class="tech-card"><h3>TEM-CEM 이중 시간척도</h3><p>TEM은 넓은 현장을 정차·도달영역 단위로, CEM은 한 정차점의 버킷 cell·깊이 단위로 계획한다. 베이스 이동 최소화와 국소 최대 굴착의 전략이 달라 core 가중치를 공유하지 않으며, 공유-core baseline의 tile sub-task 실패가 이를 뒷받침한다.</p><ul><li>TEM: move/excavate</li><li>CEM: approach/dig</li><li>PATH: move_base</li><li>상·하위 종료 별도 예측</li></ul></article><article class="tech-card"><h3>높이차 격자와 사양 전달</h3><p>TaskNet은 현재-목표 높이차를 공통 표현으로 쓴다. tile은 처리 여부를 압축하고 cell은 버킷 굴착 위치를 보존한다. 출력이 class에 그치지 않고 방향·국소좌표·깊이를 포함하므로 기존 모션플래너가 연속 궤적을 계산할 수 있다.</p><ul><li>tile=도달영역</li><li>cell=버킷 폭</li><li>방향·좌표·깊이 출력</li><li>학습계획과 운동계획 분리</li></ul></article><article class="tech-card"><h3>합성 시연과 실차 미세조정</h3><p>TEM은 순회·비작업 tile 건너뛰기, CEM은 최고 cell 우선 규칙으로 대량 trace를 얻는다. 실제 백만 단위 label 수집을 피하지만 합성 규칙이 전략을 선결정할 수 있어, 저자들은 인간 운전 trace로 실차 전 fine-tuning했다.</p><ul><li>TEM 1,126,900 sample</li><li>CEM 10,000 sequence</li><li>실차 fine-tuning</li><li>few-shot이 후속과제</li></ul></article></div>
+<figure class="source-figure figure-asset" data-figure-id="p041-figure-p0005-3-o01-23c0e6d1">
+<img alt="원문 Figure 3, PDF 5쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/c5c9cc513c19de832adaf184.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 3 · PDF p.5</b> — Fig. 3. Randomized tiles map. (a) 30x30 tiles map is randomly generated, where only blue tiles need to be processed. Our learned TEM model can cover the blue tiles in zig-zag order (e.g. move from left to right, go down, then move from right to left) and skip green tiles. The model is able to generalize for tiles map, which do not exist in our training dataset.</figcaption>
+</figure>
+<h2><span class="sec-num">4.</span>실험 결과</h2>
+<h3>실험 환경·장비·데이터</h3><ul><li>TEM: 최대 32×32의 3,000개 map, 총 1,126,900 sample.</li><li>CEM: 최대 6×6의 10,000 sequence, batch 1,000, learning rate 1e-3.</li><li>비교군은 naive pure IL과 TEM·CEM core-share 변형이다.</li><li>3.5톤 particle-terrain simulator와 LiDAR·IMU 장착 49톤 drive-by-wire 굴착기를 사용했다.</li></ul>
+<h3>실험 프로토콜</h3><ul><li>미학습 randomized map에서 필요한 tile의 zig-zag 순회와 비작업 tile 건너뛰기를 확인했다.</li><li>Table II에서 세 모델의 tile·cell plan 완료 여부와 실패 유형을 비교했다.</li><li>pile·trench·multiple-block 작업을 지형 갱신이 포함된 simulation 폐루프로 실행했다.</li><li>실차 54회에서 추론·primitive 시간과 총 운반체적/시간을 기록해 인간 효율과 비교했다.</li></ul>
+<h3>비교 기준</h3><ul><li>Pure IL: cell termination failure.</li><li>Core-share: tile sub-task failure.</li><li>인간 운전자: 동일 실차 작업의 m³/h 비교.</li></ul>
+<h3>평가 지표</h3><ul><li>tile/cell 완료</li><li>학습 규모</li><li>추론·실행시간</li><li>54회 적재 m³/h</li><li>미학습 지형 완료</li></ul>
+<figure class="source-figure figure-asset" data-figure-id="p041-figure-p0006-4-o01-b5b413d7">
+<img alt="원문 Figure 4, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/6131003e18e9f1fcc7e04d8a.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 4 · PDF p.6</b> — Fig. 4. Real-world experiment for loading the material to dump area. The autonomous excavator system integrated with TaskNet conducts an iteration of the cell-excavation task, including approach, dig, swing, and dump task primitives. The LiDAR scan is overlaid in each subﬁgure to illustrate the terrain environment.</figcaption>
+</figure><figure class="source-figure figure-asset" data-figure-id="p041-figure-p0006-5-o01-3c74ce34">
+<img alt="원문 Figure 5, PDF 6쪽" class="w700" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e14f2805be24653b23c352db.webp" tabindex="0"/>
+<figcaption><b>원문 Figure 5 · PDF p.6</b> — Fig. 5. Top: Pile excavation simulation. (Bottom) Trench excavation task and multiple block excavation task. Refer to the accompanied video.</figcaption>
+</figure>
+<h3>핵심 결과 해석</h3><p>TaskNet은 Table II의 tile·cell plan을 모두 완료했다. Pure IL은 cell 종료를 못했고, core-share는 tile sub-task 선택에 실패했다. TEM은 학습에 없던 무작위 30×30 사례에서 필요한 tile을 zig-zag로 덮고 비작업 tile을 건너뛰었다. 3.5톤 simulation의 pile·trench·multiple-block도 폐루프로 수행했지만 성공률이나 목표형상 오차는 수치로 보고하지 않았다.</p><p>49톤 실차에서 다음 primitive·사양 추론은 1초 미만, approach는 약 2초, dig·swing·dump 합계는 약 22초였다. 54회 적재의 자율 효율은 356.8 m³/h, 인간은 396.5 m³/h였다. 자율 처리량은 인간의 약 90%이나 TaskNet 단독 효과가 아니라 모션플래너·제어기와 현장조건을 포함한 통합 시스템 성과다.</p>
+<h3>정량 결과</h3><div class="tbl-wrap"><table class="metric-table">
+<thead><tr><th>평가 항목</th><th>정량 결과</th><th>조건·맥락</th><th>원문 근거</th></tr></thead>
+<tbody><tr><td>TEM 학습 규모</td><td>3,000 maps, 1,126,900 samples</td><td>최대 32×32 tile map</td><td>PDF p.5</td></tr><tr><td>CEM 학습 규모</td><td>10,000 sequences</td><td>최대 6×6, batch 1,000, learning rate 1e-3</td><td>PDF p.5</td></tr><tr><td>TaskNet 계획 완료</td><td>Tile Complete / Cell Complete</td><td>Table II</td><td>PDF p.5</td></tr><tr><td>Pure IL 실패</td><td>Cell termination failure</td><td>Tile plan은 Complete</td><td>PDF p.5</td></tr><tr><td>Core-share 실패</td><td>Tile sub-task failure</td><td>Cell plan은 Complete</td><td>PDF p.5</td></tr><tr><td>시뮬레이터 장비</td><td>3.5 t</td><td>boom 2.00 m, stick 1.05 m, bucket 0.60 m, base height 0.35 m</td><td>PDF p.6</td></tr><tr><td>TaskNet 추론시간</td><td>&lt;1 s</td><td>실차에서 다음 primitive와 specification 예측</td><td>PDF p.6</td></tr><tr><td>Primitive 실행시간</td><td>approach 약 2 s; dig+swing+dump 약 22 s</td><td>49톤 실차 작업 cycle</td><td>PDF p.6</td></tr><tr><td>실차 반복 횟수</td><td>54 iterations</td><td>자율·인간 효율 비교</td><td>PDF p.6</td></tr><tr><td>자율 적재 효율</td><td>356.8 m³/h</td><td>49톤 자율굴착기</td><td>PDF p.6</td></tr><tr><td>인간 적재 효율</td><td>396.5 m³/h</td><td>동일 작업 비교</td><td>PDF p.6</td></tr></tbody></table></div>
+<div class="callout supp"><b>실패 사례와 경계조건</b><ul><li>Pure IL은 cell 종료판단 실패로 지역 계획을 끝내지 못했다.</li><li>Core-share는 tile 수준의 올바른 sub-task 선택에 실패했다.</li><li>합성 규칙 밖 지형의 정량 일반화율과 센서오차·안전 실패 빈도는 보고되지 않았다.</li></ul></div>
+<h2><span class="sec-num">5.</span>한계 및 향후 연구</h2>
+<div class="wrap-grid"><div class="wrap-card l"><h4>현재 한계</h4><ul><li>대부분의 trace가 규칙 기반 simulator라 zig-zag·최고 cell 우선 전략을 답습할 수 있다.</li><li>실차 fine-tuning 데이터 규모·비율·epoch가 없어 sim-to-real 재현성이 제한된다.</li><li>높이 기하만 사용해 soil texture·hardness·저항력·버킷 힘을 반영하지 않는다.</li><li>실차는 단일 49톤 장비·적재 시나리오이고 평가도 binary 완료와 처리량 중심이다.</li></ul></div><div class="wrap-card r"><h4>향후 연구</h4><ul><li>원문은 격자에 soil texture와 hardness를 추가하고 few-shot으로 실데이터 요구량을 줄이는 방향을 제시한다.</li><li>버킷 힘·유압압력·실제 충전율을 넣어 다음 깊이와 접근점을 성과 기반으로 보정할 수 있다.</li><li>완료율, termination F1, 목표형상 RMSE, 안전개입률과 재계획 지연을 새 현장에서 평가해야 한다.</li></ul></div></div>
+<h2><span class="sec-num">6.</span>한마디로 정리</h2>
+<div class="wrap-grid"><div class="wrap-card"><h4>핵심 방법은?</h4><p>높이차를 tile·cell로 나누고 TEM·CEM이 sub-task·primitive·사양·종료를 시연학습해 기존 모션플래너로 넘긴다.</p></div><div class="wrap-card r"><h4>핵심 결과는?</h4><p>TaskNet만 두 계획시험을 모두 완료했고, 49톤 굴착기 54회에서 356.8 m³/h로 인간 396.5 m³/h에 근접했다.</p></div><div class="wrap-card l"><h4>한계는?</h4><p>합성 규칙 의존, 물성·힘 정보 부재, 단일 실차 현장과 완료 중심 평가로 OOD 일반화·안전성은 미확인이다.</p></div></div>
+<div class="kw"><span>#학습·RL·IL·VLA</span><span>#작업·궤적계획</span><span>#시연학습</span><span>#Task-level Excavation Model</span><span>#Cell-level Excavation Model</span><span>#재귀적 작업분해</span></div>
+<div class="opinion"><h2>나의 의견 / 우리 연구와의 연관성</h2><p>TaskNet은 규칙형 AES의 작업분해를 데이터 기반으로 바꾸면서 검증된 모션플래너를 유지한다. rank 40의 버킷 적재 체적을 CEM 종료와 다음 dig 깊이에 되먹이면 최고 cell 규칙을 실제 충전효율로 교정할 수 있다. 주행성 지도는 위험 tile을 막고, rank 42 안전감시는 장비 침입 때 primitive를 pause한 뒤 관측 갱신·재계획을 유도할 수 있다.</p><ul><li>버킷 체적을 CEM termination·depth specification에 되먹여 저충전 굴착을 재계획한다.</li><li>토질·유압 힘을 입력 채널로 추가해 재료 조건부 primitive와 에너지 최적화로 확장한다.</li><li>주행성 비용을 TEM tile mask와 PATH에 연결해 거친 지형의 베이스 재배치를 안전하게 만든다.</li><li>외부 안전감시 경보를 pause·대기·재개 sub-task로 통합한다.</li></ul></div>
+<h2><span class="sec-num">7.</span>전체 그림·표</h2>
+<p class="gallery-intro">본문 핵심 위치에 배치하지 않은 원문 Figure와 Table을 원문 페이지 순서로 수록한다.</p>
+<div class="figure-gallery"><figure class="source-figure table-asset" data-figure-id="p041-table-p0003-i-o01-55e00f79">
+<img alt="원문 Table I, PDF 3쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/e747ded4734683888a412f9e.webp" tabindex="0"/>
+<figcaption><b>원문 Table I · PDF p.3</b> — TABLE I SUB-TASKS AND PRIMITIVES LIST</figcaption>
+</figure><figure class="source-figure table-asset" data-figure-id="p041-table-p0005-ii-o01-4d4a2630">
+<img alt="원문 Table II, PDF 5쪽" class="w700" loading="lazy" onclick="zoom(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zoom(this)}" src="../media/9f5f9c2703af6c73801eebd7.webp" tabindex="0"/>
+<figcaption><b>원문 Table II · PDF p.5</b> — TABLE II COMPARISON</figcaption>
+</figure></div>
+<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul><li><b>배경</b>: p.1, p.2</li><li><b>방법론</b>: p.2, p.3, p.4</li><li><b>실험</b>: p.5, p.6</li><li><b>결과</b>: p.5, p.6</li><li><b>한계</b>: p.6</li></ul></div>
+<section aria-label="근거 추적" class="trace">
+<h3>원문·기존 요약·관련 자료</h3><ul><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">논문 PDF</span> <span>pdf</span></li><li><a href="../media/66476934dc3c43760a38b5f2.webp" rel="noopener" target="_blank">TaskNet 구조</a> <span>figure</span></li></ul>
+<h3>추출·교차검증 근거</h3><ul><li><a href="../notes/8c9e0316fbd4642c.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 카드 요약 2019-2024.md</a></li><li><a href="../notes/8ed0fdc3c86f2b23.html" rel="noopener" target="_blank">Baidu 자율굴착 논문 핵심 분석 2019-2024.md</a></li><li><span rel="noopener" target="_blank" title="Obsidian 볼트에서 확인할 수 있는 자료">2021 TaskNet_A_Neural_Task_Planner_for_Autonomous_Excavator.pdf</span></li></ul>
+</section>
+<div class="pager"><a class="prev" href="paper-040.html"><span class="lbl">← 이전 #40</span>LiDAR 기반 굴착기 버킷 적재물 실시간 체적 추정</a><a class="next" href="paper-042.html"><span class="lbl">다음 #42 →</span>영상 기반 굴착기 작업 분석 및 안전 모니터링 시스템</a></div>
+</main>
+<div aria-hidden="true" aria-modal="true" class="lightbox" id="lb" onclick="closeZoom()" role="dialog"><img alt="확대 원문 그림" id="lbimg"/></div>
+<script>
+function zoom(el){var lb=document.getElementById('lb');var image=document.getElementById('lbimg');image.src=el.currentSrc||el.src;image.alt=el.alt;lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+function closeZoom(){var lb=document.getElementById('lb');lb.classList.remove('open');lb.setAttribute('aria-hidden','true');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeZoom();});
+</script>
+<footer>필드로봇 연구 통합 대시보드 · 확인되지 않은 서지·수치는 추정하지 않음</footer>
+<script src="../assets/live.js"></script></body>
+</html>
