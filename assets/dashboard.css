@@ -125,3 +125,5 @@ footer { text-align:center; color:var(--txt2); font-size:12px; padding:24px; bor
   *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;}
   .card:hover,.detail-btn:hover{transform:none;}
 }
+
+.fbtn{white-space:nowrap}
