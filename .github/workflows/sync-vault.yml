@@ -18,6 +18,9 @@ jobs:
           sparse-checkout: |
             /02_research/필드로봇/
             /attachments/
+            !*.pdf
+            !*.pptx
+            !*.hwpx
       - uses: actions/checkout@v4
         with:
           repository: hanminy/field-robot-dashboard

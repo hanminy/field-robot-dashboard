@@ -190,6 +190,8 @@ class Exporter:
         shutil.copytree(self.root / 'assets', self.output / 'assets')
         (self.output / 'detail').mkdir()
         shutil.copy2(self.root / 'detail/paper.css', self.output / 'detail/paper.css')
+        with (self.output / 'detail/paper.css').open('a', encoding='utf-8') as css:
+            css.write('\n/* Keep long equations within narrow phone screens. */\n.equations,.eq{min-width:0;max-width:100%;box-sizing:border-box}.eq code{overflow-wrap:anywhere}\n')
         main = renderer.v2_render_dashboard(records, manifest, images)
         main = self.rewrite(main, self.root / MAIN, Path(MAIN))
         soup = BeautifulSoup(main, 'html.parser')
