@@ -1,0 +1,56 @@
+name: Export field robotics from Obsidian
+on:
+  workflow_call:
+    secrets:
+      PUBLISH_SSH_KEY:
+        required: true
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: vault
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /02_research/필드로봇/
+            /attachments/
+      - uses: actions/checkout@v4
+        with:
+          repository: hanminy/field-robot-dashboard
+          ref: main
+          path: publisher
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: publisher/requirements.txt
+      - run: pip install -r publisher/requirements.txt
+      - name: Build and verify public files
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: python publisher/src/publish.py --vault vault --output site --revision "$SOURCE_SHA"
+      - uses: actions/checkout@v4
+        with:
+          repository: hanminy/field-robot-dashboard
+          ref: gh-pages
+          ssh-key: ${{ secrets.PUBLISH_SSH_KEY }}
+          path: published
+      - name: Publish verified snapshot
+        working-directory: published
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          rsync -a --delete --exclude=.git --exclude=.github ../site/ ./
+          mkdir -p .github/workflows
+          cp ../publisher/.github/workflows/pages.yml .github/workflows/pages.yml
+          git config user.name 'field-robot-dashboard[bot]'
+          git config user.email 'field-robot-dashboard@users.noreply.github.com'
+          git add --all
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync Obsidian ${SOURCE_SHA}"
+            git push origin HEAD:gh-pages
+          fi
