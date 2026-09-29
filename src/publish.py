@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit, quote
@@ -67,7 +68,7 @@ class Exporter:
         destination.parent.mkdir(parents=True, exist_ok=True)
         if not destination.exists():
             with Image.open(source) as image:
-                image.save(destination, 'WEBP', lossless=True, method=3)
+                image.save(destination, 'WEBP', lossless=True, method=0)
         self.assets[source] = target
         return target
 
@@ -166,6 +167,12 @@ class Exporter:
         records, manifest = renderer.load_records()
         records = renderer.merge_enriched(records)
         images = renderer.load_image_map(records)
+        # Encode the independent figure images concurrently. Pillow releases the GIL.
+        assets = sorted({p.resolve() for folder in ('images', 'detail/figs')
+                         for p in (self.root / folder).rglob('*')
+                         if p.suffix.lower() in IMAGES})
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(self.asset, assets))
         # Explicit linked notes plus new summary notes; unrelated vault notes stay private.
         for record in records:
             links = [x['path'] for x in record['source_links']] + record['evidence_sources']
@@ -218,7 +225,11 @@ class Exporter:
       const response = await fetch(url, {cache: 'no-store'});
       if (!response.ok) return;
       const next = await response.json();
-      if (next.revision && next.revision !== current) location.reload();
+      if (next.revision && next.revision !== current) {
+        const page = new URL(location.href);
+        page.searchParams.set('v', next.revision);
+        location.replace(page);
+      }
     } catch (_) { /* Offline viewing remains available. */ }
   }
   setInterval(check, 60000);
