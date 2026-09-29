@@ -362,11 +362,23 @@ def load_records():
             normalize_title(item["title"]),
         )
     )
-    for index, record in enumerate(records, 1):
-        record["rank"] = index
-        record["detail_page"] = f"detail/paper-{index:03d}.html"
+    # Published addresses belong to paper IDs, not to their year-sort positions.
+    saved = read_json(IMAGE_MAP_PATH).get("images", []) if IMAGE_MAP_PATH.exists() else []
+    ranks = {item["id"]: item["rank"] for item in saved}
+    if len(ranks) != len(saved) or len(set(ranks.values())) != len(saved):
+        raise SystemExit("image_map의 id/rank는 고유해야 합니다.")
+    if any(type(rank) is not int or rank < 1 for rank in ranks.values()):
+        raise SystemExit("image_map rank는 양의 정수여야 합니다.")
+    next_rank = max(ranks.values(), default=0) + 1
+    for record in records:
+        if record["id"] not in ranks:
+            ranks[record["id"]] = next_rank
+            next_rank += 1
+        record["rank"] = ranks[record["id"]]
+        record["detail_page"] = f"detail/paper-{record['rank']:03d}.html"
         record.pop("provisional_key", None)
         record.pop("fragment", None)
+    records.sort(key=lambda item: item["rank"])
 
     manifest = build_manifest(records, manifest_sources, duplicate_merges, excluded, unavailable)
     return records, manifest
@@ -374,18 +386,18 @@ def load_records():
 
 def merge_enriched(records):
     """Attach the reviewed v3 prose package without re-summarizing it."""
-    expected = {"eth.json": 33, "baidu.json": 22, "snu_other.json": 25}
     enriched = []
-    for name, count in expected.items():
-        path = ENRICHED_DIR / name
+    for path in sorted(ENRICHED_DIR.glob("*.json")):
         payload = read_json(path)
         items = payload.get("records") if isinstance(payload, dict) else None
-        if payload.get("schema_version") != 3 or not isinstance(items, list) or len(items) != count:
-            raise SystemExit(f"{path.name}: schema_version=3, records={count} 계약 불일치")
+        if not isinstance(payload, dict) or payload.get("schema_version") != 3 or not isinstance(items, list):
+            raise SystemExit(f"{path.name}: schema_version=3, records 배열이 필요합니다.")
+        if payload.get("record_count", len(items)) != len(items):
+            raise SystemExit(f"{path.name}: record_count 불일치")
         enriched.extend(items)
     by_rank = {int(item["rank"]): item for item in enriched}
-    if len(enriched) != 80 or set(by_rank) != set(range(1, 81)):
-        raise SystemExit("enriched 레코드는 고유 rank 1..80이어야 합니다.")
+    if len(enriched) != len(records) or set(by_rank) != {record["rank"] for record in records}:
+        raise SystemExit("enriched 레코드는 논문별 고유 rank와 일대일로 일치해야 합니다.")
     for record in records:
         for link in record.get("source_links", []):
             link["path"] = portable_vault_path(link.get("path"))
@@ -866,6 +878,7 @@ def v2_render_card(record, image_item):
 
 
 def v2_render_dashboard(records, manifest, image_map):
+    groups = Counter(institution_group(record) for record in records)
     years = sorted({record["year"] for record in records if record["year"]}, reverse=True)
     kinds = sorted({record["source_kind"] for record in records})
     cards = "\n".join(v2_render_card(record, image_map[record["rank"]]) for record in records)
@@ -903,12 +916,12 @@ def v2_render_dashboard(records, manifest, image_map):
   <h1>🏗️ 필드로봇 연구 통합 대시보드</h1>
   <div class="subtitle">자율굴착기 · 건설기계 · 필드로봇 연구를 한 화면에서 탐색 · 검토된 고유 연구 <b>{len(records)}편</b></div>
   <div class="stats" aria-label="수록 통계">
-    <div class="stat"><span class="stat-num">80</span><span class="stat-lbl">전체 연구</span></div>
-    <div class="stat cat-exc"><span class="stat-num">33</span><span class="stat-lbl">ETH</span></div>
-    <div class="stat cat-core"><span class="stat-num">22</span><span class="stat-lbl">Baidu</span></div>
-    <div class="stat cat-field"><span class="stat-num">10</span><span class="stat-lbl">서울대</span></div>
-    <div class="stat cat-other"><span class="stat-num">15</span><span class="stat-lbl">기타기관</span></div>
-    <div class="stat"><span class="stat-num">1995–2026</span><span class="stat-lbl">연도 범위</span></div>
+    <div class="stat"><span class="stat-num">{len(records)}</span><span class="stat-lbl">전체 연구</span></div>
+    <div class="stat cat-exc"><span class="stat-num">{groups['ETH']}</span><span class="stat-lbl">ETH</span></div>
+    <div class="stat cat-core"><span class="stat-num">{groups['Baidu']}</span><span class="stat-lbl">Baidu</span></div>
+    <div class="stat cat-field"><span class="stat-num">{groups['SNU']}</span><span class="stat-lbl">서울대</span></div>
+    <div class="stat cat-other"><span class="stat-num">{groups['other']}</span><span class="stat-lbl">기타기관</span></div>
+    <div class="stat"><span class="stat-num">{min(years) if years else ''}–{max(years) if years else ''}</span><span class="stat-lbl">연도 범위</span></div>
   </div>
 </header>
 <div class="controls" aria-label="검색 및 필터">
@@ -1164,6 +1177,7 @@ document.addEventListener('keydown',function(e){{if(e.key==='Escape')closeZoom()
 
 
 def v2_render_index(records, manifest, image_map):
+    groups = Counter(institution_group(record) for record in records)
     counts = manifest["category_tag_counts"]
     figure_count = sum(sum(asset.get("kind") == "figure" for asset in item.get("figures", [])) for item in image_map.values())
     table_count = sum(sum(asset.get("kind") == "table" for asset in item.get("figures", [])) for item in image_map.values())
@@ -1186,15 +1200,15 @@ date: {manifest['generated_on']}
 # 필드로봇 연구 통합
 
 > [!abstract] ICRA2026 카탈로그형 통합 화면
-> 검토된 **80개 고유 연구**와 실제 논문 대표 그림 80개를 한 화면에서 탐색한다. 카드에는 4줄 요약이 항상 보이며, 상세 페이지는 ICRA2026형 7개 섹션과 원문 Figure/Table 전체 갤러리를 제공한다.
+> 검토된 **{len(records)}개 고유 연구**와 실제 논문 대표 그림 {len(records)}개를 한 화면에서 탐색한다. 카드에는 4줄 요약이 항상 보이며, 상세 페이지는 ICRA2026형 7개 섹션과 원문 Figure/Table 전체 갤러리를 제공한다.
 
 ## 바로 열기
 
-- [전체 80편](필드로봇_연구통합_대시보드.html)
-- [ETH 33편](필드로봇_연구통합_대시보드.html#institution=ETH)
-- [서울대 10편](필드로봇_연구통합_대시보드.html#institution=SNU)
-- [Baidu 22편](필드로봇_연구통합_대시보드.html#institution=Baidu)
-- [기타기관 15편](필드로봇_연구통합_대시보드.html#institution=other)
+- [전체 {len(records)}편](필드로봇_연구통합_대시보드.html)
+- [ETH {groups['ETH']}편](필드로봇_연구통합_대시보드.html#institution=ETH)
+- [서울대 {groups['SNU']}편](필드로봇_연구통합_대시보드.html#institution=SNU)
+- [Baidu {groups['Baidu']}편](필드로봇_연구통합_대시보드.html#institution=Baidu)
+- [기타기관 {groups['other']}편](필드로봇_연구통합_대시보드.html#institution=other)
 
 ## 세부 기관별 바로가기
 
@@ -1204,11 +1218,11 @@ date: {manifest['generated_on']}
 
 | 항목 | 값 |
 |---|---:|
-| 고유 연구 | 80 |
-| ETH / Baidu / 서울대 / 기타기관 | 33 / 22 / 10 / 15 |
+| 고유 연구 | {len(records)} |
+| ETH / Baidu / 서울대 / 기타기관 | {groups['ETH']} / {groups['Baidu']} / {groups['SNU']} / {groups['other']} |
 | 연도 범위 | 1995–2026 |
 | 기술 분류 | 8개 |
-| 대표 그림 | 80개 |
+| 대표 그림 | {len(records)}개 |
 | 원문 Figure / Table | {figure_count} / {table_count} |
 | 근거 제한 항목 | {manifest['insufficient_evidence_count']} |
 | 서지 일부 미확인 | {manifest['metadata_gap_count']} |
@@ -1227,9 +1241,9 @@ date: {manifest['generated_on']}
 
 1. `data/fragments/`와 `data/enriched/`의 검토 레코드·근거 경로를 갱신한다.
 2. 카드 대표 그림을 `images/paper-NNN.png`에 준비한다.
-3. `python tools/extract_all_figures.py`로 PDF Figure/Table 전체를 추출·기록한다.
-4. `python tools/build_image_map.py`와 `python tools/build_dashboard.py`로 메인·상세·문서를 재생성한다.
-5. `python tools/qa_dashboard.py`와 `python tools/browser_qa.py`가 모두 0 오류인지 확인한다.
+3. PDF Figure/Table을 추출·검토하고 `data/figure_manifest.json`과 `data/image_map.json`에 근거·배치 정보를 기록한다.
+4. 외부 구현 저장소 `field-robot-dashboard`에서 `python src/dashboard_renderer.py --vault /path/to/obsidian_work`로 로컬 HTML을 재생성한다.
+5. 같은 저장소의 `src/publish.py`로 공개본을 빌드하고 내부 링크·브라우저 화면을 검증한다. 기존 `tools/`는 80편 기준의 이전 도구이므로 새 논문 재생성에는 사용하지 않는다.
 
 > [!warning]
 > 같은 연구의 MD/PDF/HTML/인포그래픽은 별도 카드가 아니라 `source_links`에 묶는다. 확인할 수 없는 메타데이터나 수치는 만들지 않는다.
@@ -1237,41 +1251,44 @@ date: {manifest['generated_on']}
 
 
 def v2_render_readme(records, manifest, image_map):
+    groups = Counter(institution_group(record) for record in records)
     fallback = sum("fallback" in str(item.get("extraction_method", "")) for item in image_map.values())
     figure_count = sum(sum(asset.get("kind") == "figure" for asset in item.get("figures", [])) for item in image_map.values())
     table_count = sum(sum(asset.get("kind") == "table" for asset in item.get("figures", [])) for item in image_map.values())
     return f'''# 필드로봇 연구 통합 대시보드 v3
 
-ICRA2026 분야추천 TOP50의 조밀한 카탈로그와 상세 정보 밀도를 기준으로 만든 오프라인 대시보드다. 고유 연구 80건, 대표 그림 80개, 원문 Figure {figure_count}개와 Table {table_count}개를 수록한다.
+**외부 공개**: https://hanminy.github.io/field-robot-dashboard/ · [[공개 대시보드 및 자동 동기화|자동 갱신 방식과 운영 안내]]
+
+ICRA2026 분야추천 TOP50의 조밀한 카탈로그와 상세 정보 밀도를 기준으로 만든 오프라인 대시보드다. 고유 연구 {len(records)}건, 대표 그림 {len(records)}개, 원문 Figure {figure_count}개와 Table {table_count}개를 수록한다.
 
 ## 구조
 
 - `필드로봇_연구통합_대시보드.html`: ICRA형 메인 카탈로그
 - `assets/dashboard.css`, `assets/dashboard.js`: 오프라인 스타일·검색·조합 필터·hash·라이트박스
-- `images/paper-NNN.png`: 카드와 상세가 공유하는 대표 그림 80개
-- `data/papers.json`: 정규화된 고유 연구 레코드 80건
+- `images/paper-NNN.png`: 카드와 상세가 공유하는 대표 그림 {len(records)}개
+- `data/papers.json`: 정규화된 고유 연구 레코드 {len(records)}건
 - `data/image_map.json`: stable id/rank, 대표 그림과 전체 Figure/Table 추적 정보
 - `data/figure_manifest.json`: PDF별 탐지·추출·fallback·실패 재현 기록
 - `data/manifest.json`: 원본별 추출 수, 중복 병합, 제외·미확보 범위
-- `detail/paper-NNN.html`, `detail/paper.css`: ICRA형 상세 페이지 80개와 공통 스타일
-- `tools/build_dashboard.py`: 검토 fragment + image_map으로 정적 산출물 재생성
-- `tools/build_image_map.py`: 핵심기관·기타기관 검토 매핑을 최종 image_map으로 병합
-- `tools/qa_dashboard.py`: 스키마, 개수, DOM, 이미지 디코딩, 링크, CDN 검사
-- `tools/browser_qa.py`: 실제 Chrome 1440/390 상호작용·이미지·overflow·console 검사
+- `detail/paper-NNN.html`, `detail/paper.css`: ICRA형 상세 페이지 {len(records)}개와 공통 스타일
+- 외부 구현 저장소 `field-robot-dashboard/src/dashboard_renderer.py`: 검토 데이터에서 메인·상세·문서를 재생성
+- 외부 구현 저장소 `field-robot-dashboard/src/publish.py`: 공개 범위 변환·내부 링크 검증
+- `tools/`: 80편 기준의 이전 도구 보관본. 새 논문 추가 후에는 위 외부 구현을 사용
 - `visual-qa/`: 동일 1440px 기준 원본/완성 스크린샷과 시각 검증 자료
 
 ## 재생성·검증
 
-볼트 루트에서 실행한다.
+외부 구현 저장소 `/home/hmlee/dev/field-robot-dashboard`에서 실행한다. 볼트에는 구현 소스를 추가하지 않는다.
 
-```powershell
-python "02_research/필드로봇/통합대시보드/tools/build_image_map.py"
-python "02_research/필드로봇/통합대시보드/tools/build_dashboard.py"
-python "02_research/필드로봇/통합대시보드/tools/qa_dashboard.py"
-python "02_research/필드로봇/통합대시보드/tools/browser_qa.py"
+```bash
+.venv/bin/python src/dashboard_renderer.py --vault /home/hmlee/obsidian/obsidian_work
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python src/publish.py --vault /home/hmlee/obsidian/obsidian_work --output /tmp/field-robot-public-review --revision local
 ```
 
-브라우저에서는 `/02_research/필드로봇/통합대시보드/필드로봇_연구통합_대시보드.html`을 연다. 대표기관 버튼의 기대 결과는 전체 80, ETH 33, 서울대 10, Baidu 22, 기타기관 15다.
+공개본 출력 경로는 비어 있어야 한다. 브라우저에서 검색·기관 필터·이미지 확대와 데스크톱/모바일 overflow를 확인한다.
+
+브라우저에서는 `/02_research/필드로봇/통합대시보드/필드로봇_연구통합_대시보드.html`을 연다. 대표기관 버튼의 기대 결과는 전체 {len(records)}, ETH {groups['ETH']}, 서울대 {groups['SNU']}, Baidu {groups['Baidu']}, 기타기관 {groups['other']}다.
 
 ## 이미지 갱신 원칙
 
@@ -1284,18 +1301,35 @@ python "02_research/필드로봇/통합대시보드/tools/browser_qa.py"
 3. DOI, 정규화 제목, 동일 원문 PDF 경로 순으로 중복을 점검한다.
 4. 동일 연구의 파생 자료는 한 레코드의 `source_links`에 묶는다.
 5. 확인되지 않은 연도·저자·학회·DOI·정량 결과는 공란으로 두고 UI에서 해당 메타 조각을 생략한다.
-6. rank가 바뀌면 대표 그림 파일명과 `image_map.json`의 rank/id를 함께 갱신한다.
+6. 기존 id/rank와 공개 주소는 유지하고 새 논문은 다음 rank로 추가한다.
 
 ## 한계
 
 - 근거 제한 항목은 {manifest['insufficient_evidence_count']}건, 저자·발표처·DOI 중 하나 이상이 미확인인 항목은 {manifest['metadata_gap_count']}건이다.
-- 통합 대상 80편 외의 별도 `국내보고서/` PDF 9개는 원본이 없어 `manifest.json`의 미확보 참고 항목으로만 남아 있다.
+- 통합 대상 {len(records)}편 외의 별도 `국내보고서/` PDF 9개는 원본이 없어 `manifest.json`의 미확보 참고 항목으로만 남아 있다.
 - 카드 대표 이미지 2건은 Figure caption 기반 대표 그림을 확보하지 못해 원문 첫 페이지를 사용한다. 상세 페이지의 Figure/Table 전체 추출과는 별도다.
 - 외부 원문 URL은 관련 링크일 뿐 대시보드 구동에는 사용하지 않는다. 외부 UI CDN은 없다.
 '''
 
 
+def configure_vault(vault):
+    global ROOT, WORKTREE_VAULT, DATA_DIR, FRAGMENT_DIR, DETAIL_DIR, ASSET_DIR, IMAGE_DIR, IMAGE_MAP_PATH, ENRICHED_DIR
+    WORKTREE_VAULT = Path(vault).resolve()
+    ROOT = WORKTREE_VAULT / "02_research/필드로봇/통합대시보드"
+    DATA_DIR = ROOT / "data"
+    FRAGMENT_DIR = DATA_DIR / "fragments"
+    DETAIL_DIR = ROOT / "detail"
+    ASSET_DIR = ROOT / "assets"
+    IMAGE_DIR = ROOT / "images"
+    IMAGE_MAP_PATH = DATA_DIR / "image_map.json"
+    ENRICHED_DIR = DATA_DIR / "enriched"
+
+
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--vault", type=Path, required=True)
+    configure_vault(parser.parse_args().vault)
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
     DETAIL_DIR.mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -162,12 +162,7 @@ class Exporter:
         if self.output.exists() and any(self.output.iterdir()):
             raise ValueError('Output directory must be empty')
         self.output.mkdir(parents=True, exist_ok=True)
-        renderer.ROOT = self.root
-        renderer.WORKTREE_VAULT = self.vault
-        renderer.DATA_DIR = self.root / 'data'
-        renderer.FRAGMENT_DIR = renderer.DATA_DIR / 'fragments'
-        renderer.ENRICHED_DIR = renderer.DATA_DIR / 'enriched'
-        renderer.IMAGE_MAP_PATH = renderer.DATA_DIR / 'image_map.json'
+        renderer.configure_vault(self.vault)
         records, manifest = renderer.load_records()
         records = renderer.merge_enriched(records)
         images = renderer.load_image_map(records)
