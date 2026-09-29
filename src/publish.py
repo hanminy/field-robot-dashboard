@@ -44,11 +44,15 @@ class Exporter:
             if marker not in value:
                 return None
             value = value.split(marker, 1)[1]
-        for candidate in (source.parent / value, self.vault / value):
+        variants = [value] if value.endswith('.md') else [value, value + '.md']
+        for candidate in [base / variant for variant in variants
+                          for base in (source.parent, self.vault)]:
             candidate = candidate.resolve()
             if candidate.is_relative_to(self.vault) and candidate.is_file():
                 return candidate
         matches = self.files_by_name.get(Path(value).name, [])
+        if not matches:
+            matches = self.files_by_name.get(Path(value).name + '.md', [])
         return matches[0] if len(matches) == 1 else None
 
     def write(self, relative, content):
