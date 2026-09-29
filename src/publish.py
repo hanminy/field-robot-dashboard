@@ -188,6 +188,8 @@ class Exporter:
             if not path.is_relative_to(self.root):
                 self.notes[path] = self.note_path(path)
         shutil.copytree(self.root / 'assets', self.output / 'assets')
+        with (self.output / 'assets/dashboard.css').open('a', encoding='utf-8') as css:
+            css.write('\n.fbtn{white-space:nowrap}\n')
         (self.output / 'detail').mkdir()
         shutil.copy2(self.root / 'detail/paper.css', self.output / 'detail/paper.css')
         with (self.output / 'detail/paper.css').open('a', encoding='utf-8') as css:
