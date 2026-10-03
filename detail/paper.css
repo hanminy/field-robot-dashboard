@@ -70,7 +70,10 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .pipeline-card .step-num{position:absolute;left:14px;top:15px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:14px;font-weight:700;}
 .pipeline-card h4,.eq h4{margin:0 0 7px;color:#fff;font-size:1em;}.pipeline-card p,.eq p{margin:0;font-size:1em;}
 .equations{display:grid;gap:11px;margin:14px 0 22px;}.eq{background:#11151c;border:1px solid var(--line);border-left:4px solid var(--core);border-radius:10px;padding:13px 15px;}
-.eq code{display:block;overflow-x:auto;white-space:pre-wrap;margin:8px 0;padding:8px 10px;line-height:1.55;color:#ffe1ad;}
+.eq{min-width:0;}
+.math-display{max-width:100%;overflow-x:auto;margin:12px 0;padding:12px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;font-size:1.1em;color:#ffe1ad;}
+.math-display math{width:max-content;min-width:100%;margin:0;}
+.math-display:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:16px 0;}.tech-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:2px 16px 12px;}
 .tech-card h3{color:var(--accent);}.tech-card p,.tech-card li{font-size:1em;}.metric-table td:nth-child(2){font-weight:650;color:#fff;}
 .source-figure{margin:26px auto;}.source-figure b{color:#cfd9e8;}.table-asset img{background:#fff;}.gallery-intro{color:var(--txt2);}
