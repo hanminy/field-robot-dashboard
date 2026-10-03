@@ -7,6 +7,7 @@ import hashlib
 import html
 import json
 import re
+import subprocess
 import unicodedata
 from collections import Counter
 from datetime import date
@@ -1061,6 +1062,26 @@ def render_evidence_pages(record):
     return f'<div class="evidence-pages"><h3>섹션별 원문 근거 페이지</h3><ul>{"".join(items)}</ul></div>'
 
 
+def render_equations(equations):
+    """Compile reviewed TeX at build time; no browser script or CDN is needed."""
+    if not equations:
+        return ""
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("render_math.cjs"))],
+        input=json.dumps([item.get("latex", "") for item in equations]),
+        text=True, capture_output=True, timeout=30,
+    )
+    if result.returncode:
+        raise ValueError(f"Equation rendering failed: {result.stderr.strip()}")
+    rendered = json.loads(result.stdout)
+    return "".join(
+        f'<div class="eq"><h4>{esc(item.get("label"))}</h4>'
+        f'<div class="math-display" tabindex="0" aria-label="수식">{math}</div>'
+        f'<p>{esc(item.get("explanation"))}</p></div>'
+        for item, math in zip(equations, rendered, strict=True)
+    )
+
+
 def v2_render_detail(record, previous_record, next_record, image_item):
     cls = institution_class(record)
     categories = [record["category"], *record["secondary_categories"]]
@@ -1095,10 +1116,7 @@ def v2_render_detail(record, previous_record, next_record, image_item):
         f'<div class="pipeline-card"><span class="step-num">{index}</span><h4>{esc(item.get("title"))}</h4><p>{esc(item.get("body"))}</p></div>'
         for index, item in enumerate(methodology.get("pipeline", []), 1)
     )
-    equation_html = "".join(
-        f'<div class="eq"><h4>{esc(item.get("label"))}</h4><code>{esc(item.get("latex"))}</code><p>{esc(item.get("explanation"))}</p></div>'
-        for item in methodology.get("equations", [])
-    )
+    equation_html = render_equations(methodology.get("equations", []))
     core_html = "".join(
         f'<article class="tech-card"><h3>{esc(item.get("title"))}</h3>{render_paragraphs(item.get("paragraphs"))}{render_bullets(item.get("points"))}</article>'
         for item in core_technology

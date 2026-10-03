@@ -27,6 +27,11 @@ CSS/JS는 볼트의 assets를 사용하고, HTML 템플릿은 `src/dashboard_ren
 
 ## 로컬 검증
 
+Python과 Node.js가 필요하다. 상세 수식은 기존 볼트에서 사용하던 KaTeX
+0.16.45 번들을 재사용해 빌드 시 MathML로 변환한다. 최신 브라우저에서
+외부 CDN이나 클라이언트 수식 스크립트 없이 표시되며, 잘못된 TeX는
+원문 문자열로 게시하지 않고 빌드를 실패시킨다.
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
